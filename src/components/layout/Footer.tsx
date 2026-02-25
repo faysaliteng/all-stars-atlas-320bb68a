@@ -1,25 +1,56 @@
 import { Link } from "react-router-dom";
-import { Plane, Mail, Phone, MapPin, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
+import { Plane, Mail, Phone, MapPin, Facebook, Instagram, Youtube, Twitter, ArrowRight, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const Footer = () => {
   return (
-    <footer className="bg-[hsl(220_25%_10%)] text-white">
+    <footer className="bg-[hsl(224,30%,8%)] text-white">
+      {/* Newsletter */}
+      <div className="border-b border-white/8">
+        <div className="container mx-auto px-4 py-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-xl font-bold mb-1">Get Travel Deals & Tips</h3>
+              <p className="text-sm text-white/50">Subscribe for exclusive offers. No spam, unsubscribe anytime.</p>
+            </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <Input
+                placeholder="Enter your email"
+                className="bg-white/8 border-white/10 text-white placeholder:text-white/30 h-11 w-full md:w-72 rounded-xl focus-visible:ring-primary"
+              />
+              <Button className="h-11 px-6 rounded-xl font-bold shadow-lg shadow-primary/20">
+                <Send className="w-4 h-4 mr-1.5" /> Subscribe
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
           {/* Brand */}
-          <div className="space-y-4">
+          <div className="lg:col-span-2 space-y-5">
             <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl hero-gradient flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl hero-gradient flex items-center justify-center shadow-lg shadow-primary/20">
                 <Plane className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-extrabold">TravelHub</span>
+              <div>
+                <span className="text-xl font-black block leading-none">TravelHub</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">Bangladesh</span>
+              </div>
             </Link>
-            <p className="text-sm text-white/50 leading-relaxed">
-              Your trusted travel partner for flights, hotels, visa and holiday packages. Best prices guaranteed with 24/7 customer support.
+            <p className="text-sm text-white/45 leading-relaxed max-w-sm">
+              Bangladesh's most trusted travel platform. Book flights, hotels, visa & holidays with best prices, instant confirmation, and 24/7 customer support.
             </p>
-            <div className="flex gap-2.5">
-              {[Facebook, Instagram, Twitter, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className="w-9 h-9 rounded-lg bg-white/8 hover:bg-primary flex items-center justify-center transition-colors">
+            <div className="flex gap-2">
+              {[
+                { Icon: Facebook, label: "Facebook" },
+                { Icon: Instagram, label: "Instagram" },
+                { Icon: Twitter, label: "Twitter" },
+                { Icon: Youtube, label: "YouTube" },
+              ].map(({ Icon, label }) => (
+                <a key={label} href="#" aria-label={label} className="w-10 h-10 rounded-xl bg-white/6 hover:bg-primary flex items-center justify-center transition-all hover:scale-105">
                   <Icon className="w-4 h-4" />
                 </a>
               ))}
@@ -28,17 +59,21 @@ const Footer = () => {
 
           {/* Services */}
           <div>
-            <h4 className="font-bold text-sm mb-4 uppercase tracking-wider text-white/80">Services</h4>
-            <ul className="space-y-2.5 text-sm text-white/50">
+            <h4 className="font-bold text-[13px] mb-5 uppercase tracking-wider text-white/70">Services</h4>
+            <ul className="space-y-3 text-sm text-white/45">
               {[
                 { label: "Flight Booking", href: "/flights" },
                 { label: "Hotel Reservation", href: "/hotels" },
                 { label: "Visa Processing", href: "/visa" },
                 { label: "Holiday Packages", href: "/holidays" },
                 { label: "Travel Insurance", href: "#" },
+                { label: "eSIM", href: "#" },
               ].map((item) => (
                 <li key={item.label}>
-                  <Link to={item.href} className="hover:text-white transition-colors">{item.label}</Link>
+                  <Link to={item.href} className="hover:text-white transition-colors flex items-center gap-1 group">
+                    <ArrowRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                    {item.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -46,11 +81,14 @@ const Footer = () => {
 
           {/* Company */}
           <div>
-            <h4 className="font-bold text-sm mb-4 uppercase tracking-wider text-white/80">Company</h4>
-            <ul className="space-y-2.5 text-sm text-white/50">
+            <h4 className="font-bold text-[13px] mb-5 uppercase tracking-wider text-white/70">Company</h4>
+            <ul className="space-y-3 text-sm text-white/45">
               {["About Us", "Contact", "Blog", "Careers", "Terms & Conditions", "Privacy Policy", "Refund Policy"].map((item) => (
                 <li key={item}>
-                  <Link to="#" className="hover:text-white transition-colors">{item}</Link>
+                  <Link to="#" className="hover:text-white transition-colors flex items-center gap-1 group">
+                    <ArrowRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                    {item}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -58,27 +96,27 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-bold text-sm mb-4 uppercase tracking-wider text-white/80">Contact Us</h4>
-            <ul className="space-y-3 text-sm text-white/50">
+            <h4 className="font-bold text-[13px] mb-5 uppercase tracking-wider text-white/70">Contact Us</h4>
+            <ul className="space-y-3.5 text-sm text-white/45">
               <li className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-white/40" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-primary/60" />
                 <span>123 Travel Street, Dhaka 1205, Bangladesh</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 shrink-0 text-white/40" />
-                <span>+880 1234-567890</span>
+                <Phone className="w-4 h-4 shrink-0 text-primary/60" />
+                <a href="tel:+8801234567890" className="hover:text-white transition-colors">+880 1234-567890</a>
               </li>
               <li className="flex items-center gap-2.5">
-                <Mail className="w-4 h-4 shrink-0 text-white/40" />
-                <span>support@travelhub.com</span>
+                <Mail className="w-4 h-4 shrink-0 text-primary/60" />
+                <a href="mailto:support@travelhub.com" className="hover:text-white transition-colors">support@travelhub.com</a>
               </li>
             </ul>
 
             <div className="mt-6">
-              <h5 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">We Accept</h5>
+              <h5 className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3">We Accept</h5>
               <div className="flex flex-wrap gap-1.5">
-                {["bKash", "Nagad", "VISA", "Master", "AMEX"].map((m) => (
-                  <span key={m} className="px-2 py-1 bg-white/8 rounded text-[10px] font-semibold text-white/60">{m}</span>
+                {["bKash", "Nagad", "VISA", "Master", "AMEX", "PayPal"].map((m) => (
+                  <span key={m} className="px-2.5 py-1 bg-white/6 rounded-md text-[10px] font-semibold text-white/50">{m}</span>
                 ))}
               </div>
             </div>
@@ -86,15 +124,13 @@ const Footer = () => {
         </div>
       </div>
 
-      <div className="border-t border-white/8">
-        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] text-white/30">
+      <div className="border-t border-white/6">
+        <div className="container mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] text-white/25">
           <p>© {new Date().getFullYear()} TravelHub. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <span>IATA Accredited</span>
-            <span>•</span>
-            <span>ATAB Member</span>
-            <span>•</span>
-            <span>Superbrands Award</span>
+          <div className="flex items-center gap-5">
+            <span className="flex items-center gap-1.5">✈️ IATA Accredited</span>
+            <span className="flex items-center gap-1.5">🏆 ATAB Member</span>
+            <span className="flex items-center gap-1.5">⭐ Superbrands Award</span>
           </div>
         </div>
       </div>

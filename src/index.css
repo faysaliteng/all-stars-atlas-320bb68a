@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,83 +7,83 @@
 @layer base {
   :root {
     --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --foreground: 222 30% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 222 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 222 30% 12%;
 
-    --primary: 213 94% 48%;
+    --primary: 217 91% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 24 95% 53%;
+    --secondary: 24 100% 50%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 214 18% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 172 66% 40%;
+    --accent: 167 72% 41%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 18% 91%;
-    --input: 214 18% 91%;
-    --ring: 213 94% 48%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 50%;
 
     --radius: 0.75rem;
 
-    --success: 142 71% 45%;
+    --success: 152 69% 41%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 25% 10%;
-    --sidebar-primary: 213 94% 48%;
+    --sidebar-foreground: 222 30% 12%;
+    --sidebar-primary: 217 91% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 18% 95%;
-    --sidebar-accent-foreground: 220 25% 10%;
-    --sidebar-border: 214 18% 91%;
-    --sidebar-ring: 213 94% 48%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 30% 12%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 50%;
   }
 
   .dark {
-    --background: 222 30% 8%;
-    --foreground: 210 20% 95%;
-    --card: 222 25% 12%;
-    --card-foreground: 210 20% 95%;
-    --popover: 222 25% 12%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 213 94% 55%;
+    --background: 224 30% 6%;
+    --foreground: 210 20% 96%;
+    --card: 224 25% 10%;
+    --card-foreground: 210 20% 96%;
+    --popover: 224 25% 10%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 217 91% 58%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 24 95% 55%;
+    --secondary: 24 100% 55%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 220 20% 18%;
-    --muted-foreground: 215 15% 60%;
-    --accent: 172 66% 45%;
+    --muted: 224 20% 15%;
+    --muted-foreground: 218 11% 55%;
+    --accent: 167 72% 46%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 213 94% 55%;
-    --success: 142 71% 45%;
+    --border: 224 18% 16%;
+    --input: 224 18% 16%;
+    --ring: 217 91% 58%;
+    --success: 152 69% 41%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --sidebar-background: 222 25% 12%;
-    --sidebar-foreground: 210 20% 95%;
-    --sidebar-primary: 213 94% 55%;
+    --sidebar-background: 224 25% 10%;
+    --sidebar-foreground: 210 20% 96%;
+    --sidebar-primary: 217 91% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 18%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 220 20% 18%;
-    --sidebar-ring: 213 94% 55%;
+    --sidebar-accent: 224 20% 15%;
+    --sidebar-accent-foreground: 210 20% 96%;
+    --sidebar-border: 224 18% 16%;
+    --sidebar-ring: 217 91% 58%;
   }
 }
 
@@ -95,65 +95,155 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Premium scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection */
+  ::selection {
+    background: hsl(var(--primary) / 0.15);
+    color: hsl(var(--primary));
   }
 }
 
 @layer components {
   .hero-gradient {
-    background: linear-gradient(135deg, hsl(213 94% 48%), hsl(220 70% 32%));
+    background: linear-gradient(135deg, hsl(217 91% 50%), hsl(224 70% 28%));
+  }
+
+  .hero-gradient-warm {
+    background: linear-gradient(135deg, hsl(217 91% 50%), hsl(167 72% 41%));
   }
 
   .glass-card {
-    background: hsl(var(--card) / 0.95);
-    backdrop-filter: blur(24px);
-    border: 1px solid hsl(var(--border) / 0.6);
+    background: hsl(var(--card) / 0.92);
+    backdrop-filter: blur(40px) saturate(1.8);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    border: 1px solid hsl(var(--border) / 0.5);
     box-shadow:
-      0 4px 6px -1px hsl(var(--foreground) / 0.03),
-      0 20px 40px -8px hsl(var(--foreground) / 0.08);
+      0 0 0 1px hsl(var(--card) / 0.3),
+      0 2px 4px hsl(var(--foreground) / 0.02),
+      0 12px 24px -4px hsl(var(--foreground) / 0.06),
+      0 32px 64px -8px hsl(var(--foreground) / 0.08);
+  }
+
+  .glass-card-hero {
+    background: hsl(var(--card) / 0.88);
+    backdrop-filter: blur(60px) saturate(2);
+    -webkit-backdrop-filter: blur(60px) saturate(2);
+    border: 1px solid hsl(0 0% 100% / 0.15);
+    box-shadow:
+      0 0 0 1px hsl(0 0% 100% / 0.05),
+      0 8px 16px hsl(0 0% 0% / 0.06),
+      0 24px 48px -8px hsl(0 0% 0% / 0.12),
+      0 48px 96px -16px hsl(0 0% 0% / 0.1);
   }
 
   .search-tab {
-    @apply flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer;
+    @apply flex items-center gap-2 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer;
     @apply text-muted-foreground hover:text-foreground hover:bg-muted/60;
   }
 
   .search-tab-active {
-    @apply text-primary bg-primary/8 shadow-sm;
+    @apply text-primary;
+    background: hsl(var(--primary) / 0.08);
+    box-shadow: inset 0 -2px 0 hsl(var(--primary));
   }
 
   .search-field {
-    @apply flex items-center gap-3 px-4 py-3 border-r border-border last:border-r-0 cursor-pointer hover:bg-muted/40 transition-colors;
+    @apply flex items-center gap-3 px-5 py-4 border-r border-border/60 last:border-r-0 cursor-pointer transition-all duration-200;
+  }
+
+  .search-field:hover {
+    background: hsl(var(--primary) / 0.03);
   }
 
   .section-title {
-    @apply text-2xl md:text-3xl font-bold tracking-tight;
+    @apply text-2xl md:text-[32px] font-extrabold tracking-tight;
+    letter-spacing: -0.03em;
+  }
+
+  .section-subtitle {
+    @apply text-muted-foreground mt-2 max-w-2xl mx-auto text-[15px] leading-relaxed;
   }
 
   .destination-card {
-    @apply relative overflow-hidden rounded-2xl group cursor-pointer;
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+    @apply relative overflow-hidden rounded-2xl cursor-pointer;
+    @apply transition-all duration-500 hover:shadow-2xl hover:-translate-y-1.5;
+  }
+
+  .destination-card img {
+    @apply transition-transform duration-700 group-hover:scale-110;
   }
 
   .airline-card {
-    @apply flex flex-col items-center gap-2 p-4 rounded-xl border border-border bg-card;
-    @apply hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer;
+    @apply flex flex-col items-center gap-3 p-5 rounded-2xl border border-border bg-card;
+    @apply hover:shadow-lg hover:border-primary/25 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer;
   }
 
   .offer-card {
-    @apply relative overflow-hidden rounded-2xl cursor-pointer group;
-    @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+    @apply relative overflow-hidden rounded-2xl cursor-pointer;
+    @apply transition-all duration-500 hover:shadow-2xl hover:-translate-y-1.5;
   }
 
-  .story-link * {
-    @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
+  .premium-card {
+    @apply bg-card rounded-2xl overflow-hidden border border-border;
+    @apply hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-500 cursor-pointer group;
+    box-shadow: 0 1px 3px hsl(var(--foreground) / 0.04), 0 8px 24px -4px hsl(var(--foreground) / 0.06);
   }
 
-  .hover-scale {
-    @apply transition-transform duration-200 hover:scale-105;
+  .premium-card:hover {
+    box-shadow: 0 4px 8px hsl(var(--foreground) / 0.06), 0 24px 48px -8px hsl(var(--primary) / 0.12);
+  }
+
+  .stat-card {
+    @apply text-center;
+  }
+
+  .stat-number {
+    @apply text-3xl md:text-4xl font-black tracking-tight;
+    letter-spacing: -0.04em;
+  }
+
+  .trust-badge {
+    @apply flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium;
+    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.04);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+  }
+
+  .shimmer {
+    background: linear-gradient(110deg, transparent 25%, hsl(0 0% 100% / 0.06) 37%, transparent 63%);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s infinite ease-in-out;
   }
 }
 
@@ -164,4 +254,16 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  .text-gradient-warm {
+    background: linear-gradient(135deg, hsl(var(--secondary)), hsl(24 100% 65%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

@@ -7,20 +7,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Menu, User, Plane, Building2, FileText, Palmtree,
-  ChevronDown, Gift, ShoppingBag, Bus, MoreHorizontal, Phone
+  ChevronDown, Phone, Globe, Headphones
 } from "lucide-react";
 
 const mainNav = [
   { label: "Flight", href: "/flights", icon: Plane },
   { label: "Hotel", href: "/hotels", icon: Building2 },
   { label: "Holiday", href: "/holidays", icon: Palmtree },
-];
-
-const moreItems = [
-  { label: "Visa", href: "/visa" },
-  { label: "eSIM", href: "#" },
-  { label: "Recharge", href: "#" },
-  { label: "Pay Bill", href: "#" },
 ];
 
 const Header = () => {
@@ -30,134 +23,188 @@ const Header = () => {
   const isHome = location.pathname === "/";
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 30);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const headerBg = isHome && !scrolled
-    ? "bg-transparent"
-    : "bg-card/98 backdrop-blur-xl shadow-sm border-b border-border/50";
-
-  const textColor = isHome && !scrolled ? "text-white" : "text-foreground";
-  const mutedColor = isHome && !scrolled ? "text-white/70" : "text-muted-foreground";
+  const transparent = isHome && !scrolled;
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerBg}`}>
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 lg:h-[68px]">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl hero-gradient flex items-center justify-center shadow-md">
-              <Plane className="w-5 h-5 text-white" />
-            </div>
-            <span className={`text-xl font-extrabold tracking-tight ${textColor}`}>
-              TravelHub
-            </span>
-          </Link>
-
-          {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-0.5">
-            {mainNav.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`px-4 py-2 rounded-lg text-[15px] font-semibold transition-colors ${mutedColor} hover:${textColor} ${
-                  isHome && !scrolled ? "hover:bg-white/10" : "hover:bg-muted"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-
-            {/* Visa dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className={`flex items-center gap-1 px-4 py-2 rounded-lg text-[15px] font-semibold transition-colors ${mutedColor} ${
-                isHome && !scrolled ? "hover:bg-white/10" : "hover:bg-muted"
-              }`}>
-                Visa <ChevronDown className="w-3.5 h-3.5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuItem asChild><Link to="/visa">Visa Application</Link></DropdownMenuItem>
-                <DropdownMenuItem>Visa Requirements</DropdownMenuItem>
-                <DropdownMenuItem>Track Application</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Others dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className={`flex items-center gap-1 px-4 py-2 rounded-lg text-[15px] font-semibold transition-colors ${mutedColor} ${
-                isHome && !scrolled ? "hover:bg-white/10" : "hover:bg-muted"
-              }`}>
-                Others <ChevronDown className="w-3.5 h-3.5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuItem>eSIM</DropdownMenuItem>
-                <DropdownMenuItem>Recharge</DropdownMenuItem>
-                <DropdownMenuItem>Pay Bill</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </nav>
-
-          {/* Right Side */}
-          <div className="hidden lg:flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className={`font-semibold ${mutedColor} ${isHome && !scrolled ? "hover:bg-white/10 hover:text-white" : ""}`}
-            >
-              <Link to="/auth/login">
-                <User className="w-4 h-4 mr-1.5" />
-                Login
-              </Link>
-            </Button>
+    <>
+      {/* Top info bar — only on desktop */}
+      <div className={`hidden lg:block fixed top-0 left-0 right-0 z-[51] transition-all duration-300 ${
+        transparent ? "bg-white/5 backdrop-blur-sm border-b border-white/10" : "bg-muted border-b border-border"
+      }`}>
+        <div className="container mx-auto px-4 flex items-center justify-between h-8">
+          <div className={`flex items-center gap-4 text-[11px] font-medium ${transparent ? "text-white/60" : "text-muted-foreground"}`}>
+            <a href="tel:+8801234567890" className="flex items-center gap-1 hover:text-primary transition-colors">
+              <Phone className="w-3 h-3" />
+              <span>+880 1234-567890</span>
+            </a>
+            <span className="w-px h-3 bg-current opacity-30" />
+            <a href="mailto:support@travelhub.com" className="hover:text-primary transition-colors">
+              support@travelhub.com
+            </a>
           </div>
-
-          {/* Mobile */}
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild className="lg:hidden">
-              <Button variant="ghost" size="icon" className={textColor}>
-                <Menu className="w-5 h-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-80 p-0">
-              <div className="flex flex-col h-full">
-                <div className="p-5 border-b border-border">
-                  <Link to="/" className="flex items-center gap-2.5" onClick={() => setMobileOpen(false)}>
-                    <div className="w-9 h-9 rounded-xl hero-gradient flex items-center justify-center">
-                      <Plane className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-lg font-extrabold">TravelHub</span>
-                  </Link>
-                </div>
-                <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-                  {[...mainNav, { label: "Visa", href: "/visa", icon: FileText }].map((item) => (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-muted transition-colors font-medium"
-                    >
-                      <item.icon className="w-5 h-5 text-primary" />
-                      {item.label}
-                    </Link>
-                  ))}
-                </nav>
-                <div className="p-4 border-t border-border space-y-2">
-                  <Button className="w-full" asChild>
-                    <Link to="/auth/login" onClick={() => setMobileOpen(false)}>Login</Link>
-                  </Button>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link to="/auth/register" onClick={() => setMobileOpen(false)}>Create Account</Link>
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <div className={`flex items-center gap-3 text-[11px] font-medium ${transparent ? "text-white/60" : "text-muted-foreground"}`}>
+            <button className="flex items-center gap-1 hover:text-primary transition-colors">
+              <Globe className="w-3 h-3" />
+              English
+            </button>
+            <span className="w-px h-3 bg-current opacity-30" />
+            <span>BDT ৳</span>
+            <span className="w-px h-3 bg-current opacity-30" />
+            <a href="#" className="flex items-center gap-1 hover:text-primary transition-colors">
+              <Headphones className="w-3 h-3" /> Help Center
+            </a>
+          </div>
         </div>
       </div>
-    </header>
+
+      {/* Main header */}
+      <header className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
+        transparent
+          ? "top-8 bg-transparent"
+          : "top-8 bg-card/98 backdrop-blur-2xl shadow-[0_1px_3px_hsl(var(--foreground)/0.06)] border-b border-border/50"
+      } lg:top-8`} style={{ top: scrolled || !isHome ? '32px' : undefined }}>
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-[60px]">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <div className="w-10 h-10 rounded-xl hero-gradient flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow">
+                <Plane className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className={`text-[19px] font-black tracking-tight leading-none ${transparent ? "text-white" : "text-foreground"}`}>
+                  TravelHub
+                </span>
+                <span className={`text-[9px] font-semibold uppercase tracking-[0.2em] ${transparent ? "text-white/50" : "text-muted-foreground"}`}>
+                  Bangladesh
+                </span>
+              </div>
+            </Link>
+
+            {/* Desktop Nav */}
+            <nav className="hidden lg:flex items-center gap-1">
+              {mainNav.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[14px] font-semibold transition-all ${
+                    transparent
+                      ? "text-white/80 hover:text-white hover:bg-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  } ${location.pathname === item.href ? (transparent ? "text-white bg-white/10" : "text-primary bg-primary/8") : ""}`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              ))}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger className={`flex items-center gap-1 px-4 py-2 rounded-lg text-[14px] font-semibold transition-all ${
+                  transparent ? "text-white/80 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}>
+                  <FileText className="w-4 h-4" />
+                  Visa <ChevronDown className="w-3 h-3 ml-0.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-52">
+                  <DropdownMenuItem asChild><Link to="/visa">Visa Application</Link></DropdownMenuItem>
+                  <DropdownMenuItem>Visa Requirements</DropdownMenuItem>
+                  <DropdownMenuItem>Track Application</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger className={`flex items-center gap-1 px-4 py-2 rounded-lg text-[14px] font-semibold transition-all ${
+                  transparent ? "text-white/80 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}>
+                  More <ChevronDown className="w-3 h-3 ml-0.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-52">
+                  <DropdownMenuItem>eSIM</DropdownMenuItem>
+                  <DropdownMenuItem>Recharge</DropdownMenuItem>
+                  <DropdownMenuItem>Pay Bill</DropdownMenuItem>
+                  <DropdownMenuItem>Medical Tourism</DropdownMenuItem>
+                  <DropdownMenuItem>Car Rental</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </nav>
+
+            {/* Right Side */}
+            <div className="hidden lg:flex items-center gap-2.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className={`font-semibold text-[13px] ${transparent ? "text-white/80 hover:bg-white/10 hover:text-white" : ""}`}
+              >
+                <Link to="/auth/login">
+                  <User className="w-4 h-4 mr-1.5" />
+                  Login
+                </Link>
+              </Button>
+              <Button
+                size="sm"
+                asChild
+                className="font-bold text-[13px] shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow"
+              >
+                <Link to="/auth/register">
+                  Sign Up
+                </Link>
+              </Button>
+            </div>
+
+            {/* Mobile */}
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild className="lg:hidden">
+                <Button variant="ghost" size="icon" className={transparent ? "text-white" : ""}>
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] p-0">
+                <div className="flex flex-col h-full">
+                  <div className="p-5 border-b border-border">
+                    <Link to="/" className="flex items-center gap-2.5" onClick={() => setMobileOpen(false)}>
+                      <div className="w-9 h-9 rounded-xl hero-gradient flex items-center justify-center">
+                        <Plane className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-lg font-extrabold">TravelHub</span>
+                    </Link>
+                  </div>
+                  <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+                    {[...mainNav, { label: "Visa", href: "/visa", icon: FileText }].map((item) => (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-muted transition-colors font-medium"
+                      >
+                        <item.icon className="w-5 h-5 text-primary" />
+                        {item.label}
+                      </Link>
+                    ))}
+                  </nav>
+                  <div className="p-4 border-t border-border space-y-2">
+                    <Button className="w-full font-bold" asChild>
+                      <Link to="/auth/login" onClick={() => setMobileOpen(false)}>Login</Link>
+                    </Button>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link to="/auth/register" onClick={() => setMobileOpen(false)}>Create Account</Link>
+                    </Button>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center pt-2">
+                      <Phone className="w-3 h-3" />
+                      <span>+880 1234-567890</span>
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+    </>
   );
 };
 

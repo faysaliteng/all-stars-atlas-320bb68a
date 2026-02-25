@@ -1,15 +1,51 @@
 import { motion } from "framer-motion";
-import type { Easing } from "framer-motion";
-import { ArrowRight, Star, MapPin, Shield, Headphones, BadgePercent, Smartphone, ChevronRight } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import {
+  ArrowRight, Star, MapPin, Shield, Headphones, BadgePercent,
+  Smartphone, ChevronRight, Plane, Users, Award, TrendingUp,
+  CheckCircle2, Quote, Heart
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import SearchWidget from "@/components/search/SearchWidget";
 
+// --- Animated counter hook ---
+function useCounter(end: number, duration = 2000) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const start = performance.now();
+          const tick = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.floor(eased * end));
+            if (progress < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [end, duration]);
+
+  return { count, ref };
+}
+
 // --- Data ---
 const offers = [
-  { title: "Exclusive Fares on Int'l Flights", discount: "Up to 16% OFF", desc: "International flights with partner bank cards", gradient: "from-blue-600 to-blue-800" },
-  { title: "Domestic Flight Deals", discount: "৳1,000 OFF", desc: "Save on domestic routes with credit cards", gradient: "from-emerald-500 to-emerald-700" },
-  { title: "Student Fare Special", discount: "Extra Baggage", desc: "Affordable flights with extra luggage for students", gradient: "from-orange-500 to-orange-700" },
+  { title: "Exclusive Fares on Int'l Flights", discount: "Up to 16% OFF", desc: "International flights with partner bank cards", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]", emoji: "✈️" },
+  { title: "Domestic Flight Deals", discount: "৳1,000 OFF", desc: "Save on domestic routes with credit cards", gradient: "from-[hsl(152,69%,41%)] to-[hsl(167,72%,30%)]", emoji: "🏷️" },
+  { title: "Student Fare Special", discount: "Extra Baggage", desc: "Affordable flights with extra luggage allowance", gradient: "from-[hsl(24,100%,50%)] to-[hsl(12,80%,45%)]", emoji: "🎓" },
+  { title: "Hotel Weekday Deals", discount: "30% OFF", desc: "Luxury hotels at budget prices on weekdays", gradient: "from-[hsl(270,60%,50%)] to-[hsl(280,70%,35%)]", emoji: "🏨" },
 ];
 
 const exploreBD = [
@@ -40,71 +76,119 @@ const intlDestinations = [
 ];
 
 const bestHotels = [
-  { name: "Sea Pearl Beach Resort & Spa", location: "Cox's Bazar", rating: 5, reviews: 431, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/agoda-2564409-60592569-839740.jpg" },
-  { name: "Bhawal Resort & Spa", location: "Gazipur", rating: 5, reviews: 264, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/bhawal-resort-spa-20210907174024.jpg" },
-  { name: "Grand Sylhet Hotel & Resort", location: "Sylhet", rating: 5, reviews: 159, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/267736179_149939317369872_2872125975221274736_n.jpg" },
-  { name: "Sayeman Beach Resort", location: "Cox's Bazar", rating: 5, reviews: 453, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/sayeman_-1.PNG" },
+  { name: "Sea Pearl Beach Resort & Spa", location: "Cox's Bazar", rating: 5, reviews: 431, price: "৳8,500", img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/agoda-2564409-60592569-839740.jpg" },
+  { name: "Bhawal Resort & Spa", location: "Gazipur", rating: 5, reviews: 264, price: "৳6,200", img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/bhawal-resort-spa-20210907174024.jpg" },
+  { name: "Grand Sylhet Hotel & Resort", location: "Sylhet", rating: 5, reviews: 159, price: "৳5,900", img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/267736179_149939317369872_2872125975221274736_n.jpg" },
+  { name: "Sayeman Beach Resort", location: "Cox's Bazar", rating: 5, reviews: 453, price: "৳7,800", img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/sayeman_-1.PNG" },
 ];
 
 const tourPackages = [
-  { name: "Bangkok", rating: 5, reviews: 57, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Bangkok.jpg" },
-  { name: "Maldives", rating: 5, reviews: 29, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Maafushi.jpg" },
-  { name: "Kolkata", rating: 4.5, reviews: 97, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Kolkata.jpg" },
-  { name: "Kuala Lumpur", rating: 5, reviews: 68, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Kuala_Lumpur.jpg" },
-  { name: "Singapore", rating: 5, reviews: 33, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Singapore.jpg" },
-  { name: "Dubai", rating: 5, reviews: 36, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Dubai.jpg" },
+  { name: "Bangkok", days: "4N/5D", price: "৳42,000", rating: 5, reviews: 57, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Bangkok.jpg" },
+  { name: "Maldives", days: "3N/4D", price: "৳68,000", rating: 5, reviews: 29, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Maafushi.jpg" },
+  { name: "Kolkata", days: "3N/4D", price: "৳22,000", rating: 4.5, reviews: 97, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Kolkata.jpg" },
+  { name: "Kuala Lumpur", days: "4N/5D", price: "৳48,000", rating: 5, reviews: 68, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Kuala_Lumpur.jpg" },
+  { name: "Singapore", days: "3N/4D", price: "৳55,000", rating: 5, reviews: 33, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Singapore.jpg" },
+  { name: "Dubai", days: "5N/6D", price: "৳75,000", rating: 5, reviews: 36, img: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/promotion/Dubai.jpg" },
 ];
 
 const domesticRoutes = [
-  { from: "Dhaka", fromAirport: "Hazrat Shahjalal Intl Airport", to: "Cox's Bazar", toAirport: "Cox's Bazar Airport" },
-  { from: "Dhaka", fromAirport: "Hazrat Shahjalal Intl Airport", to: "Jashore", toAirport: "Jashore Airport" },
-  { from: "Dhaka", fromAirport: "Hazrat Shahjalal Intl Airport", to: "Chattogram", toAirport: "Shah Amanat Intl Airport" },
-  { from: "Dhaka", fromAirport: "Hazrat Shahjalal Intl Airport", to: "Sylhet", toAirport: "Osmany Intl Airport" },
-  { from: "Dhaka", fromAirport: "Hazrat Shahjalal Intl Airport", to: "Barisal", toAirport: "Barisal Airport" },
-  { from: "Dhaka", fromAirport: "Hazrat Shahjalal Intl Airport", to: "Saidpur", toAirport: "Saidpur Airport" },
+  { from: "Dhaka", fromCode: "DAC", to: "Cox's Bazar", toCode: "CXB", price: "৳4,200" },
+  { from: "Dhaka", fromCode: "DAC", to: "Jashore", toCode: "JSR", price: "৳3,800" },
+  { from: "Dhaka", fromCode: "DAC", to: "Chattogram", toCode: "CGP", price: "৳3,500" },
+  { from: "Dhaka", fromCode: "DAC", to: "Sylhet", toCode: "ZYL", price: "৳3,900" },
+  { from: "Dhaka", fromCode: "DAC", to: "Barisal", toCode: "BZL", price: "৳3,200" },
+  { from: "Dhaka", fromCode: "DAC", to: "Saidpur", toCode: "SPD", price: "৳4,100" },
+];
+
+const testimonials = [
+  { name: "Rafiq Ahmed", role: "Frequent Traveller", text: "Best travel platform in Bangladesh! The flight booking is incredibly smooth and prices are always competitive.", avatar: "RA" },
+  { name: "Fatema Khatun", role: "Business Traveller", text: "I use TravelHub for all my corporate travel. The visa processing is fast and hassle-free.", avatar: "FK" },
+  { name: "Kamal Hossain", role: "Family Traveller", text: "Booked our family holiday to Maldives through TravelHub. Amazing packages at unbeatable prices!", avatar: "KH" },
 ];
 
 const features = [
-  { icon: Shield, title: "Secure Booking", desc: "100% data protection & secure payments" },
+  { icon: Shield, title: "Secure Booking", desc: "SSL encrypted, PCI-DSS compliant" },
   { icon: BadgePercent, title: "Best Price Guarantee", desc: "We match any lower price you find" },
-  { icon: Headphones, title: "24/7 Support", desc: "Round-the-clock customer assistance" },
+  { icon: Headphones, title: "24/7 Support", desc: "Call, chat, or email anytime" },
+  { icon: Award, title: "IATA Accredited", desc: "Trusted by global airlines" },
+];
+
+const stats = [
+  { value: 500000, suffix: "+", label: "Happy Travellers" },
+  { value: 120, suffix: "+", label: "Airlines" },
+  { value: 50000, suffix: "+", label: "Hotels" },
+  { value: 45, suffix: "+", label: "Visa Countries" },
 ];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.5, ease: [0, 0, 0.2, 1] as const } }),
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.55 } }),
 };
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
+};
+
+const staggerChild = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+function StatCard({ value, suffix, label }: { value: number; suffix: string; label: string }) {
+  const { count, ref } = useCounter(value);
+  const display = value >= 1000 ? `${Math.floor(count / 1000)}K` : count;
+  return (
+    <div ref={ref} className="stat-card">
+      <div className="stat-number text-white">
+        {display}<span className="text-secondary">{suffix}</span>
+      </div>
+      <div className="text-white/60 text-sm font-medium mt-1">{label}</div>
+    </div>
+  );
+}
 
 const Index = () => {
   return (
     <div className="overflow-hidden">
       {/* ===== HERO ===== */}
-      <section className="relative min-h-[520px] md:min-h-[580px]">
+      <section className="relative min-h-[600px] md:min-h-[660px]">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80')" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(224,30%,6%)/0.6] via-[hsl(224,30%,6%)/0.4] to-[hsl(224,30%,6%)/0.75]" />
 
-        <div className="relative container mx-auto px-4 pt-28 md:pt-32 pb-8">
+        {/* Floating shapes */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-[100px] animate-float" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-[120px]" style={{ animationDelay: '2s' }} />
+
+        <div className="relative container mx-auto px-4 pt-36 md:pt-40 pb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-8"
+            transition={{ duration: 0.6 }}
+            className="text-center mb-10"
           >
-            <h1 className="text-3xl md:text-5xl lg:text-[56px] font-extrabold text-white mb-3 leading-tight tracking-tight">
-              Welcome to <span className="text-secondary">TravelHub!</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 text-xs font-semibold mb-5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+              Bangladesh's Most Trusted Travel Platform
+            </div>
+            <h1 className="text-4xl md:text-6xl lg:text-[68px] font-black text-white mb-4 leading-[1.08] tracking-tight">
+              Your Journey,{" "}
+              <span className="text-gradient-warm">Simplified.</span>
             </h1>
-            <p className="text-base md:text-lg text-white/75 font-medium">
-              Find Flights, Hotels, Visa & Holidays
+            <p className="text-base md:text-lg text-white/65 font-medium max-w-xl mx-auto leading-relaxed">
+              Book flights, hotels, holidays & visa — all in one place.
+              <br className="hidden md:block" />
+              Best prices, 24/7 support, instant confirmation.
             </p>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-[1100px] mx-auto"
           >
             <SearchWidget />
@@ -112,18 +196,30 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ===== FEATURES STRIP ===== */}
+      {/* ===== STATS STRIP ===== */}
+      <section className="hero-gradient relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDE0VjBoLTJWMTRIMjBWMGgtMnYxNEgwdjJoMTR2MTRIMHYyaDE0djE0aDJ2LTE0aDE0djE0aDJ2LTE0aDE0di0ySDM2VjE2aDEydi0ySDM2eiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
+            {stats.map((stat, i) => (
+              <StatCard key={i} {...stat} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FEATURES ===== */}
       <section className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="container mx-auto px-4 py-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {features.map((f, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+              <div key={i} className="flex items-center gap-3 p-2">
+                <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
                   <f.icon className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold">{f.title}</h4>
-                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                  <h4 className="text-[13px] font-bold">{f.title}</h4>
+                  <p className="text-[11px] text-muted-foreground leading-snug">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -132,281 +228,306 @@ const Index = () => {
       </section>
 
       {/* ===== EXCLUSIVE OFFERS ===== */}
-      <section className="py-12 md:py-16">
+      <section className="py-14 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-7">
-            <h2 className="section-title">Exclusive Offers</h2>
-            <Button variant="ghost" className="text-primary font-semibold hidden md:flex">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="section-title">Exclusive Offers</h2>
+              <p className="section-subtitle mt-2">Grab limited-time deals before they're gone</p>
+            </div>
+            <Button variant="ghost" className="text-primary font-semibold hidden md:flex hover:bg-primary/5">
               View All <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {offers.map((offer, i) => (
               <motion.div
                 key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className={`offer-card bg-gradient-to-br ${offer.gradient} p-6 text-white min-h-[180px] flex flex-col justify-between`}
+                variants={staggerChild}
+                className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${offer.gradient} p-6 text-white min-h-[200px] flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-500`}
               >
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-12 translate-x-12" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
+                <div className="absolute top-0 right-0 w-44 h-44 bg-white/5 rounded-full -translate-y-14 translate-x-14 group-hover:scale-125 transition-transform duration-700" />
+                <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-10 -translate-x-10" />
                 <div className="relative z-10">
-                  <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold mb-3">
-                    {offer.discount}
-                  </span>
-                  <h3 className="text-lg font-bold mb-1">{offer.title}</h3>
-                  <p className="text-sm text-white/75">{offer.desc}</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">{offer.emoji}</span>
+                    <span className="px-2.5 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
+                      {offer.discount}
+                    </span>
+                  </div>
+                  <h3 className="text-[17px] font-bold mb-1 leading-snug">{offer.title}</h3>
+                  <p className="text-sm text-white/65">{offer.desc}</p>
                 </div>
-                <Button size="sm" variant="secondary" className="relative z-10 w-fit mt-4 group-hover:translate-x-1 transition-transform">
+                <Button size="sm" variant="secondary" className="relative z-10 w-fit mt-4 font-bold shadow-lg">
                   Book Now <ArrowRight className="w-3.5 h-3.5 ml-1" />
                 </Button>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ===== EXPLORE BANGLADESH ===== */}
-      <section className="py-12 md:py-16 bg-muted/30">
+      <section className="py-14 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <h2 className="section-title">Explore Bangladesh</h2>
-            <p className="text-muted-foreground mt-1.5 max-w-xl mx-auto text-sm">
-              Experience rich culture and majestic beauty. Plan your trip now!
+            <p className="section-subtitle">
+              Discover the beauty of our homeland — from the world's longest beach to lush tea gardens
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {exploreBD.map((dest, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="destination-card"
-              >
-                <div className="aspect-[4/5] relative">
-                  <img src={dest.img} alt={dest.name} className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h4 className="font-bold text-white text-sm">{dest.name}</h4>
-                    <p className="text-[11px] text-white/70">{dest.hotels} Hotels Available</p>
+              <motion.div key={i} variants={staggerChild} className="destination-card group">
+                <div className="aspect-[3/4] relative">
+                  <img src={dest.img} alt={dest.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                    <h4 className="font-bold text-white text-[15px]">{dest.name}</h4>
+                    <p className="text-[11px] text-white/60 mt-0.5">{dest.hotels} Hotels</p>
+                  </div>
+                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Heart className="w-4 h-4 text-white" />
                   </div>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ===== TOP AIRLINES ===== */}
-      <section className="py-12 md:py-16">
+      <section className="py-14 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <h2 className="section-title">Search Top Airlines</h2>
-            <p className="text-muted-foreground mt-1.5 text-sm max-w-xl mx-auto">
-              Connect to top airlines instantly. Enjoy comfortable, hassle-free journeys.
+            <p className="section-subtitle">
+              Access 120+ airlines worldwide. Compare fares and book instantly.
             </p>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-3">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
             {airlines.map((airline, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="airline-card"
-              >
+              <motion.div key={i} variants={staggerChild} className="airline-card">
                 <img
                   src={`https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/airlines-logo/${airline.code}.png`}
                   alt={airline.name}
-                  className="w-12 h-12 object-contain"
+                  className="w-14 h-14 object-contain"
                   loading="lazy"
                 />
-                <span className="text-xs font-medium text-center leading-tight">{airline.name}</span>
+                <span className="text-xs font-semibold text-center leading-tight">{airline.name}</span>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ===== POPULAR DESTINATIONS ===== */}
-      <section className="py-12 md:py-16 bg-muted/30">
+      <section className="py-14 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <h2 className="section-title">Most Popular Destinations</h2>
-            <p className="text-muted-foreground mt-1.5 text-sm max-w-xl mx-auto">
-              Explore the world — Asia, Europe, America and more.
+            <p className="section-subtitle">
+              Where Bangladeshi travellers love to go — Asia's best cities & beaches
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {intlDestinations.map((dest, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="destination-card"
-              >
-                <div className="aspect-[4/5] relative">
-                  <img src={dest.img} alt={dest.name} className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h4 className="font-bold text-white text-sm">{dest.name}</h4>
-                    <p className="text-[11px] text-white/70">{dest.hotels} Hotels Available</p>
+              <motion.div key={i} variants={staggerChild} className="destination-card group">
+                <div className="aspect-[3/4] relative">
+                  <img src={dest.img} alt={dest.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                    <h4 className="font-bold text-white text-[15px]">{dest.name}</h4>
+                    <p className="text-[11px] text-white/60 mt-0.5">{dest.hotels} Hotels</p>
                   </div>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ===== BEST HOTELS ===== */}
-      <section className="py-12 md:py-16">
+      <section className="py-14 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="section-title">Best Hotels for Your Next Trip</h2>
-            <p className="text-muted-foreground mt-1.5 text-sm max-w-xl mx-auto">
-              Luxurious or budget-friendly — browse accommodations that meet your need.
-            </p>
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="section-title">Best Hotels in Bangladesh</h2>
+              <p className="section-subtitle mt-2">Handpicked properties with verified reviews & instant booking</p>
+            </div>
+            <Button variant="ghost" className="text-primary font-semibold hidden md:flex hover:bg-primary/5">
+              View All <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {bestHotels.map((hotel, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group"
-              >
-                <div className="aspect-[16/10] overflow-hidden">
-                  <img src={hotel.img} alt={hotel.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+              <motion.div key={i} variants={staggerChild} className="premium-card">
+                <div className="aspect-[16/10] overflow-hidden relative">
+                  <img src={hotel.img} alt={hotel.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                  <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-secondary text-secondary-foreground text-xs font-bold shadow-lg">
+                    {hotel.price}<span className="text-[10px] font-medium opacity-75">/night</span>
+                  </div>
                 </div>
                 <div className="p-4">
-                  <h4 className="font-bold text-sm mb-1 truncate">{hotel.name}</h4>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                  <h4 className="font-bold text-sm mb-1.5 truncate">{hotel.name}</h4>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2.5">
                     <MapPin className="w-3 h-3" /> {hotel.location}
                   </p>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <Star key={j} className={`w-3.5 h-3.5 ${j < hotel.rating ? "fill-warning text-warning" : "text-muted"}`} />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">({hotel.reviews})</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Star key={j} className={`w-3.5 h-3.5 ${j < hotel.rating ? "fill-warning text-warning" : "text-muted"}`} />
+                      ))}
+                      <span className="text-[11px] text-muted-foreground ml-1.5">({hotel.reviews})</span>
+                    </div>
+                    <Button size="sm" variant="ghost" className="text-primary text-xs h-7 px-2 font-semibold">
+                      Book <ArrowRight className="w-3 h-3 ml-0.5" />
+                    </Button>
                   </div>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ===== TOUR PACKAGES ===== */}
-      <section className="py-12 md:py-16 bg-muted/30">
+      <section className="py-14 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="section-title">Our Tour Packages for You</h2>
-            <p className="text-muted-foreground mt-1.5 text-sm max-w-xl mx-auto">
-              Plan your dream getaway with our curated holiday packages.
+          <div className="text-center mb-10">
+            <h2 className="section-title">Holiday Tour Packages</h2>
+            <p className="section-subtitle">
+              All-inclusive packages with flights, hotels, sightseeing & meals
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {tourPackages.map((pkg, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="destination-card"
-              >
-                <div className="aspect-[4/5] relative">
-                  <img src={pkg.img} alt={pkg.name} className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h4 className="font-bold text-white text-sm">{pkg.name}</h4>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 fill-warning text-warning" />
-                      <span className="text-[11px] text-white/80">{pkg.rating} ({pkg.reviews})</span>
+              <motion.div key={i} variants={staggerChild} className="destination-card group">
+                <div className="aspect-[3/4] relative">
+                  <img src={pkg.img} alt={pkg.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold">
+                    {pkg.days}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                    <h4 className="font-bold text-white text-[15px]">{pkg.name}</h4>
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-warning text-warning" />
+                        <span className="text-[11px] text-white/70">{pkg.rating}</span>
+                      </div>
+                      <span className="text-xs font-bold text-secondary">{pkg.price}</span>
                     </div>
                   </div>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ===== TOP ROUTES ===== */}
-      <section className="py-12 md:py-16">
+      <section className="py-14 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="section-title">Top Domestic & International Routes</h2>
-            <p className="text-muted-foreground mt-1.5 text-sm max-w-xl mx-auto">
-              Choose from hundreds of airlines for your next trip.
+          <div className="text-center mb-10">
+            <h2 className="section-title">Top Domestic Routes</h2>
+            <p className="section-subtitle">
+              Most popular flight routes from Dhaka — starting prices shown
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {domesticRoutes.map((route, i) => (
               <motion.div
                 key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:shadow-md hover:border-primary/20 transition-all cursor-pointer"
+                variants={staggerChild}
+                className="flex items-center gap-3 p-5 rounded-2xl border border-border bg-card hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer group"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold">{route.from}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">{route.fromAirport}</div>
+                  <div className="text-[15px] font-bold">{route.from}</div>
+                  <div className="text-xs text-muted-foreground font-medium">{route.fromCode}</div>
                 </div>
-                <div className="shrink-0 w-8 h-8 rounded-full bg-primary/8 flex items-center justify-center">
-                  <ChevronRight className="w-4 h-4 text-primary" />
+                <div className="shrink-0 flex flex-col items-center gap-1">
+                  <Plane className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
+                  <div className="w-16 h-px bg-border" />
                 </div>
                 <div className="flex-1 min-w-0 text-right">
-                  <div className="text-sm font-bold">{route.to}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">{route.toAirport}</div>
+                  <div className="text-[15px] font-bold">{route.to}</div>
+                  <div className="text-xs text-muted-foreground font-medium">{route.toCode}</div>
+                </div>
+                <div className="shrink-0 pl-3 border-l border-border">
+                  <div className="text-xs text-muted-foreground">From</div>
+                  <div className="text-sm font-bold text-primary">{route.price}</div>
                 </div>
               </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ===== TESTIMONIALS ===== */}
+      <section className="py-14 md:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="section-title">What Our Travellers Say</h2>
+            <p className="section-subtitle">
+              Join 500,000+ happy travellers across Bangladesh
+            </p>
           </div>
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {testimonials.map((t, i) => (
+              <motion.div key={i} variants={staggerChild} className="bg-card rounded-2xl p-6 border border-border hover:shadow-lg transition-all">
+                <Quote className="w-8 h-8 text-primary/20 mb-3" />
+                <p className="text-sm text-foreground leading-relaxed mb-5">"{t.text}"</p>
+                <div className="flex items-center gap-3 pt-4 border-t border-border">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold">{t.name}</div>
+                    <div className="text-[11px] text-muted-foreground">{t.role}</div>
+                  </div>
+                  <div className="ml-auto flex gap-0.5">
+                    {[...Array(5)].map((_, j) => (
+                      <Star key={j} className="w-3 h-3 fill-warning text-warning" />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* ===== APP DOWNLOAD ===== */}
-      <section className="py-12 md:py-16 hero-gradient">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+      <section className="py-14 md:py-20 hero-gradient relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDE0VjBoLTJWMTRIMjBWMGgtMnYxNEgwdjJoMTR2MTRIMHYyaDE0djE0aDJ2LTE0aDE0djE0aDJ2LTE0aDE0di0ySDM2VjE2aDEydi0ySDM2eiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
+        <div className="container mx-auto px-4 relative">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10">
             <div className="text-center md:text-left max-w-lg">
-              <h2 className="text-2xl md:text-4xl font-extrabold text-white mb-3 tracking-tight">
-                Your All-in-One Travel App
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-semibold mb-4">
+                <TrendingUp className="w-3.5 h-3.5" /> 4.8★ on App Store
+              </div>
+              <h2 className="text-3xl md:text-[44px] font-black text-white mb-4 leading-tight tracking-tight">
+                Download the<br />TravelHub App
               </h2>
-              <p className="text-white/70 mb-6 text-sm md:text-base">
-                Get flights, hotels, holidays and visa assistance in just a few taps. Real-time updates, exclusive deals, and rewards.
+              <p className="text-white/60 mb-6 text-sm md:text-[15px] leading-relaxed">
+                Get exclusive app-only deals, instant notifications, and manage your bookings on the go. Available on iOS and Android.
               </p>
               <div className="flex items-center gap-3 justify-center md:justify-start">
-                <Button variant="secondary" size="lg" className="font-bold">
+                <Button variant="secondary" size="lg" className="font-bold shadow-xl shadow-secondary/25">
                   <Smartphone className="w-5 h-5 mr-2" />
-                  Download App
+                  App Store
+                </Button>
+                <Button size="lg" className="font-bold bg-white/15 hover:bg-white/25 text-white border-0">
+                  <Smartphone className="w-5 h-5 mr-2" />
+                  Google Play
                 </Button>
               </div>
             </div>
-            <div className="w-48 h-48 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm">
-              <div className="text-center text-white/60">
-                <Smartphone className="w-12 h-12 mx-auto mb-2 animate-float" />
-                <span className="text-xs font-medium">Scan QR Code</span>
+            <div className="w-56 h-56 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+              <div className="text-center text-white/50">
+                <Smartphone className="w-14 h-14 mx-auto mb-3 animate-float" />
+                <span className="text-xs font-semibold">Scan QR to Download</span>
               </div>
             </div>
           </div>

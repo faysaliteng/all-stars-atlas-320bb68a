@@ -5,55 +5,67 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Plane, Clock, ArrowRight, Filter, X, ChevronDown, Luggage, Wifi,
-  UtensilsCrossed, Star, SlidersHorizontal
+  Plane, Clock, ArrowRight, Filter, X, Luggage, Wifi,
+  UtensilsCrossed, SlidersHorizontal, ChevronDown, ChevronUp, Shield, AlertCircle, Info
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 
 const mockFlights = [
   {
     id: 1, airline: "Biman Bangladesh", code: "BG", flightNo: "BG-435",
-    from: "DAC", to: "CXB", departTime: "07:30", arriveTime: "08:35", duration: "1h 05m",
+    from: "DAC", fromFull: "Hazrat Shahjalal Intl", to: "CXB", toFull: "Cox's Bazar Airport",
+    departTime: "07:30", arriveTime: "08:35", duration: "1h 05m",
     stops: 0, price: 4200, originalPrice: 5100, class: "Economy",
-    baggage: "20kg", amenities: ["meal", "wifi"],
+    baggage: "20kg", cabinBag: "7kg", amenities: ["meal", "wifi"],
+    aircraft: "Boeing 737-800", fareRules: "Non-refundable. Date change ৳500. Name correction ৳300.",
     logo: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/airlines-logo/BG.png"
   },
   {
     id: 2, airline: "US-Bangla Airlines", code: "BS", flightNo: "BS-141",
-    from: "DAC", to: "CXB", departTime: "09:15", arriveTime: "10:20", duration: "1h 05m",
+    from: "DAC", fromFull: "Hazrat Shahjalal Intl", to: "CXB", toFull: "Cox's Bazar Airport",
+    departTime: "09:15", arriveTime: "10:20", duration: "1h 05m",
     stops: 0, price: 3800, originalPrice: 4500, class: "Economy",
-    baggage: "20kg", amenities: ["meal"],
+    baggage: "20kg", cabinBag: "7kg", amenities: ["meal"],
+    aircraft: "ATR 72-600", fareRules: "Non-refundable. Date change ৳500.",
     logo: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/airlines-logo/BS.png"
   },
   {
     id: 3, airline: "NOVOAIR", code: "VQ", flightNo: "VQ-901",
-    from: "DAC", to: "CXB", departTime: "11:45", arriveTime: "12:50", duration: "1h 05m",
+    from: "DAC", fromFull: "Hazrat Shahjalal Intl", to: "CXB", toFull: "Cox's Bazar Airport",
+    departTime: "11:45", arriveTime: "12:50", duration: "1h 05m",
     stops: 0, price: 4500, originalPrice: 5200, class: "Economy",
-    baggage: "20kg", amenities: ["meal", "wifi"],
+    baggage: "20kg", cabinBag: "7kg", amenities: ["meal", "wifi"],
+    aircraft: "ATR 72-600", fareRules: "Partially refundable. Cancel ৳1,000. Date change free.",
     logo: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/airlines-logo/VQ.png"
   },
   {
     id: 4, airline: "Air Astra", code: "2A", flightNo: "2A-702",
-    from: "DAC", to: "CXB", departTime: "14:00", arriveTime: "15:05", duration: "1h 05m",
+    from: "DAC", fromFull: "Hazrat Shahjalal Intl", to: "CXB", toFull: "Cox's Bazar Airport",
+    departTime: "14:00", arriveTime: "15:05", duration: "1h 05m",
     stops: 0, price: 4100, originalPrice: 4800, class: "Economy",
-    baggage: "20kg", amenities: ["meal"],
+    baggage: "20kg", cabinBag: "7kg", amenities: ["meal"],
+    aircraft: "ATR 72-600", fareRules: "Non-refundable. Date change ৳800.",
     logo: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/airlines-logo/2A.png"
   },
   {
     id: 5, airline: "Biman Bangladesh", code: "BG", flightNo: "BG-437",
-    from: "DAC", to: "CXB", departTime: "16:30", arriveTime: "17:35", duration: "1h 05m",
+    from: "DAC", fromFull: "Hazrat Shahjalal Intl", to: "CXB", toFull: "Cox's Bazar Airport",
+    departTime: "16:30", arriveTime: "17:35", duration: "1h 05m",
     stops: 0, price: 4800, originalPrice: 5500, class: "Economy",
-    baggage: "30kg", amenities: ["meal", "wifi"],
+    baggage: "30kg", cabinBag: "7kg", amenities: ["meal", "wifi"],
+    aircraft: "Boeing 737-800", fareRules: "Partially refundable. Cancel ৳1,500. Date change ৳500.",
     logo: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/airlines-logo/BG.png"
   },
   {
     id: 6, airline: "US-Bangla Airlines", code: "BS", flightNo: "BS-145",
-    from: "DAC", to: "CXB", departTime: "19:00", arriveTime: "20:05", duration: "1h 05m",
+    from: "DAC", fromFull: "Hazrat Shahjalal Intl", to: "CXB", toFull: "Cox's Bazar Airport",
+    departTime: "19:00", arriveTime: "20:05", duration: "1h 05m",
     stops: 0, price: 3600, originalPrice: 4200, class: "Economy",
-    baggage: "20kg", amenities: ["meal"],
+    baggage: "20kg", cabinBag: "7kg", amenities: ["meal"],
+    aircraft: "Dash 8-400", fareRules: "Non-refundable. No date change.",
     logo: "https://tbbd-flight.s3.ap-southeast-1.amazonaws.com/airlines-logo/BS.png"
   },
 ];
@@ -66,6 +78,7 @@ const FlightResults = () => {
   const [priceRange, setPriceRange] = useState([3000, 6000]);
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedFlight, setExpandedFlight] = useState<number | null>(null);
 
   const toggleAirline = (a: string) => {
     setSelectedAirlines(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
@@ -81,26 +94,18 @@ const FlightResults = () => {
       return 0;
     });
 
+  const cheapest = Math.min(...mockFlights.map(f => f.price));
+
   const FilterPanel = () => (
     <div className="space-y-6">
-      {/* Price Range */}
       <div>
         <h4 className="text-sm font-bold mb-3">Price Range</h4>
-        <Slider
-          value={priceRange}
-          onValueChange={setPriceRange}
-          min={2000}
-          max={8000}
-          step={100}
-          className="mb-2"
-        />
+        <Slider value={priceRange} onValueChange={setPriceRange} min={2000} max={8000} step={100} className="mb-2" />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>৳{priceRange[0].toLocaleString()}</span>
           <span>৳{priceRange[1].toLocaleString()}</span>
         </div>
       </div>
-
-      {/* Stops */}
       <div>
         <h4 className="text-sm font-bold mb-3">Stops</h4>
         <div className="space-y-2">
@@ -112,24 +117,17 @@ const FlightResults = () => {
           ))}
         </div>
       </div>
-
-      {/* Airlines */}
       <div>
         <h4 className="text-sm font-bold mb-3">Airlines</h4>
         <div className="space-y-2">
           {airlines.map((a) => (
             <label key={a} className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={selectedAirlines.includes(a)}
-                onCheckedChange={() => toggleAirline(a)}
-              />
+              <Checkbox checked={selectedAirlines.includes(a)} onCheckedChange={() => toggleAirline(a)} />
               <span className="text-sm">{a}</span>
             </label>
           ))}
         </div>
       </div>
-
-      {/* Departure Time */}
       <div>
         <h4 className="text-sm font-bold mb-3">Departure Time</h4>
         <div className="space-y-2">
@@ -141,8 +139,6 @@ const FlightResults = () => {
           ))}
         </div>
       </div>
-
-      {/* Baggage */}
       <div>
         <h4 className="text-sm font-bold mb-3">Baggage</h4>
         <div className="space-y-2">
@@ -159,7 +155,6 @@ const FlightResults = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Search Summary Bar */}
       <div className="bg-card border-b border-border pt-20 lg:pt-28 pb-4">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -168,17 +163,19 @@ const FlightResults = () => {
                 Dhaka <ArrowRight className="w-5 h-5 text-primary" /> Cox's Bazar
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Thu, 26 Feb 2026 • 1 Adult • Economy • {filtered.length} flights found
+                Thu, 26 Feb 2026 • 1 Adult • Economy • <strong className="text-foreground">{filtered.length} flights</strong> found
               </p>
             </div>
-            <Button variant="outline" size="sm">Modify Search</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">Modify Search</Button>
+              <Badge className="bg-success/10 text-success border-0 font-semibold h-9 px-3">Cheapest from ৳{cheapest.toLocaleString()}</Badge>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex gap-6">
-          {/* Desktop Filters */}
           <aside className="hidden lg:block w-64 shrink-0">
             <Card className="sticky top-28">
               <CardContent className="p-5">
@@ -187,24 +184,20 @@ const FlightResults = () => {
                     <SlidersHorizontal className="w-4 h-4" /> Filters
                   </h3>
                   <Button variant="ghost" size="sm" className="text-xs text-primary h-7"
-                    onClick={() => { setSelectedAirlines([]); setPriceRange([2000, 8000]); }}>
-                    Reset
-                  </Button>
+                    onClick={() => { setSelectedAirlines([]); setPriceRange([2000, 8000]); }}>Reset</Button>
                 </div>
                 <FilterPanel />
               </CardContent>
             </Card>
           </aside>
 
-          {/* Results */}
           <div className="flex-1 space-y-4">
-            {/* Sort + Mobile Filter */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex gap-1 overflow-x-auto scrollbar-none">
                 {[
-                  { value: "cheapest", label: "Cheapest" },
-                  { value: "earliest", label: "Earliest" },
-                  { value: "fastest", label: "Fastest" },
+                  { value: "cheapest", label: "Cheapest", sub: `৳${cheapest.toLocaleString()}` },
+                  { value: "earliest", label: "Earliest", sub: "07:30" },
+                  { value: "fastest", label: "Fastest", sub: "1h 05m" },
                 ].map((s) => (
                   <button
                     key={s.value}
@@ -215,33 +208,30 @@ const FlightResults = () => {
                         : "bg-card border border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {s.label}
+                    <span>{s.label}</span>
+                    <span className="block text-[10px] font-medium opacity-75">{s.sub}</span>
                   </button>
                 ))}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="lg:hidden"
-                onClick={() => setShowFilters(true)}
-              >
+              <Button variant="outline" size="sm" className="lg:hidden" onClick={() => setShowFilters(true)}>
                 <Filter className="w-4 h-4 mr-1" /> Filters
               </Button>
             </div>
 
-            {/* Flight Cards */}
             {filtered.map((flight) => (
-              <Card key={flight.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+              <Card key={flight.id} className={`hover:shadow-lg transition-all overflow-hidden ${expandedFlight === flight.id ? 'ring-1 ring-primary/30' : ''}`}>
                 <CardContent className="p-0">
                   <div className="flex flex-col sm:flex-row">
-                    {/* Flight Info */}
                     <div className="flex-1 p-4 sm:p-5">
                       <div className="flex items-center gap-3 mb-4">
                         <img src={flight.logo} alt={flight.airline} className="w-8 h-8 object-contain" />
-                        <div>
+                        <div className="flex-1">
                           <p className="text-sm font-bold">{flight.airline}</p>
-                          <p className="text-xs text-muted-foreground">{flight.flightNo} • {flight.class}</p>
+                          <p className="text-xs text-muted-foreground">{flight.flightNo} • {flight.class} • {flight.aircraft}</p>
                         </div>
+                        {flight.price === cheapest && (
+                          <Badge className="bg-success/10 text-success border-0 text-[10px] font-bold">Cheapest</Badge>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4">
@@ -270,6 +260,7 @@ const FlightResults = () => {
 
                       <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1"><Luggage className="w-3.5 h-3.5" /> {flight.baggage}</span>
+                        <span className="flex items-center gap-1">🎒 {flight.cabinBag}</span>
                         {flight.amenities.includes("meal") && (
                           <span className="flex items-center gap-1"><UtensilsCrossed className="w-3.5 h-3.5" /> Meal</span>
                         )}
@@ -277,20 +268,72 @@ const FlightResults = () => {
                           <span className="flex items-center gap-1"><Wifi className="w-3.5 h-3.5" /> WiFi</span>
                         )}
                       </div>
+
+                      <button
+                        className="flex items-center gap-1 mt-3 text-xs text-primary font-semibold hover:underline"
+                        onClick={() => setExpandedFlight(expandedFlight === flight.id ? null : flight.id)}
+                      >
+                        Flight Details {expandedFlight === flight.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
 
-                    {/* Price + Book */}
                     <div className="sm:w-48 border-t sm:border-t-0 sm:border-l border-border p-4 sm:p-5 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 bg-muted/30">
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground line-through">৳{flight.originalPrice.toLocaleString()}</p>
                         <p className="text-2xl font-black text-primary">৳{flight.price.toLocaleString()}</p>
                         <p className="text-[10px] text-muted-foreground">per person</p>
+                        <p className="text-[10px] text-success font-semibold">Save ৳{(flight.originalPrice - flight.price).toLocaleString()}</p>
                       </div>
-                      <Button className="font-bold shadow-lg shadow-primary/20 h-10 px-6">
-                        Select <ArrowRight className="w-4 h-4 ml-1" />
+                      <Button className="font-bold shadow-lg shadow-primary/20 h-10 px-6" asChild>
+                        <Link to="/flights/book">Select <ArrowRight className="w-4 h-4 ml-1" /></Link>
                       </Button>
                     </div>
                   </div>
+
+                  {/* Expanded Details */}
+                  <AnimatePresence>
+                    {expandedFlight === flight.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-border p-4 sm:p-5 bg-muted/20">
+                          <div className="grid sm:grid-cols-3 gap-6">
+                            {/* Flight Info */}
+                            <div>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Flight Info</h4>
+                              <div className="space-y-1.5 text-sm">
+                                <div className="flex justify-between"><span className="text-muted-foreground">Aircraft</span><span className="font-medium">{flight.aircraft}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Duration</span><span className="font-medium">{flight.duration}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Departure</span><span className="font-medium">{flight.departTime} ({flight.fromFull})</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Arrival</span><span className="font-medium">{flight.arriveTime} ({flight.toFull})</span></div>
+                              </div>
+                            </div>
+                            {/* Baggage */}
+                            <div>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Baggage</h4>
+                              <div className="space-y-1.5 text-sm">
+                                <div className="flex justify-between"><span className="text-muted-foreground">Checked</span><span className="font-medium">{flight.baggage}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Cabin</span><span className="font-medium">{flight.cabinBag}</span></div>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2"><Info className="w-3 h-3" /> Extra baggage available at counter</div>
+                              </div>
+                            </div>
+                            {/* Fare Rules */}
+                            <div>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Fare Rules</h4>
+                              <p className="text-sm text-muted-foreground leading-relaxed">{flight.fareRules}</p>
+                              <div className="flex items-center gap-1 mt-2 text-xs text-warning">
+                                <AlertCircle className="w-3 h-3" /> Fare rules subject to airline policy
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </CardContent>
               </Card>
             ))}
@@ -308,7 +351,6 @@ const FlightResults = () => {
         </div>
       </div>
 
-      {/* Mobile Filter Sheet */}
       {showFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowFilters(false)} />

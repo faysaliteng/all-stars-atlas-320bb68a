@@ -62,7 +62,7 @@ const HotelResults = () => {
               <h1 className="text-xl sm:text-2xl font-bold">Hotels in {searchMeta.location || 'your destination'}</h1>
               <p className="text-sm text-muted-foreground mt-0.5">{searchMeta.dates || ''} • {hotels.length} properties</p>
             </div>
-            <Button variant="outline" size="sm">Modify Search</Button>
+            <Button variant="outline" size="sm" asChild><Link to="/">Modify Search</Link></Button>
           </div>
         </div>
       </div>

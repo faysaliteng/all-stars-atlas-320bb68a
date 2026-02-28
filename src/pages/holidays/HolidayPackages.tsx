@@ -94,7 +94,9 @@ const HolidayPackages = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-xl sm:text-2xl font-bold mb-3">Can't Find the Perfect Package?</h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-lg mx-auto">Tell us your dream destination and we'll create a custom package just for you</p>
-          <Button size="lg" className="font-bold shadow-lg shadow-primary/20">Request Custom Package <ArrowRight className="w-4 h-4 ml-1" /></Button>
+          <Button size="lg" className="font-bold shadow-lg shadow-primary/20" asChild>
+            <Link to="/contact">Request Custom Package <ArrowRight className="w-4 h-4 ml-1" /></Link>
+          </Button>
         </div>
       </section>
     </div>

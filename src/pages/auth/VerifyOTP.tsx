@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const VerifyOTP = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -13,11 +14,13 @@ const VerifyOTP = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [step, setStep] = useState<"otp" | "reset">("otp");
+  const [verifiedToken, setVerifiedToken] = useState("");
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email") || "";
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { verifyOtp, resetPassword, forgotPassword } = useAuth();
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
@@ -38,6 +41,16 @@ const VerifyOTP = () => {
     }
   };
 
+  const handleResendOtp = async () => {
+    if (!email) return;
+    try {
+      await forgotPassword(email);
+      toast({ title: "OTP Resent", description: "A new verification code has been sent to your email" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Failed to resend OTP", variant: "destructive" });
+    }
+  };
+
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = otp.join("");
@@ -47,11 +60,12 @@ const VerifyOTP = () => {
     }
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1200));
+      await verifyOtp(email, code);
+      setVerifiedToken(code);
       setStep("reset");
       toast({ title: "Verified", description: "OTP verified successfully. Set your new password." });
-    } catch {
-      toast({ title: "Error", description: "Invalid OTP. Please try again.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Invalid OTP. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -69,11 +83,11 @@ const VerifyOTP = () => {
     }
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1200));
+      await resetPassword(verifiedToken, newPassword);
       toast({ title: "Success", description: "Password reset successfully. Please login." });
       navigate("/auth/login");
-    } catch {
-      toast({ title: "Error", description: "Failed to reset password. Please try again.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Failed to reset password. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -117,7 +131,7 @@ const VerifyOTP = () => {
                 {loading ? "Verifying..." : "Verify"} <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                Didn't receive the code? <button type="button" className="text-primary font-semibold hover:underline">Resend</button>
+                Didn't receive the code? <button type="button" onClick={handleResendOtp} className="text-primary font-semibold hover:underline">Resend</button>
               </p>
             </form>
           ) : (

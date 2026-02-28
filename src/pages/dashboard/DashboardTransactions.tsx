@@ -8,6 +8,7 @@ import { Search, ArrowUpRight, ArrowDownLeft, Download, Filter } from "lucide-re
 import { useState } from "react";
 import { useDashboardTransactions } from "@/hooks/useApiData";
 import DataLoader from "@/components/DataLoader";
+import { useToast } from "@/hooks/use-toast";
 
 const entryTypeColors: Record<string, string> = {
   AirTicket: "bg-primary/10 text-primary",
@@ -19,6 +20,7 @@ const entryTypeColors: Record<string, string> = {
 };
 
 const DashboardTransactions = () => {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [perPage, setPerPage] = useState("20");
@@ -39,7 +41,7 @@ const DashboardTransactions = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">My Transactions</h1>
-        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1.5" /> Export</Button>
+        <Button variant="outline" size="sm" onClick={() => toast({ title: "Exporting...", description: "Your transactions CSV is being prepared." })}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
       </div>
 
       <DataLoader isLoading={isLoading} error={error} skeleton="dashboard" retry={refetch}>

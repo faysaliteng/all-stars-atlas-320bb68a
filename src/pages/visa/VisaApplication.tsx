@@ -146,8 +146,10 @@ const VisaApplication = () => {
               {step < 4 ? (
                 <Button onClick={() => setStep(step + 1)} className="font-bold">Continue <ArrowRight className="w-4 h-4 ml-1" /></Button>
               ) : (
-                <Button className="font-bold shadow-lg shadow-primary/20">
-                  <Shield className="w-4 h-4 mr-1" /> Submit Application & Pay ৳4,500
+                <Button className="font-bold shadow-lg shadow-primary/20" asChild>
+                  <Link to="/booking/confirmation">
+                    <Shield className="w-4 h-4 mr-1" /> Submit Application & Pay ৳4,500
+                  </Link>
                 </Button>
               )}
             </div>

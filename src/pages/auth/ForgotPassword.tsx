@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { forgotPassword } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,12 +24,11 @@ const ForgotPassword = () => {
     }
     setLoading(true);
     try {
-      // Will connect to API: api.post(API_ENDPOINTS.AUTH_FORGOT_PASSWORD, { email })
-      await new Promise(r => setTimeout(r, 1500));
+      await forgotPassword(email);
       setSubmitted(true);
       toast({ title: "OTP Sent", description: "Check your email for the verification code" });
-    } catch {
-      toast({ title: "Error", description: "Failed to send reset link. Please try again.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Failed to send reset link. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -48,7 +49,7 @@ const ForgotPassword = () => {
             <Button onClick={() => navigate(`/auth/verify-otp?email=${encodeURIComponent(email)}`)} className="w-full font-bold">
               Enter OTP <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
-            <button onClick={() => setSubmitted(false)} className="text-sm text-primary hover:underline">
+            <button onClick={() => { setSubmitted(false); setLoading(false); }} className="text-sm text-primary hover:underline">
               Didn't receive it? Resend
             </button>
           </CardContent>

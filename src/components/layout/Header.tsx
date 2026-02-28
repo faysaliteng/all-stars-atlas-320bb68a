@@ -167,7 +167,13 @@ const Header = () => {
                   )}
 
                   <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-                    {[...mainNav, { label: "Visa", href: "/visa", icon: FileText }].map((item) => (
+                    {[...mainNav,
+                      { label: "Visa", href: "/visa", icon: FileText },
+                      { label: "eSIM", href: "/esim", icon: Globe },
+                      { label: "Recharge", href: "/recharge", icon: Phone },
+                      { label: "Medical", href: "/medical", icon: Headphones },
+                      { label: "Cars", href: "/cars", icon: Plane },
+                    ].map((item) => (
                       <Link key={item.href} to={item.href} onClick={() => setMobileOpen(false)}
                         className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-foreground hover:bg-muted transition-colors font-medium">
                         <item.icon className="w-5 h-5 text-primary" />{item.label}

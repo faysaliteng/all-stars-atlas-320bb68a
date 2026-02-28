@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useSubmitContact } from "@/hooks/useApiData";
 
 const contactInfo = [
   { icon: MapPin, title: "Office Address", text: "123 Travel Street, Motijheel C/A\nDhaka 1000, Bangladesh" },
@@ -20,8 +21,8 @@ const Contact = () => {
   const [phone, setPhone] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const submitContact = useSubmitContact();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,16 +30,12 @@ const Contact = () => {
       toast({ title: "Error", description: "Please fill in required fields", variant: "destructive" });
       return;
     }
-    setLoading(true);
     try {
-      // Will connect to API: api.post(API_ENDPOINTS.CONTACT_SUBMIT, { name, email, phone, subject, message })
-      await new Promise(r => setTimeout(r, 1500));
+      await submitContact.mutateAsync({ name, email, phone, subject, message } as any);
       toast({ title: "Message Sent!", description: "We'll get back to you within 24 hours." });
       setName(""); setEmail(""); setPhone(""); setSubject(""); setMessage("");
-    } catch {
-      toast({ title: "Error", description: "Failed to send message. Please try again.", variant: "destructive" });
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Failed to send message. Please try again.", variant: "destructive" });
     }
   };
 
@@ -99,8 +96,8 @@ const Contact = () => {
                       <Label>Message *</Label>
                       <Textarea placeholder="Tell us more about your inquiry..." rows={5} value={message} onChange={e => setMessage(e.target.value)} />
                     </div>
-                    <Button type="submit" className="h-11 font-bold shadow-lg shadow-primary/20" disabled={loading}>
-                      <Send className="w-4 h-4 mr-1.5" /> {loading ? "Sending..." : "Send Message"}
+                    <Button type="submit" className="h-11 font-bold shadow-lg shadow-primary/20" disabled={submitContact.isPending}>
+                      <Send className="w-4 h-4 mr-1.5" /> {submitContact.isPending ? "Sending..." : "Send Message"}
                     </Button>
                   </form>
                 </CardContent>

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Heart, Rocket, ArrowRight, Briefcase } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const openPositions = [
   { id: 1, title: "Senior Full-Stack Developer", dept: "Engineering", location: "Dhaka, Bangladesh", type: "Full-time", description: "Build and maintain our core booking platform using React, Node.js, and MySQL." },
@@ -19,61 +20,70 @@ const perks = [
   { icon: Briefcase, title: "Growth", desc: "Career development opportunities and training" },
 ];
 
-const Careers = () => (
-  <div className="min-h-screen bg-muted/30">
-    <section className="relative bg-gradient-to-br from-[hsl(167,72%,41%)] to-[hsl(217,91%,50%)] pt-24 lg:pt-32 pb-16">
-      <div className="container mx-auto px-4 text-center">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">Join Our Team</h1>
-        <p className="text-white/60 text-sm sm:text-base max-w-lg mx-auto">Help us revolutionize travel in Bangladesh. We're always looking for talented people.</p>
-      </div>
-    </section>
+const Careers = () => {
+  const { toast } = useToast();
 
-    <section className="py-10 sm:py-16">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6">Why Seven Trip?</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          {perks.map(p => (
-            <Card key={p.title}>
-              <CardContent className="p-5 text-center">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <p.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-bold mb-1">{p.title}</h3>
-                <p className="text-sm text-muted-foreground">{p.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
+  const handleApply = (title: string) => {
+    window.location.href = `mailto:careers@seventrip.com.bd?subject=Application for ${encodeURIComponent(title)}&body=Hi, I would like to apply for the ${encodeURIComponent(title)} position. Please find my CV attached.`;
+    toast({ title: "Opening email client", description: `Applying for ${title}` });
+  };
+
+  return (
+    <div className="min-h-screen bg-muted/30">
+      <section className="relative bg-gradient-to-br from-[hsl(167,72%,41%)] to-[hsl(217,91%,50%)] pt-24 lg:pt-32 pb-16">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">Join Our Team</h1>
+          <p className="text-white/60 text-sm sm:text-base max-w-lg mx-auto">Help us revolutionize travel in Bangladesh. We're always looking for talented people.</p>
         </div>
+      </section>
 
-        <h2 className="text-2xl font-bold mb-6">Open Positions</h2>
-        <div className="space-y-4">
-          {openPositions.map(pos => (
-            <Card key={pos.id} className="hover:shadow-lg transition-all">
-              <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg">{pos.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{pos.description}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge variant="secondary" className="text-xs">{pos.dept}</Badge>
-                    <Badge variant="outline" className="text-xs"><MapPin className="w-3 h-3 mr-1" />{pos.location}</Badge>
-                    <Badge variant="outline" className="text-xs">{pos.type}</Badge>
+      <section className="py-10 sm:py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold mb-6">Why Seven Trip?</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+            {perks.map(p => (
+              <Card key={p.title}>
+                <CardContent className="p-5 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <p.icon className="w-6 h-6 text-primary" />
                   </div>
-                </div>
-                <Button className="font-bold shrink-0">
-                  Apply <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <h3 className="font-bold mb-1">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground">{p.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground mb-4">Don't see a role that fits? Send your CV to</p>
-          <a href="mailto:careers@seventrip.com.bd" className="text-primary font-bold text-lg hover:underline">careers@seventrip.com.bd</a>
+          <h2 className="text-2xl font-bold mb-6">Open Positions</h2>
+          <div className="space-y-4">
+            {openPositions.map(pos => (
+              <Card key={pos.id} className="hover:shadow-lg transition-all">
+                <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg">{pos.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{pos.description}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="secondary" className="text-xs">{pos.dept}</Badge>
+                      <Badge variant="outline" className="text-xs"><MapPin className="w-3 h-3 mr-1" />{pos.location}</Badge>
+                      <Badge variant="outline" className="text-xs">{pos.type}</Badge>
+                    </div>
+                  </div>
+                  <Button className="font-bold shrink-0" onClick={() => handleApply(pos.title)}>
+                    Apply <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-muted-foreground mb-4">Don't see a role that fits? Send your CV to</p>
+            <a href="mailto:careers@seventrip.com.bd" className="text-primary font-bold text-lg hover:underline">careers@seventrip.com.bd</a>
+          </div>
         </div>
-      </div>
-    </section>
-  </div>
-);
+      </section>
+    </div>
+  );
+};
 
 export default Careers;

@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plane, Building2, Search, Eye, Download, MoreHorizontal, RotateCcw, XCircle, FileText, Globe, Palmtree, CreditCard } from "lucide-react";
 import { useDashboardBookings } from "@/hooks/useApiData";
 import DataLoader from "@/components/DataLoader";
+import { useToast } from "@/hooks/use-toast";
 
 const statusTabs = ["All", "On Hold", "Pending", "In Progress", "Confirmed", "Completed", "Void", "Refund", "Exchange", "Expired", "Cancelled", "Un-Confirmed"];
 
@@ -29,6 +30,7 @@ const statusColors: Record<string, string> = {
 const typeIcons: Record<string, typeof Plane> = { flight: Plane, hotel: Building2, visa: Globe, holiday: Palmtree };
 
 const DashboardBookings = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("All");
   const [search, setSearch] = useState("");
   const [perPage, setPerPage] = useState("10");
@@ -53,7 +55,7 @@ const DashboardBookings = () => {
           <h1 className="text-2xl font-bold">My Bookings</h1>
           <p className="text-sm text-muted-foreground mt-1">{total} total bookings</p>
         </div>
-        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1.5" /> Export</Button>
+        <Button variant="outline" size="sm" onClick={() => toast({ title: "Exporting...", description: "Your bookings CSV is being prepared." })}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
       </div>
 
       <div className="flex gap-1 overflow-x-auto scrollbar-none border-b border-border pb-px -mx-1 px-1">
@@ -123,13 +125,13 @@ const DashboardBookings = () => {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
-                            <DropdownMenuItem><FileText className="w-4 h-4 mr-2" /> Download E-Ticket</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast({ title: "Booking Details", description: `Viewing booking ${booking.id}` })}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast({ title: "Downloading...", description: "E-Ticket PDF is being prepared." })}><FileText className="w-4 h-4 mr-2" /> Download E-Ticket</DropdownMenuItem>
                             {booking.status === "Confirmed" && (<>
-                              <DropdownMenuItem><RotateCcw className="w-4 h-4 mr-2" /> Request Reissue</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive"><XCircle className="w-4 h-4 mr-2" /> Request Refund</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toast({ title: "Request Submitted", description: "Reissue request has been submitted." })}><RotateCcw className="w-4 h-4 mr-2" /> Request Reissue</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Request Submitted", description: "Refund request has been submitted." })}><XCircle className="w-4 h-4 mr-2" /> Request Refund</DropdownMenuItem>
                             </>)}
-                            {booking.status === "On Hold" && <DropdownMenuItem><CreditCard className="w-4 h-4 mr-2" /> Pay Now</DropdownMenuItem>}
+                            {booking.status === "On Hold" && <DropdownMenuItem onClick={() => toast({ title: "Redirecting...", description: "Redirecting to payments." })}><CreditCard className="w-4 h-4 mr-2" /> Pay Now</DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

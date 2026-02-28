@@ -47,7 +47,7 @@ const DashboardETransactions = () => {
           <h1 className="text-2xl font-bold">E-Transactions</h1>
           <p className="text-sm text-muted-foreground mt-1">Online payment transactions via bKash, Nagad & Card</p>
         </div>
-        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1.5" /> Export</Button>
+        <Button variant="outline" size="sm" onClick={() => { /* Export toast placeholder */ }}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">

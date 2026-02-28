@@ -69,7 +69,7 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
                 { label: "Hotel Reservation", href: "/hotels" },
                 { label: "Visa Processing", href: "/visa" },
                 { label: "Holiday Packages", href: "/holidays" },
-                { label: "Travel Insurance", href: "#" },
+                { label: "Travel Insurance", href: "/contact" },
                 { label: "eSIM", href: "/esim" },
                 { label: "Car Rental", href: "/cars" },
                 { label: "Medical Tourism", href: "/medical" },
@@ -91,7 +91,7 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
               {[
                 { label: "About Us", href: "/about" },
                 { label: "Contact", href: "/contact" },
-                { label: "Blog", href: "#" },
+                { label: "Blog", href: "/faq" },
                 { label: "Careers", href: "/careers" },
                 { label: "FAQ", href: "/faq" },
                 { label: "Terms & Conditions", href: "/terms" },

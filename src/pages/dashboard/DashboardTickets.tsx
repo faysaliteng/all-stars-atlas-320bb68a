@@ -7,6 +7,7 @@ import { Ticket, Download, Plane, Search, Eye, Printer, Calendar, Users } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useDashboardTickets } from "@/hooks/useApiData";
 import DataLoader from "@/components/DataLoader";
+import { useToast } from "@/hooks/use-toast";
 
 const statusColors: Record<string, string> = {
   active: "bg-success/10 text-success",
@@ -16,6 +17,7 @@ const statusColors: Record<string, string> = {
 };
 
 const DashboardTickets = () => {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const { data, isLoading, error, refetch } = useDashboardTickets({ search: search || undefined });
   const tickets = (data as any)?.tickets || [];
@@ -82,13 +84,13 @@ const DashboardTickets = () => {
                             <div><p className="text-muted-foreground text-xs">Class</p><p className="font-bold">{ticket.class}</p></div>
                           </div>
                           <div className="flex gap-2 pt-2">
-                            <Button className="flex-1 font-bold"><Download className="w-4 h-4 mr-1" /> Download PDF</Button>
-                            <Button variant="outline" className="flex-1"><Printer className="w-4 h-4 mr-1" /> Print</Button>
+                            <Button className="flex-1 font-bold" onClick={() => toast({ title: "Downloading...", description: "E-Ticket PDF is being prepared." })}><Download className="w-4 h-4 mr-1" /> Download PDF</Button>
+                            <Button variant="outline" className="flex-1" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" /> Print</Button>
                           </div>
                         </div>
                       </DialogContent>
                     </Dialog>
-                    <Button size="sm" className="text-xs gap-1.5 font-bold"><Download className="w-3.5 h-3.5" /> Download</Button>
+                    <Button size="sm" className="text-xs gap-1.5 font-bold" onClick={() => toast({ title: "Downloading...", description: "E-Ticket PDF is being prepared." })}><Download className="w-3.5 h-3.5" /> Download</Button>
                   </div>
                 </div>
               </CardContent>

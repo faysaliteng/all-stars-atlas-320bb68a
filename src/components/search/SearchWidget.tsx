@@ -227,16 +227,17 @@ const SearchWidget = () => {
   const domesticAirports = AIRPORTS.filter(a => a.country === "BD");
   const internationalAirports = AIRPORTS.filter(a => a.country !== "BD");
 
-  const scopedFromAirports = AIRPORTS.filter(a => a.country === "BD");
+  const scopedFromAirports = flightScope === "domestic" ? domesticAirports : AIRPORTS;
   const scopedToAirports = flightScope === "domestic" ? domesticAirports : internationalAirports;
 
-  // Clear toAirport when switching to international if it's a domestic airport
+  // Clear toAirport when switching scope if it doesn't belong
   useEffect(() => {
     if (flightScope === "international" && toAirport && toAirport.country === "BD") {
       setToAirport(null);
     }
-    if (flightScope === "domestic" && toAirport && toAirport.country !== "BD") {
-      setToAirport(null);
+    if (flightScope === "domestic") {
+      if (toAirport && toAirport.country !== "BD") setToAirport(null);
+      if (fromAirport && fromAirport.country !== "BD") setFromAirport(domesticAirports[0]);
     }
   }, [flightScope]);
 
@@ -291,12 +292,22 @@ const SearchWidget = () => {
   const totalHotelGuests = hotelGuests.adults + hotelGuests.children;
 
   const swapAirports = useCallback(() => {
-    setFromAirport(prev => {
-      const oldFrom = prev;
-      setToAirport(oldFrom);
-      return toAirport;
-    });
-  }, [toAirport]);
+    if (flightScope === "international") {
+      // In international mode, only swap if both airports fit the scope after swap
+      // FROM can be anything, TO must be non-BD
+      if (toAirport && fromAirport && fromAirport.country !== "BD") {
+        setFromAirport(toAirport);
+        setToAirport(fromAirport);
+      }
+    } else {
+      // Domestic: both must be BD
+      setFromAirport(prev => {
+        const oldFrom = prev;
+        setToAirport(oldFrom);
+        return toAirport;
+      });
+    }
+  }, [toAirport, fromAirport, flightScope]);
 
   // ====== SEARCH HANDLERS ======
   const handleFlightSearch = () => {

@@ -224,9 +224,21 @@ const SearchWidget = () => {
   const [fareType, setFareType] = useState("regular");
   const [flightScope, setFlightScope] = useState<"domestic" | "international">("domestic");
 
-  const scopedAirports = AIRPORTS.filter(a =>
-    flightScope === "domestic" ? a.country === "BD" : true
-  );
+  const domesticAirports = AIRPORTS.filter(a => a.country === "BD");
+  const internationalAirports = AIRPORTS.filter(a => a.country !== "BD");
+
+  const scopedFromAirports = AIRPORTS.filter(a => a.country === "BD");
+  const scopedToAirports = flightScope === "domestic" ? domesticAirports : internationalAirports;
+
+  // Clear toAirport when switching to international if it's a domestic airport
+  useEffect(() => {
+    if (flightScope === "international" && toAirport && toAirport.country === "BD") {
+      setToAirport(null);
+    }
+    if (flightScope === "domestic" && toAirport && toAirport.country !== "BD") {
+      setToAirport(null);
+    }
+  }, [flightScope]);
 
   // Hotel state
   const [hotelCity, setHotelCity] = useState("Cox's Bazar");
@@ -470,7 +482,7 @@ const SearchWidget = () => {
         {/* Search Fields */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-0 border border-border rounded-2xl bg-background shadow-sm">
           <div className="md:col-span-3 search-field border-b md:border-b-0 flex-col items-start">
-            <AirportInput label="From" value={fromAirport} onChange={setFromAirport} placeholder="Type city or airport..." airports={scopedAirports} />
+            <AirportInput label="From" value={fromAirport} onChange={setFromAirport} placeholder="Type city or airport..." airports={scopedFromAirports} />
           </div>
 
           <div className="flex md:hidden items-center justify-center py-1">
@@ -485,7 +497,7 @@ const SearchWidget = () => {
           </div>
 
           <div className="md:col-span-3 search-field border-b md:border-b-0 flex-col items-start">
-            <AirportInput label="To" value={toAirport} onChange={setToAirport} placeholder="Where to?" airports={scopedAirports} />
+            <AirportInput label="To" value={toAirport} onChange={setToAirport} placeholder="Where to?" airports={scopedToAirports} />
           </div>
 
           <div className={`${tripType === "roundtrip" ? "col-span-1 sm:col-span-1" : ""} md:col-span-2 search-field border-b md:border-b-0 flex-col items-start`}>

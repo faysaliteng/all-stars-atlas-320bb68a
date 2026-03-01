@@ -225,19 +225,15 @@ const SearchWidget = () => {
   const [flightScope, setFlightScope] = useState<"domestic" | "international">("domestic");
 
   const domesticAirports = useMemo(() => AIRPORTS.filter(a => a.country === "BD"), []);
-  const internationalAirports = useMemo(() => AIRPORTS.filter(a => a.country !== "BD"), []);
 
-  const scopedFromAirports = useMemo(() => flightScope === "domestic" ? domesticAirports : AIRPORTS, [flightScope, domesticAirports]);
-  const scopedToAirports = useMemo(() => flightScope === "domestic" ? domesticAirports : internationalAirports, [flightScope, domesticAirports, internationalAirports]);
+  const scopedFromAirports = AIRPORTS;
+  const scopedToAirports = AIRPORTS;
 
-  // Clear toAirport when switching scope if it doesn't belong
+  // When switching to domestic, reset to BD airports if needed
   useEffect(() => {
-    if (flightScope === "international" && toAirport && toAirport.country === "BD") {
-      setToAirport(null);
-    }
     if (flightScope === "domestic") {
-      if (toAirport && toAirport.country !== "BD") setToAirport(null);
       if (fromAirport && fromAirport.country !== "BD") setFromAirport(domesticAirports[0]);
+      if (toAirport && toAirport.country !== "BD") setToAirport(domesticAirports[1] || null);
     }
   }, [flightScope]);
 
@@ -293,15 +289,9 @@ const SearchWidget = () => {
 
   const swapAirports = useCallback(() => {
     const oldFrom = fromAirport;
-    const oldTo = toAirport;
-    setFromAirport(oldTo);
-    // In international mode, if the old FROM is a BD airport, clear TO instead of setting it
-    if (flightScope === "international" && oldFrom && oldFrom.country === "BD") {
-      setToAirport(null);
-    } else {
-      setToAirport(oldFrom);
-    }
-  }, [toAirport, fromAirport, flightScope]);
+    setFromAirport(toAirport);
+    setToAirport(oldFrom);
+  }, [toAirport, fromAirport]);
 
   // ====== SEARCH HANDLERS ======
   const handleFlightSearch = () => {

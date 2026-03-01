@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AIRPORTS, type Airport } from "@/lib/airports";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -224,11 +224,11 @@ const SearchWidget = () => {
   const [fareType, setFareType] = useState("regular");
   const [flightScope, setFlightScope] = useState<"domestic" | "international">("domestic");
 
-  const domesticAirports = AIRPORTS.filter(a => a.country === "BD");
-  const internationalAirports = AIRPORTS.filter(a => a.country !== "BD");
+  const domesticAirports = useMemo(() => AIRPORTS.filter(a => a.country === "BD"), []);
+  const internationalAirports = useMemo(() => AIRPORTS.filter(a => a.country !== "BD"), []);
 
-  const scopedFromAirports = flightScope === "domestic" ? domesticAirports : AIRPORTS;
-  const scopedToAirports = flightScope === "domestic" ? domesticAirports : internationalAirports;
+  const scopedFromAirports = useMemo(() => flightScope === "domestic" ? domesticAirports : AIRPORTS, [flightScope, domesticAirports]);
+  const scopedToAirports = useMemo(() => flightScope === "domestic" ? domesticAirports : internationalAirports, [flightScope, domesticAirports, internationalAirports]);
 
   // Clear toAirport when switching scope if it doesn't belong
   useEffect(() => {
@@ -1111,10 +1111,10 @@ const SearchWidget = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
           >
             {tabContent[activeTab]}
           </motion.div>

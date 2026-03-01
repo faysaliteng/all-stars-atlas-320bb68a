@@ -32,6 +32,7 @@ import Privacy from "@/pages/static/Privacy";
 import RefundPolicy from "@/pages/static/RefundPolicy";
 import FAQ from "@/pages/static/FAQ";
 import Careers from "@/pages/static/Careers";
+import Blog from "@/pages/static/Blog";
 import FlightBooking from "@/pages/flights/FlightBooking";
 import HotelDetail from "@/pages/hotels/HotelDetail";
 import HolidayDetail from "@/pages/holidays/HolidayDetail";
@@ -115,6 +116,7 @@ const App = () => (
                 <Route path="/refund-policy" element={<RefundPolicy />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/careers" element={<Careers />} />
+                <Route path="/blog" element={<Blog />} />
                 {/* New Service Routes */}
                 <Route path="/medical" element={<MedicalServices />} />
                 <Route path="/medical/book" element={<MedicalBooking />} />

@@ -93,7 +93,7 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
               {[
                 { label: "About Us", href: "/about" },
                 { label: "Contact", href: "/contact" },
-                { label: "Blog", href: "/faq" },
+                { label: "Blog", href: "/blog" },
                 { label: "Careers", href: "/careers" },
                 { label: "FAQ", href: "/faq" },
                 { label: "Terms & Conditions", href: "/terms" },

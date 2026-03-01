@@ -6,23 +6,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Smartphone, Check, ArrowRight, Signal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useESIMPlans } from "@/hooks/useApiData";
+import { useCmsPageContent } from "@/hooks/useCmsContent";
 import DataLoader from "@/components/DataLoader";
 
 const ESIMPlans = () => {
   const [selectedCountry, setSelectedCountry] = useState("all");
+  const { data: page } = useCmsPageContent("/esim");
+  const listing = page?.listingConfig;
+
   const { data, isLoading, error, refetch } = useESIMPlans({ country: selectedCountry !== "all" ? selectedCountry : undefined });
   const countries = (data as any)?.countries || [];
 
+  const countryFilters = listing?.esimCountries || [
+    { value: "thailand", label: "Thailand" }, { value: "malaysia", label: "Malaysia" },
+    { value: "singapore", label: "Singapore" }, { value: "india", label: "India" },
+  ];
+
   return (
     <div className="min-h-screen bg-muted/30">
-      <div className="bg-gradient-to-r from-primary to-accent text-primary-foreground pt-20 lg:pt-28 pb-10">
+      <div className={`bg-gradient-to-r ${page?.hero.gradient || "from-primary to-accent"} text-primary-foreground pt-20 lg:pt-28 pb-10`}>
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3"><Smartphone className="w-8 h-8" /> eSIM Data Plans</h1>
-          <p className="text-primary-foreground/80 mt-2 max-w-2xl">Stay connected worldwide. Instant activation, no physical SIM needed.</p>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3"><Smartphone className="w-8 h-8" /> {page?.hero.title || "eSIM Data Plans"}</h1>
+          <p className="text-primary-foreground/80 mt-2 max-w-2xl">{page?.hero.subtitle}</p>
           <div className="flex flex-wrap gap-3 mt-6">
             <Select value={selectedCountry} onValueChange={setSelectedCountry}>
               <SelectTrigger className="w-44 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="all">All Countries</SelectItem><SelectItem value="thailand">Thailand</SelectItem><SelectItem value="malaysia">Malaysia</SelectItem><SelectItem value="singapore">Singapore</SelectItem><SelectItem value="india">India</SelectItem></SelectContent>
+              <SelectContent>
+                <SelectItem value="all">All Countries</SelectItem>
+                {countryFilters.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
         </div>

@@ -8,11 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Star, Wifi, Car, UtensilsCrossed, Waves, Filter, X, SlidersHorizontal, Grid3X3, List, Heart, ArrowRight } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useHotelSearch } from "@/hooks/useApiData";
+import { useCmsPageContent } from "@/hooks/useCmsContent";
 import DataLoader from "@/components/DataLoader";
 
 const amenityIcons: Record<string, typeof Wifi> = { wifi: Wifi, pool: Waves, restaurant: UtensilsCrossed, parking: Car };
 
 const HotelResults = () => {
+  const { data: page } = useCmsPageContent("/hotels");
+  const listing = page?.listingConfig;
   const [searchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState("recommended");
   const [priceRange, setPriceRange] = useState([1000, 20000]);
@@ -59,7 +62,7 @@ const HotelResults = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Hotels in {searchMeta.location || 'your destination'}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">{page?.pageTitle ? `${page.pageTitle} - ` : "Hotels in "}{searchMeta.location || 'your destination'}</h1>
               <p className="text-sm text-muted-foreground mt-0.5">{searchMeta.dates || ''} • {hotels.length} properties</p>
             </div>
             <Button variant="outline" size="sm" asChild><Link to="/">Modify Search</Link></Button>
@@ -84,10 +87,12 @@ const HotelResults = () => {
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="recommended">Recommended</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="rating">Guest Rating</SelectItem>
+                  {(listing?.hotelSortOptions || [
+                    { value: "recommended", label: "Recommended" },
+                    { value: "price-low", label: "Price: Low to High" },
+                    { value: "price-high", label: "Price: High to Low" },
+                    { value: "rating", label: "Guest Rating" },
+                  ]).map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2">

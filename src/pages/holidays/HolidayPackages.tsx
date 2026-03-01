@@ -6,33 +6,46 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Star, Calendar, Plane, Building2, UtensilsCrossed, Camera, ArrowRight, Heart, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useHolidaySearch } from "@/hooks/useApiData";
+import { useCmsPageContent } from "@/hooks/useCmsContent";
 import DataLoader from "@/components/DataLoader";
 
-const includeIcons: Record<string, typeof Plane> = { flight: Plane, hotel: Building2, meals: UtensilsCrossed, sightseeing: Camera };
+const includeIcons: Record<string, typeof Plane> = { Plane, Building2, UtensilsCrossed, Camera, Users, flight: Plane, hotel: Building2, meals: UtensilsCrossed, sightseeing: Camera };
 
 const HolidayPackages = () => {
   const [sortBy, setSortBy] = useState("recommended");
   const [filter, setFilter] = useState("all");
+  const { data: page } = useCmsPageContent("/holidays");
+  const listing = page?.listingConfig;
 
   const { data, isLoading, error, refetch } = useHolidaySearch({ sort: sortBy, filter });
   const packages = (data as any)?.packages || [];
 
+  const includes = listing?.holidayIncludes || [
+    { icon: "Plane", label: "Flights" }, { icon: "Building2", label: "Hotels" },
+    { icon: "UtensilsCrossed", label: "Meals" }, { icon: "Camera", label: "Sightseeing" }, { icon: "Users", label: "Guide" },
+  ];
+  const filters = listing?.holidayFilters || [
+    { value: "all", label: "All" }, { value: "budget", label: "Budget" },
+    { value: "luxury", label: "Luxury" }, { value: "domestic", label: "Domestic" },
+  ];
+
   return (
     <div className="min-h-screen bg-muted/30">
-      <section className="relative bg-gradient-to-br from-[hsl(167,72%,41%)] to-[hsl(217,91%,50%)] pt-24 lg:pt-32 pb-16 sm:pb-20 overflow-hidden">
+      <section className={`relative bg-gradient-to-br ${page?.hero.gradient || "from-[hsl(167,72%,41%)] to-[hsl(217,91%,50%)]"} pt-24 lg:pt-32 pb-16 sm:pb-20 overflow-hidden`}>
         <div className="container mx-auto px-4 relative text-center">
-          <Badge className="bg-white/15 text-white border-white/20 mb-4 text-xs font-semibold"><Star className="w-3.5 h-3.5 mr-1 fill-warning text-warning" /> Holiday Packages</Badge>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Holiday Packages</h1>
-          <p className="text-white/65 text-sm sm:text-base max-w-lg mx-auto">All-inclusive packages with flights, hotels, meals & sightseeing</p>
+          <Badge className="bg-white/15 text-white border-white/20 mb-4 text-xs font-semibold"><Star className="w-3.5 h-3.5 mr-1 fill-warning text-warning" /> {listing?.heroBadge || "Holiday Packages"}</Badge>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">{page?.hero.title || "Holiday Packages"}</h1>
+          <p className="text-white/65 text-sm sm:text-base max-w-lg mx-auto">{page?.hero.subtitle}</p>
         </div>
       </section>
 
       <section className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-center gap-6 sm:gap-10 flex-wrap">
-            {[{ icon: Plane, label: "Flights" }, { icon: Building2, label: "Hotels" }, { icon: UtensilsCrossed, label: "Meals" }, { icon: Camera, label: "Sightseeing" }, { icon: Users, label: "Guide" }].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm"><item.icon className="w-4 h-4 text-primary" /><span className="font-medium text-muted-foreground">{item.label}</span></div>
-            ))}
+            {includes.map((item, i) => {
+              const Icon = includeIcons[item.icon] || Plane;
+              return <div key={i} className="flex items-center gap-2 text-sm"><Icon className="w-4 h-4 text-primary" /><span className="font-medium text-muted-foreground">{item.label}</span></div>;
+            })}
           </div>
         </div>
       </section>
@@ -41,7 +54,7 @@ const HolidayPackages = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex gap-1 overflow-x-auto scrollbar-none">
-              {[{ value: "all", label: "All" }, { value: "budget", label: "Budget" }, { value: "luxury", label: "Luxury" }, { value: "domestic", label: "Domestic" }].map(f => (
+              {filters.map(f => (
                 <button key={f.value} onClick={() => setFilter(f.value)}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${filter === f.value ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>{f.label}</button>
               ))}
@@ -92,10 +105,10 @@ const HolidayPackages = () => {
 
       <section className="py-10 sm:py-14 bg-card border-t border-border">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-xl sm:text-2xl font-bold mb-3">Can't Find the Perfect Package?</h2>
-          <p className="text-sm text-muted-foreground mb-6 max-w-lg mx-auto">Tell us your dream destination and we'll create a custom package just for you</p>
+          <h2 className="text-xl sm:text-2xl font-bold mb-3">{listing?.holidayCtaTitle || "Can't Find the Perfect Package?"}</h2>
+          <p className="text-sm text-muted-foreground mb-6 max-w-lg mx-auto">{listing?.holidayCtaSubtitle || "Tell us your dream destination and we'll create a custom package just for you"}</p>
           <Button size="lg" className="font-bold shadow-lg shadow-primary/20" asChild>
-            <Link to="/contact">Request Custom Package <ArrowRight className="w-4 h-4 ml-1" /></Link>
+            <Link to="/contact">{listing?.holidayCtaButton || "Request Custom Package"} <ArrowRight className="w-4 h-4 ml-1" /></Link>
           </Button>
         </div>
       </section>

@@ -6,28 +6,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Stethoscope, MapPin, Star, ArrowRight, Heart, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMedicalHospitals } from "@/hooks/useApiData";
+import { useCmsPageContent } from "@/hooks/useCmsContent";
 import DataLoader from "@/components/DataLoader";
 
 const MedicalServices = () => {
   const [country, setCountry] = useState("all");
   const [treatment, setTreatment] = useState("all");
+  const { data: page } = useCmsPageContent("/medical");
+  const listing = page?.listingConfig;
+
   const { data, isLoading, error, refetch } = useMedicalHospitals({ country: country !== "all" ? country : undefined, treatment: treatment !== "all" ? treatment : undefined });
   const hospitals = (data as any)?.hospitals || [];
 
+  const countries = listing?.medicalCountries || [
+    { value: "india", label: "India" }, { value: "thailand", label: "Thailand" },
+    { value: "singapore", label: "Singapore" }, { value: "turkey", label: "Turkey" }, { value: "malaysia", label: "Malaysia" },
+  ];
+  const treatments = listing?.medicalTreatments || [
+    { value: "cardiac", label: "Cardiac" }, { value: "dental", label: "Dental" },
+    { value: "orthopedic", label: "Orthopedic" }, { value: "eye", label: "Eye Care" },
+    { value: "cosmetic", label: "Cosmetic Surgery" }, { value: "cancer", label: "Cancer Treatment" },
+  ];
+
   return (
     <div className="min-h-screen bg-muted/30">
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground pt-20 lg:pt-28 pb-10">
+      <div className={`bg-gradient-to-r ${page?.hero.gradient || "from-primary to-primary/80"} text-primary-foreground pt-20 lg:pt-28 pb-10`}>
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3"><Stethoscope className="w-8 h-8" /> Medical Tourism</h1>
-          <p className="text-primary-foreground/80 mt-2 max-w-2xl">World-class healthcare at affordable prices.</p>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3"><Stethoscope className="w-8 h-8" /> {page?.hero.title || "Medical Tourism"}</h1>
+          <p className="text-primary-foreground/80 mt-2 max-w-2xl">{page?.hero.subtitle}</p>
           <div className="flex flex-wrap gap-3 mt-6">
             <Select value={country} onValueChange={setCountry}>
               <SelectTrigger className="w-40 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground"><SelectValue placeholder="Country" /></SelectTrigger>
-              <SelectContent><SelectItem value="all">All Countries</SelectItem><SelectItem value="india">India</SelectItem><SelectItem value="thailand">Thailand</SelectItem><SelectItem value="singapore">Singapore</SelectItem><SelectItem value="turkey">Turkey</SelectItem><SelectItem value="malaysia">Malaysia</SelectItem></SelectContent>
+              <SelectContent>
+                <SelectItem value="all">All Countries</SelectItem>
+                {countries.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+              </SelectContent>
             </Select>
             <Select value={treatment} onValueChange={setTreatment}>
               <SelectTrigger className="w-44 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground"><SelectValue placeholder="Treatment" /></SelectTrigger>
-              <SelectContent><SelectItem value="all">All Treatments</SelectItem><SelectItem value="cardiac">Cardiac</SelectItem><SelectItem value="dental">Dental</SelectItem><SelectItem value="orthopedic">Orthopedic</SelectItem><SelectItem value="eye">Eye Care</SelectItem><SelectItem value="cosmetic">Cosmetic Surgery</SelectItem><SelectItem value="cancer">Cancer Treatment</SelectItem></SelectContent>
+              <SelectContent>
+                <SelectItem value="all">All Treatments</SelectItem>
+                {treatments.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
         </div>

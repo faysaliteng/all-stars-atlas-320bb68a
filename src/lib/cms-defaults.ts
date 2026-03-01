@@ -158,6 +158,43 @@ export interface VisaApplicationConfig {
   estimatedProcessingNote: string;
 }
 
+// ====== SERVICE LISTING CONFIG ======
+
+export interface VisaCountryListing {
+  name: string;
+  flag: string;
+  processing: string;
+  fee: string;
+  type: string;
+  popular: boolean;
+}
+
+export interface ServiceListingConfig {
+  heroBadge?: string;
+  heroSearchPlaceholder?: string;
+  // Visa-specific
+  visaCountries?: VisaCountryListing[];
+  visaSteps?: { icon: string; title: string; desc: string }[];
+  visaFeatures?: { icon: string; title: string; desc: string }[];
+  // Holiday-specific
+  holidayIncludes?: { icon: string; label: string }[];
+  holidayCtaTitle?: string;
+  holidayCtaSubtitle?: string;
+  holidayCtaButton?: string;
+  holidayFilters?: { value: string; label: string }[];
+  // Medical-specific
+  medicalCountries?: { value: string; label: string }[];
+  medicalTreatments?: { value: string; label: string }[];
+  // eSIM-specific
+  esimCountries?: { value: string; label: string }[];
+  // Car-specific
+  carSortOptions?: { value: string; label: string }[];
+  // Flight-specific
+  flightSortOptions?: { value: string; label: string }[];
+  // Hotel-specific
+  hotelSortOptions?: { value: string; label: string }[];
+}
+
 // ====== MASTER CMS CONTENT TYPE ======
 
 export interface CmsPageContent {
@@ -183,6 +220,7 @@ export interface CmsPageContent {
   serviceContent?: ServicePageContent;
   visaConfig?: VisaApplicationConfig;
   bookingConfig?: BookingFormConfig;
+  listingConfig?: ServiceListingConfig;
 }
 
 // ====== DEFAULT CONTENT FOR ALL PAGES ======
@@ -336,7 +374,7 @@ export const CMS_PAGE_DEFAULTS: Record<string, CmsPageContent> = {
     hero: { title: "Search Flights", subtitle: "Compare 120+ airlines and find the best deals", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
     serviceContent: {
       hero: { title: "Search Flights", subtitle: "Compare 120+ airlines and find the best deals" },
-      intro: "Search, compare, and book flights from Bangladesh to anywhere in the world. We partner with 120+ airlines to bring you the best fares.",
+      intro: "Search, compare, and book flights from Bangladesh to anywhere in the world.",
       features: [
         { icon: "Plane", title: "120+ Airlines", desc: "Compare fares across all major carriers" },
         { icon: "Tag", title: "Best Price Guarantee", desc: "We match any lower price you find" },
@@ -344,6 +382,13 @@ export const CMS_PAGE_DEFAULTS: Record<string, CmsPageContent> = {
         { icon: "Headphones", title: "24/7 Support", desc: "Call, chat, or email anytime" },
       ],
       visible: true,
+    },
+    listingConfig: {
+      flightSortOptions: [
+        { value: "cheapest", label: "Cheapest" },
+        { value: "earliest", label: "Earliest" },
+        { value: "fastest", label: "Fastest" },
+      ],
     },
   },
 
@@ -353,7 +398,7 @@ export const CMS_PAGE_DEFAULTS: Record<string, CmsPageContent> = {
     hero: { title: "Find Hotels", subtitle: "50,000+ properties worldwide at best prices", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
     serviceContent: {
       hero: { title: "Find Hotels", subtitle: "50,000+ properties worldwide" },
-      intro: "Book hotels at the best prices. From luxury resorts to budget-friendly stays, we have options for every traveller.",
+      intro: "Book hotels at the best prices. From luxury resorts to budget-friendly stays.",
       features: [
         { icon: "Building2", title: "50K+ Hotels", desc: "Worldwide coverage" },
         { icon: "BadgePercent", title: "Exclusive Deals", desc: "Member-only discounts" },
@@ -362,12 +407,20 @@ export const CMS_PAGE_DEFAULTS: Record<string, CmsPageContent> = {
       ],
       visible: true,
     },
+    listingConfig: {
+      hotelSortOptions: [
+        { value: "recommended", label: "Recommended" },
+        { value: "price-low", label: "Price: Low to High" },
+        { value: "price-high", label: "Price: High to Low" },
+        { value: "rating", label: "Guest Rating" },
+      ],
+    },
   },
 
   "/visa": {
     slug: "/visa",
     pageTitle: "Visa Processing",
-    hero: { title: "Visa Services", subtitle: "Fast processing for 45+ countries", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
+    hero: { title: "Visa Processing Made Simple", subtitle: "Get your visa hassle-free with Bangladesh's most trusted visa service. 99% approval rate, doorstep delivery.", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
     serviceContent: {
       hero: { title: "Visa Services", subtitle: "Fast visa processing for 45+ countries" },
       intro: "Apply for tourist, business, and student visas online. Our expert team handles the paperwork while you plan your trip.",
@@ -379,26 +432,75 @@ export const CMS_PAGE_DEFAULTS: Record<string, CmsPageContent> = {
       ],
       visible: true,
     },
+    listingConfig: {
+      heroBadge: "100,000+ Visas Processed",
+      heroSearchPlaceholder: "Search country...",
+      visaCountries: [
+        { name: "Thailand", flag: "🇹🇭", processing: "3-5 Days", fee: "৳4,500", type: "Tourist", popular: true },
+        { name: "Malaysia", flag: "🇲🇾", processing: "5-7 Days", fee: "৳6,200", type: "Tourist / Business", popular: true },
+        { name: "Singapore", flag: "🇸🇬", processing: "5-7 Days", fee: "৳5,800", type: "Tourist", popular: true },
+        { name: "UAE", flag: "🇦🇪", processing: "3-5 Days", fee: "৳8,500", type: "Tourist / Business", popular: true },
+        { name: "India", flag: "🇮🇳", processing: "7-10 Days", fee: "৳3,200", type: "Tourist / Medical", popular: false },
+        { name: "Turkey", flag: "🇹🇷", processing: "10-15 Days", fee: "৳7,500", type: "Tourist", popular: false },
+        { name: "UK", flag: "🇬🇧", processing: "15-20 Days", fee: "৳12,000", type: "Tourist / Business", popular: false },
+        { name: "USA", flag: "🇺🇸", processing: "30-60 Days", fee: "৳15,000", type: "Tourist / Business", popular: false },
+        { name: "Canada", flag: "🇨🇦", processing: "20-30 Days", fee: "৳14,000", type: "Tourist / Student", popular: false },
+        { name: "Australia", flag: "🇦🇺", processing: "15-20 Days", fee: "৳13,000", type: "Tourist / Student", popular: false },
+        { name: "Japan", flag: "🇯🇵", processing: "7-10 Days", fee: "৳9,000", type: "Tourist", popular: false },
+        { name: "South Korea", flag: "🇰🇷", processing: "7-10 Days", fee: "৳8,000", type: "Tourist", popular: false },
+      ],
+      visaSteps: [
+        { icon: "Globe", title: "Choose Country", desc: "Select your destination and visa type" },
+        { icon: "FileText", title: "Submit Documents", desc: "Upload required documents securely" },
+        { icon: "Clock", title: "Processing", desc: "We handle embassy coordination" },
+        { icon: "CheckCircle2", title: "Get Your Visa", desc: "Receive visa at your doorstep" },
+      ],
+      visaFeatures: [
+        { icon: "Shield", title: "99% Approval Rate", desc: "Expert document verification" },
+        { icon: "Clock", title: "Express Processing", desc: "Fastest turnaround in Bangladesh" },
+        { icon: "Headphones", title: "Dedicated Support", desc: "Personal visa consultant" },
+        { icon: "Star", title: "100K+ Visas Processed", desc: "Trusted by thousands" },
+      ],
+    },
   },
 
   "/holidays": {
     slug: "/holidays",
     pageTitle: "Holiday Packages",
-    hero: { title: "Holiday Packages", subtitle: "All-inclusive packages for unforgettable trips", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
+    hero: { title: "Holiday Packages", subtitle: "All-inclusive packages with flights, hotels, meals & sightseeing", gradient: "from-[hsl(167,72%,41%)] to-[hsl(217,91%,50%)]" },
     serviceContent: {
       hero: { title: "Holiday Packages", subtitle: "All-inclusive packages" },
-      intro: "Discover curated holiday packages with flights, hotels, and sightseeing included. Perfect for families, couples, and solo travellers.",
+      intro: "Discover curated holiday packages with flights, hotels, and sightseeing included.",
       visible: true,
+    },
+    listingConfig: {
+      heroBadge: "Holiday Packages",
+      holidayIncludes: [
+        { icon: "Plane", label: "Flights" },
+        { icon: "Building2", label: "Hotels" },
+        { icon: "UtensilsCrossed", label: "Meals" },
+        { icon: "Camera", label: "Sightseeing" },
+        { icon: "Users", label: "Guide" },
+      ],
+      holidayFilters: [
+        { value: "all", label: "All" },
+        { value: "budget", label: "Budget" },
+        { value: "luxury", label: "Luxury" },
+        { value: "domestic", label: "Domestic" },
+      ],
+      holidayCtaTitle: "Can't Find the Perfect Package?",
+      holidayCtaSubtitle: "Tell us your dream destination and we'll create a custom package just for you",
+      holidayCtaButton: "Request Custom Package",
     },
   },
 
   "/medical": {
     slug: "/medical",
     pageTitle: "Medical Tourism",
-    hero: { title: "Medical Tourism", subtitle: "World-class treatment at affordable prices", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
+    hero: { title: "Medical Tourism", subtitle: "World-class healthcare at affordable prices.", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
     serviceContent: {
       hero: { title: "Medical Tourism", subtitle: "World-class treatment at affordable prices" },
-      intro: "Access top hospitals in India, Thailand, Singapore, and more. We arrange everything — appointments, visa, flights, and accommodation.",
+      intro: "Access top hospitals in India, Thailand, Singapore, and more.",
       features: [
         { icon: "Stethoscope", title: "Top Hospitals", desc: "JCI-accredited facilities" },
         { icon: "Plane", title: "Travel Arranged", desc: "Flights, visa & accommodation" },
@@ -407,16 +509,41 @@ export const CMS_PAGE_DEFAULTS: Record<string, CmsPageContent> = {
       ],
       visible: true,
     },
+    listingConfig: {
+      medicalCountries: [
+        { value: "india", label: "India" },
+        { value: "thailand", label: "Thailand" },
+        { value: "singapore", label: "Singapore" },
+        { value: "turkey", label: "Turkey" },
+        { value: "malaysia", label: "Malaysia" },
+      ],
+      medicalTreatments: [
+        { value: "cardiac", label: "Cardiac" },
+        { value: "dental", label: "Dental" },
+        { value: "orthopedic", label: "Orthopedic" },
+        { value: "eye", label: "Eye Care" },
+        { value: "cosmetic", label: "Cosmetic Surgery" },
+        { value: "cancer", label: "Cancer Treatment" },
+      ],
+    },
   },
 
   "/esim": {
     slug: "/esim",
-    pageTitle: "eSIM Plans",
-    hero: { title: "Travel eSIM", subtitle: "Stay connected worldwide without roaming charges", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
+    pageTitle: "eSIM Data Plans",
+    hero: { title: "eSIM Data Plans", subtitle: "Stay connected worldwide. Instant activation, no physical SIM needed.", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
     serviceContent: {
       hero: { title: "Travel eSIM", subtitle: "Stay connected worldwide" },
       intro: "Buy eSIM plans for 100+ countries. Activate instantly with a QR code — no physical SIM needed.",
       visible: true,
+    },
+    listingConfig: {
+      esimCountries: [
+        { value: "thailand", label: "Thailand" },
+        { value: "malaysia", label: "Malaysia" },
+        { value: "singapore", label: "Singapore" },
+        { value: "india", label: "India" },
+      ],
     },
   },
 
@@ -426,8 +553,14 @@ export const CMS_PAGE_DEFAULTS: Record<string, CmsPageContent> = {
     hero: { title: "Car Rental", subtitle: "Reliable vehicles for every journey", gradient: "from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)]" },
     serviceContent: {
       hero: { title: "Car Rental", subtitle: "Reliable vehicles for every journey" },
-      intro: "Rent cars for airport transfers, city tours, or long-distance travel. Choose from economy to luxury vehicles.",
+      intro: "Rent cars for airport transfers, city tours, or long-distance travel.",
       visible: true,
+    },
+    listingConfig: {
+      carSortOptions: [
+        { value: "price", label: "Lowest Price" },
+        { value: "rating", label: "Highest Rated" },
+      ],
     },
   },
 

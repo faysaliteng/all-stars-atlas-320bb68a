@@ -9,9 +9,12 @@ import { Plane, Clock, ArrowRight, Filter, X, Luggage, Wifi, UtensilsCrossed, Sl
 import { Link, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useFlightSearch } from "@/hooks/useApiData";
+import { useCmsPageContent } from "@/hooks/useCmsContent";
 import DataLoader from "@/components/DataLoader";
 
 const FlightResults = () => {
+  const { data: page } = useCmsPageContent("/flights");
+  const listing = page?.listingConfig;
   const [searchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState("cheapest");
   const [priceRange, setPriceRange] = useState([2000, 80000]);
@@ -96,11 +99,11 @@ const FlightResults = () => {
           <div className="flex-1 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex gap-1 overflow-x-auto scrollbar-none">
-                {[
+                {(listing?.flightSortOptions || [
                   { value: "cheapest", label: "Cheapest" },
                   { value: "earliest", label: "Earliest" },
                   { value: "fastest", label: "Fastest" },
-                ].map((s) => (
+                ]).map((s) => (
                   <button key={s.value} onClick={() => setSortBy(s.value)}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
                       sortBy === s.value ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:text-foreground"

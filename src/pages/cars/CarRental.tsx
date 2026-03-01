@@ -7,12 +7,15 @@ import { Car, Star, Users, Fuel, Settings2, ArrowRight } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CAR_TYPES } from "@/lib/constants";
 import { useCarSearch } from "@/hooks/useApiData";
+import { useCmsPageContent } from "@/hooks/useCmsContent";
 import DataLoader from "@/components/DataLoader";
 
 const CarRental = () => {
   const [searchParams] = useSearchParams();
   const [carType, setCarType] = useState("all");
   const [sortBy, setSortBy] = useState("price");
+  const { data: page } = useCmsPageContent("/cars");
+  const listing = page?.listingConfig;
 
   const { data, isLoading, error, refetch } = useCarSearch({
     pickup: searchParams.get("pickup") || undefined,
@@ -22,11 +25,16 @@ const CarRental = () => {
   });
   const cars = (data as any)?.cars || [];
 
+  const sortOptions = listing?.carSortOptions || [
+    { value: "price", label: "Lowest Price" },
+    { value: "rating", label: "Highest Rated" },
+  ];
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="bg-card border-b border-border pt-20 lg:pt-28 pb-4">
         <div className="container mx-auto px-4">
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Car className="w-6 h-6 text-primary" /> Car Rental</h1>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Car className="w-6 h-6 text-primary" /> {page?.hero.title || "Car Rental"}</h1>
           <p className="text-sm text-muted-foreground mt-1">{cars.length} vehicles available</p>
         </div>
       </div>
@@ -38,7 +46,7 @@ const CarRental = () => {
           </Select>
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="price">Lowest Price</SelectItem><SelectItem value="rating">Highest Rated</SelectItem></SelectContent>
+            <SelectContent>{sortOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <DataLoader isLoading={isLoading} error={error} skeleton="cards" retry={refetch}>

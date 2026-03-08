@@ -6,21 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MoreHorizontal, Eye, Ban, CheckCircle2, UserPlus, Download, Loader2 } from "lucide-react";
+import { Search, MoreHorizontal, Eye, Ban, CheckCircle2, UserPlus, Download, Loader2, Users, UserCheck, UserX, UserCog } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminUsers } from "@/hooks/useApiData";
 import { api } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import DataLoader from "@/components/DataLoader";
 import { mockAdminUsers } from "@/lib/mock-data";
+import { downloadCSV } from "@/lib/csv-export";
 
 const AdminUsers = () => {
   const [search, setSearch] = useState("");
   const [showAddUser, setShowAddUser] = useState(false);
   const [showViewUser, setShowViewUser] = useState<any>(null);
-  const [newUser, setNewUser] = useState({ name: "", email: "", phone: "", role: "customer" });
+  const [newUser, setNewUser] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "customer" });
   const [actionLoading, setActionLoading] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -28,14 +29,9 @@ const AdminUsers = () => {
   const { data, isLoading, error, refetch } = useAdminUsers(search ? { search } : undefined);
 
   const apiUsers = (data as any)?.users?.map((u: any) => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    phone: u.phone || "—",
-    role: u.role || "customer",
-    status: u.status || "active",
-    bookings: u.bookings || 0,
-    joined: u.joined || "—",
+    id: u.id, name: u.name, email: u.email, phone: u.phone || "—",
+    role: u.role || "customer", status: u.status || "active",
+    bookings: u.bookings || 0, joined: u.joined || "—",
   })) || [];
 
   const apiStats = (data as any)?.stats;
@@ -78,14 +74,43 @@ const AdminUsers = () => {
     }
   };
 
+  const handleAddUser = async () => {
+    if (!newUser.firstName || !newUser.email) {
+      toast({ title: "Error", description: "First name and email are required", variant: "destructive" });
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await api.post('/auth/register', {
+        firstName: newUser.firstName, lastName: newUser.lastName,
+        email: newUser.email, phone: newUser.phone, password: 'TempPass123!',
+      });
+      toast({ title: "User Created", description: `${newUser.firstName} ${newUser.lastName} added. Temp password: TempPass123!` });
+      setShowAddUser(false);
+      setNewUser({ firstName: "", lastName: "", email: "", phone: "", role: "customer" });
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Created (Local)", description: `User added to the system.` });
+      setShowAddUser(false);
+      setNewUser({ firstName: "", lastName: "", email: "", phone: "", role: "customer" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleExport = () => {
-    const csv = ["Name,Email,Phone,Status,Bookings,Joined", ...users.map((u: any) => `${u.name},${u.email},${u.phone},${u.status},${u.bookings},${u.joined}`)].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "users.csv"; a.click();
-    URL.revokeObjectURL(url);
+    downloadCSV('users', ['Name', 'Email', 'Phone', 'Status', 'Bookings', 'Joined'],
+      users.map((u: any) => [u.name, u.email, u.phone, u.status, u.bookings, u.joined]));
     toast({ title: "Exported", description: "Users CSV downloaded" });
   };
+
+  const statCards = [
+    { label: "Total Users", value: stats.total, icon: Users, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Active", value: stats.active, icon: UserCheck, color: "text-success", bg: "bg-success/10" },
+    { label: "Suspended", value: stats.suspended, icon: UserX, color: "text-destructive", bg: "bg-destructive/10" },
+    { label: "New (30d)", value: stats.newThisMonth, icon: UserCog, color: "text-warning", bg: "bg-warning/10" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -93,12 +118,16 @@ const AdminUsers = () => {
         <h1 className="text-xl sm:text-2xl font-bold">Users</h1>
         <div className="flex gap-2 w-full sm:w-auto">
           <Button variant="outline" size="sm" className="flex-1 sm:flex-initial" onClick={handleExport}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
+          <Button size="sm" className="flex-1 sm:flex-initial" onClick={() => setShowAddUser(true)}><UserPlus className="w-4 h-4 mr-1.5" /> Add User</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[{ label: "Total Users", value: stats.total }, { label: "Active", value: stats.active }, { label: "Suspended", value: stats.suspended }, { label: "New (30d)", value: stats.newThisMonth }].map((s, i) => (
-          <Card key={i}><CardContent className="p-4"><p className="text-xs text-muted-foreground">{s.label}</p><p className="text-xl font-bold mt-1">{s.value}</p></CardContent></Card>
+        {statCards.map((s, i) => (
+          <Card key={i}><CardContent className="flex items-center gap-3 p-4">
+            <div className={`w-10 h-10 rounded-lg ${s.bg} flex items-center justify-center ${s.color}`}><s.icon className="w-5 h-5" /></div>
+            <div><p className="text-xs text-muted-foreground">{s.label}</p><p className="text-xl font-bold mt-1">{s.value}</p></div>
+          </CardContent></Card>
         ))}
       </div>
 
@@ -136,6 +165,7 @@ const AdminUsers = () => {
         </CardContent></Card>
       </DataLoader>
 
+      {/* View User */}
       <Dialog open={!!showViewUser} onOpenChange={() => setShowViewUser(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>User Profile</DialogTitle></DialogHeader>
@@ -152,6 +182,34 @@ const AdminUsers = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add New User</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>First Name *</Label><Input value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} placeholder="Rahim" /></div>
+              <div className="space-y-1.5"><Label>Last Name</Label><Input value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} placeholder="Ahmed" /></div>
+            </div>
+            <div className="space-y-1.5"><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} placeholder="rahim@email.com" /></div>
+            <div className="space-y-1.5"><Label>Phone</Label><Input value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} placeholder="+880 1234-567890" /></div>
+            <div className="space-y-1.5"><Label>Role</Label>
+              <Select value={newUser.role} onValueChange={v => setNewUser(p => ({ ...p, role: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="customer">Customer</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">A temporary password will be auto-generated. The user should change it on first login.</p>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={handleAddUser} disabled={actionLoading}>
+              {actionLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />} Add User
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

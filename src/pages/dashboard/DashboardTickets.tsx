@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { useDashboardTickets } from "@/hooks/useApiData";
 import DataLoader from "@/components/DataLoader";
-import { mockTickets } from "@/lib/mock-data";
+
 import { generateTicketPDF, printTicketPDF } from "@/lib/pdf-generator";
 
 const statusColors: Record<string, string> = {

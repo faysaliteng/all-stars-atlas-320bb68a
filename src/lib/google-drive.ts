@@ -3,8 +3,26 @@
  * Uses Google Identity Services + Drive API v3 for one-click file upload
  */
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const DRIVE_UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+const GDRIVE_STORAGE_KEY = 'seventrip_google_drive_client_id';
+
+/** Get Google Client ID from env or admin-configured localStorage */
+function getGoogleClientId(): string {
+  return import.meta.env.VITE_GOOGLE_CLIENT_ID || localStorage.getItem(GDRIVE_STORAGE_KEY) || '';
+}
+
+/** Set Google Client ID from admin settings */
+export function setGoogleDriveClientId(clientId: string) {
+  localStorage.setItem(GDRIVE_STORAGE_KEY, clientId);
+  // Reset token state so it re-initializes with new client ID
+  accessToken = null;
+  tokenClient = null;
+}
+
+/** Get the saved Google Client ID */
+export function getGoogleDriveClientId(): string {
+  return localStorage.getItem(GDRIVE_STORAGE_KEY) || '';
+}
 
 let tokenClient: any = null;
 let accessToken: string | null = null;

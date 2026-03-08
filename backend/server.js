@@ -12,6 +12,7 @@ const hotelRoutes = require('./src/routes/hotels');
 const serviceRoutes = require('./src/routes/services');
 const dashboardRoutes = require('./src/routes/dashboard');
 const adminRoutes = require('./src/routes/admin');
+const visaRoutes = require('./src/routes/visa');
 const { publicRouter: cmsPublicRouter, adminRouter: cmsAdminRouter } = require('./src/routes/cms');
 
 const app = express();

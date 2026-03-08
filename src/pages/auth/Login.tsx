@@ -8,13 +8,16 @@ import { Separator } from "@/components/ui/separator";
 import { Mail, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import IdUploadModal from "@/components/IdUploadModal";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const [showIdUpload, setShowIdUpload] = useState(false);
+  const { login, socialLogin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,20 +33,14 @@ const Login = () => {
     try {
       await login({ email, password });
 
-      // After login, check if user is admin — reject them from user login
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
         if (user.role === 'admin' || user.role === 'super_admin') {
-          // Clear auth — admins must use /admin/login
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('user');
-          toast({
-            title: "Access Denied",
-            description: "Admin users must log in through the admin panel.",
-            variant: "destructive",
-          });
+          toast({ title: "Access Denied", description: "Admin users must log in through the admin panel.", variant: "destructive" });
           setLoading(false);
           return;
         }
@@ -58,85 +55,122 @@ const Login = () => {
     }
   };
 
+  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
+    setSocialLoading(provider);
+    try {
+      const result = await socialLogin(provider);
+      if (result.needsIdUpload) {
+        setShowIdUpload(true);
+      } else {
+        toast({ title: "Welcome!", description: `Signed in with ${provider === 'google' ? 'Google' : 'Facebook'} successfully` });
+        navigate(from, { replace: true });
+      }
+    } catch (err: any) {
+      toast({ title: "Sign-in Failed", description: err?.message || `${provider} sign-in failed`, variant: "destructive" });
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex bg-muted/30">
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)] items-center justify-center p-12">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDE0VjBoLTJWMTRIMjBWMGgtMnYxNEgwdjJoMTR2MTRIMHYyaDE0djE0aDJ2LTE0aDE0djE0aDJ2LTE0aDE0di0ySDM2VjE2aDEydi0ySDM2eiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
-        <div className="relative text-white max-w-md">
-          <Link to="/" className="flex items-center gap-3 mb-8">
-            <img src="/images/seven-trip-logo.png" alt="Seven Trip" className="h-20 w-auto brightness-0 invert drop-shadow-[0_0_12px_rgba(29,106,229,0.5)]" />
-          </Link>
-          <h2 className="text-3xl font-black mb-4 leading-tight">Welcome back to Bangladesh's #1 Travel Platform</h2>
-          <p className="text-white/60 text-sm mb-8 leading-relaxed">Book flights, hotels, holidays & visa services with the best prices and 24/7 support.</p>
-          <div className="space-y-3">
-            {["500K+ happy travellers", "Best price guarantee", "24/7 customer support", "Instant confirmation"].map((f, i) => (
-              <div key={i} className="flex items-center gap-2 text-white/80 text-sm">
-                <CheckCircle2 className="w-4 h-4 text-accent" />{f}
-              </div>
-            ))}
+    <>
+      <div className="min-h-screen flex bg-muted/30">
+        <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[hsl(217,91%,50%)] to-[hsl(224,70%,28%)] items-center justify-center p-12">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDE0VjBoLTJWMTRIMjBWMGgtMnYxNEgwdjJoMTR2MTRIMHYyaDE0djE0aDJ2LTE0aDE0djE0aDJ2LTE0aDE0di0ySDM2VjE2aDEydi0ySDM2eiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
+          <div className="relative text-white max-w-md">
+            <Link to="/" className="flex items-center gap-3 mb-8">
+              <img src="/images/seven-trip-logo.png" alt="Seven Trip" className="h-20 w-auto brightness-0 invert drop-shadow-[0_0_12px_rgba(29,106,229,0.5)]" />
+            </Link>
+            <h2 className="text-3xl font-black mb-4 leading-tight">Welcome back to Bangladesh's #1 Travel Platform</h2>
+            <p className="text-white/60 text-sm mb-8 leading-relaxed">Book flights, hotels, holidays & visa services with the best prices and 24/7 support.</p>
+            <div className="space-y-3">
+              {["500K+ happy travellers", "Best price guarantee", "24/7 customer support", "Instant confirmation"].map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-white/80 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-accent" />{f}
+                </div>
+              ))}
+            </div>
           </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <Card className="w-full max-w-md border-0 shadow-none bg-transparent">
+            <CardHeader className="text-center pb-2">
+              <Link to="/" className="flex items-center justify-center gap-2 mb-4 lg:hidden">
+                <img src="/images/seven-trip-logo.png" alt="Seven Trip" className="h-16 w-auto" />
+              </Link>
+              <CardTitle className="text-2xl">Sign In</CardTitle>
+              <CardDescription>Enter your credentials to access your account</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input type="email" placeholder="you@example.com" className="pl-10 h-11" value={email} onChange={e => setEmail(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <Label>Password</Label>
+                    <Link to="/auth/forgot-password" className="text-xs text-primary hover:underline font-medium">Forgot Password?</Link>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input type={showPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10 h-11" value={password} onChange={e => setPassword(e.target.value)} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-11 font-bold shadow-lg shadow-primary/20" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+
+              <div className="relative my-4">
+                <Separator />
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-xs text-muted-foreground">or continue with</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" className="h-11 font-medium" disabled={!!socialLoading} onClick={() => handleSocialLogin('google')}>
+                  {socialLoading === 'google' ? (
+                    <div className="w-4 h-4 mr-2 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                  )}
+                  Google
+                </Button>
+                <Button variant="outline" className="h-11 font-medium" disabled={!!socialLoading} onClick={() => handleSocialLogin('facebook')}>
+                  {socialLoading === 'facebook' ? (
+                    <div className="w-4 h-4 mr-2 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  )}
+                  Facebook
+                </Button>
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground pt-4">
+                Don't have an account? <Link to="/auth/register" className="text-primary font-semibold hover:underline">Create Account</Link>
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md border-0 shadow-none bg-transparent">
-          <CardHeader className="text-center pb-2">
-            <Link to="/" className="flex items-center justify-center gap-2 mb-4 lg:hidden">
-              <img src="/images/seven-trip-logo.png" alt="Seven Trip" className="h-16 w-auto" />
-            </Link>
-            <CardTitle className="text-2xl">Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input type="email" placeholder="you@example.com" className="pl-10 h-11" value={email} onChange={e => setEmail(e.target.value)} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between">
-                  <Label>Password</Label>
-                  <Link to="/auth/forgot-password" className="text-xs text-primary hover:underline font-medium">Forgot Password?</Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input type={showPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10 h-11" value={password} onChange={e => setPassword(e.target.value)} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              <Button type="submit" className="w-full h-11 font-bold shadow-lg shadow-primary/20" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-
-            <div className="relative my-4">
-              <Separator />
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-xs text-muted-foreground">or continue with</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-11 font-medium" onClick={() => toast({ title: "Coming Soon", description: "Google sign-in will be available soon." })}>
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                Google
-              </Button>
-              <Button variant="outline" className="h-11 font-medium" onClick={() => toast({ title: "Coming Soon", description: "Facebook sign-in will be available soon." })}>
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                Facebook
-              </Button>
-            </div>
-
-            <p className="text-center text-sm text-muted-foreground pt-4">
-              Don't have an account? <Link to="/auth/register" className="text-primary font-semibold hover:underline">Create Account</Link>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      <IdUploadModal
+        open={showIdUpload}
+        onOpenChange={setShowIdUpload}
+        onComplete={() => {
+          setShowIdUpload(false);
+          toast({ title: "Welcome!", description: "Account verified. Redirecting to dashboard." });
+          navigate(from, { replace: true });
+        }}
+      />
+    </>
   );
 };
 

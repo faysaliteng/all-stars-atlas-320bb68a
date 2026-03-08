@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const authRoutes = require('./src/routes/auth');
+const socialAuthRoutes = require('./src/routes/social-auth');
 const flightRoutes = require('./src/routes/flights');
 const hotelRoutes = require('./src/routes/hotels');
 const serviceRoutes = require('./src/routes/services');
@@ -41,6 +42,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Dat
 
 // Auth
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth/social', authLimiter, socialAuthRoutes);
 app.post('/api/admin/auth/login', authLimiter, (req, res, next) => {
   // Redirect to auth route's admin/login handler
   req.url = '/admin/login';

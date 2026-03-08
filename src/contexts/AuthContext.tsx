@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, type ApiError } from '@/lib/api';
 import { API_ENDPOINTS } from '@/lib/constants';
+import { signInWithGoogle, signInWithFacebook } from '@/lib/social-auth';
 
 export interface User {
   id: string;
@@ -40,10 +41,16 @@ interface AuthResponse {
   refreshToken: string;
 }
 
+interface SocialAuthResponse extends AuthResponse {
+  isNewUser: boolean;
+  needsIdUpload: boolean;
+}
+
 interface AuthContextType extends AuthState {
   login: (payload: LoginPayload) => Promise<void>;
   adminLogin: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  socialLogin: (provider: 'google' | 'facebook') => Promise<{ isNewUser: boolean; needsIdUpload: boolean }>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
   verifyOtp: (email: string, otp: string) => Promise<string>;
@@ -120,6 +127,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuth(data);
   }, []);
 
+  const socialLogin = useCallback(async (provider: 'google' | 'facebook'): Promise<{ isNewUser: boolean; needsIdUpload: boolean }> => {
+    let result: SocialAuthResponse;
+    if (provider === 'google') {
+      result = await signInWithGoogle();
+    } else {
+      result = await signInWithFacebook();
+    }
+    setAuth(result);
+    return { isNewUser: result.isNewUser, needsIdUpload: result.needsIdUpload };
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
@@ -153,6 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login,
       adminLogin,
       register,
+      socialLogin,
       logout,
       forgotPassword,
       verifyOtp,

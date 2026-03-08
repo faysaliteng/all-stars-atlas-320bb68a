@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
+import { getPrefetchHandlers } from "@/lib/prefetch";
 
 const mainNav = [
   { label: "Flight", href: "/flights", icon: Plane },
@@ -67,7 +68,7 @@ const Header = () => {
 
             <nav className="hidden lg:flex items-center gap-1">
               {mainNav.map((item) => (
-                <Link key={item.href} to={item.href}
+                <Link key={item.href} to={item.href} {...getPrefetchHandlers(item.href)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[14px] font-semibold transition-all ${
                     transparent ? "text-white/80 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   } ${location.pathname === item.href ? (transparent ? "text-white bg-white/10" : "text-primary bg-primary/10") : ""}`}

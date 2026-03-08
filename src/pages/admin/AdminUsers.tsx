@@ -33,6 +33,7 @@ const AdminUsers = () => {
     id: u.id, name: u.name, email: u.email, phone: u.phone || "—",
     role: u.role || "customer", status: u.status || "active",
     bookings: u.bookings || 0, joined: u.joined || "—",
+    idDocument: u.idDocument || null, idDocType: u.idDocType || null, idVerified: u.idVerified || false,
   })) || [];
 
   const apiStats = (data as any)?.stats;

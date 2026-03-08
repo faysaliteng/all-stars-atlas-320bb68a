@@ -357,7 +357,7 @@ const AdminSettings = () => {
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 table-responsive">
           <Table>
             <TableHeader>
               <TableRow>

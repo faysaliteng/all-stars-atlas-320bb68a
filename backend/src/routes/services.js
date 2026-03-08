@@ -261,7 +261,7 @@ router.get('/paybill/billers', async (req, res) => {
   try {
     const { category } = req.query;
     const [rows] = await db.query('SELECT billers FROM bill_categories WHERE name LIKE ? AND active = 1', [`%${category || ''}%`]);
-    const billers = rows.length > 0 ? JSON.parse(rows[0].billers || '[]') : [];
+    const billers = rows.length > 0 ? safeJsonParse(rows[0].billers, []) : [];
     res.json({ data: billers });
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }
 });

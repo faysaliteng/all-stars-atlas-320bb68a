@@ -184,6 +184,7 @@ const App = () => (
                 <Route path="cms/footer" element={<CMSFooter />} />
                 <Route path="cms/seo" element={<CMSSeo />} />
                 <Route path="cms/promotions" element={<CMSPromotions />} />
+                <Route path="cms/popups" element={<CMSPopups />} />
                 <Route path="cms/media" element={<CMSMedia />} />
                 <Route path="cms/blog" element={<CMSBlog />} />
                 <Route path="cms/email-templates" element={<CMSEmailTemplates />} />

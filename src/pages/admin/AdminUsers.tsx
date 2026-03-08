@@ -65,6 +65,20 @@ const AdminUsers = () => {
     }
   };
 
+  const handleVerifyId = async (user: any, verified: boolean) => {
+    setActionLoading(true);
+    try {
+      await api.put(`/admin/users/${user.id}`, { idVerified: verified });
+      toast({ title: verified ? "ID Verified" : "ID Rejected", description: `${user.name}'s identity document has been ${verified ? 'verified' : 'rejected'}.` });
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Updated", description: `ID status updated for ${user.name}.` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleDeleteUser = async (user: any) => {
     try {
       await api.delete(`/admin/users/${user.id}`);

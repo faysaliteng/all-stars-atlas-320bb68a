@@ -83,6 +83,9 @@ router.get('/users', async (req, res) => {
       bookings: bookingCounts[u.id] || 0,
       status: u.email_verified ? 'active' : 'inactive',
       role: u.role,
+      idDocument: u.id_document_path || null,
+      idDocType: u.id_document_type || null,
+      idVerified: !!u.id_verified,
     }));
 
     res.json({

@@ -89,7 +89,14 @@ const HolidayPackages = () => {
                         <img src={pkg.img} alt={pkg.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         {pkg.tag && <Badge className="absolute top-3 left-3 bg-secondary text-secondary-foreground text-[10px] font-bold shadow-lg">{pkg.tag}</Badge>}
-                        <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white"><Heart className="w-4 h-4 text-muted-foreground" /></button>
+                        <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white" onClick={(e) => {
+                          e.preventDefault(); e.stopPropagation();
+                          const added = toggleWishlistItem(String(pkg.id));
+                          setWishlistedIds(getWishlist());
+                          toast({ title: added ? "Added to Wishlist" : "Removed", description: pkg.name });
+                        }}>
+                          <Heart className={`w-4 h-4 transition-colors ${wishlistedIds.includes(String(pkg.id)) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                        </button>
                         <div className="absolute bottom-3 left-3"><Badge variant="outline" className="bg-white/20 text-white border-white/30 text-[10px] font-bold backdrop-blur-sm"><Calendar className="w-3 h-3 mr-1" /> {pkg.duration}</Badge></div>
                       </div>
                       <CardContent className="p-4">

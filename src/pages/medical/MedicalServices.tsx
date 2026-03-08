@@ -76,7 +76,14 @@ const MedicalServices = () => {
                   <div className="relative h-48 overflow-hidden">
                     <img src={hospital.image} alt={hospital.name} className="w-full h-full object-cover" />
                     {hospital.accredited && <Badge className="absolute top-3 left-3 bg-success text-success-foreground"><Shield className="w-3 h-3 mr-1" /> JCI Accredited</Badge>}
-                    <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-card/80 backdrop-blur flex items-center justify-center"><Heart className="w-4 h-4 text-muted-foreground" /></button>
+                    <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-card/80 backdrop-blur flex items-center justify-center" onClick={(e) => {
+                      e.preventDefault(); e.stopPropagation();
+                      const added = toggleWishlistItem(String(hospital.id));
+                      setWishlistedIds(getWishlist());
+                      toast({ title: added ? "Added to Wishlist" : "Removed", description: hospital.name });
+                    }}>
+                      <Heart className={`w-4 h-4 transition-colors ${wishlistedIds.includes(String(hospital.id)) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                    </button>
                   </div>
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-2">

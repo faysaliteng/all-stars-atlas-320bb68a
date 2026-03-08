@@ -71,7 +71,7 @@ const ESIMPlans = () => {
                       </div>
                       <p className="text-2xl font-black text-primary">৳{plan.price?.toLocaleString()}</p>
                       <Button className="w-full font-bold" size="sm" asChild>
-                        <Link to={`/esim/purchase?country=${country.country?.toLowerCase()}&plan=${plan.data}`}>Buy Now <ArrowRight className="w-4 h-4 ml-1" /></Link>
+                        <Link to={`/esim/purchase?country=${plan.country?.toLowerCase()}&plan=${plan.dataAmount || plan.data}`}>Buy Now <ArrowRight className="w-4 h-4 ml-1" /></Link>
                       </Button>
                     </CardContent>
                   </Card>

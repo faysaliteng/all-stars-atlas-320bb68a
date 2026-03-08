@@ -14,7 +14,7 @@ const AdminReports = () => {
   const { toast } = useToast();
   const { data, isLoading, error, refetch } = useAdminReports({ period });
 
-  const resolved = error ? mockAdminReports : (data as any);
+  const resolved = (data as any)?.kpis ? (data as any) : mockAdminReports;
   const kpis = resolved?.kpis || mockAdminReports.kpis;
   const revenueData = resolved?.revenueData || mockAdminReports.revenueData;
   const bookingData = resolved?.bookingData || mockAdminReports.bookingData;

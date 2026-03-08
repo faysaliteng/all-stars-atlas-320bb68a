@@ -20,7 +20,7 @@ const DashboardTravellers = () => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', gender: '', dob: '', passport: '', nationality: '', email: '', phone: '' });
 
-  const resolved = error ? mockTravellers : (data as any);
+  const resolved = (data as any)?.travellers?.length ? (data as any) : mockTravellers;
   const travellers = resolved?.travellers || [];
 
   const handleCreate = async () => {

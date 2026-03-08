@@ -39,7 +39,7 @@ const DashboardETransactions = () => {
     }),
   });
 
-  const resolved = error ? mockETransactions : (data as any);
+  const resolved = (data as any)?.transactions?.length || (data as any)?.data?.length ? (data as any) : mockETransactions;
   const transactions = resolved?.transactions || resolved?.data || [];
   const total = resolved?.total || 0;
   const totalPages = Math.ceil(total / Number(perPage)) || 1;

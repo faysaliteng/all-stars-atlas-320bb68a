@@ -22,7 +22,7 @@ const AdminUsers = () => {
   const { toast } = useToast();
   const { data, isLoading, error, refetch } = useAdminUsers({ search: search || undefined });
 
-  const resolved = error ? mockAdminUsers : (data as any);
+  const resolved = (data as any)?.users?.length ? (data as any) : mockAdminUsers;
   const users = resolved?.users || [];
   const stats = resolved?.stats || mockAdminUsers.stats;
 

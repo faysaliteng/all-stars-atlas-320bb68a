@@ -22,7 +22,7 @@ const AdminBookings = () => {
   const [viewBooking, setViewBooking] = useState<any>(null);
   const { toast } = useToast();
   const { data, isLoading, error, refetch } = useAdminBookings({ search: search || undefined });
-  const resolved = error ? mockAdminBookings : (data as any);
+  const resolved = (data as any)?.bookings?.length ? (data as any) : mockAdminBookings;
   const bookings = resolved?.bookings || [];
   const stats = resolved?.stats || mockAdminBookings.stats;
 

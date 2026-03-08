@@ -21,7 +21,7 @@ const DashboardTickets = () => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const { data, isLoading, error, refetch } = useDashboardTickets({ search: search || undefined });
-  const resolved = error ? mockTickets : (data as any);
+  const resolved = (data as any)?.tickets?.length ? (data as any) : mockTickets;
   const tickets = resolved?.tickets || [];
 
   return (

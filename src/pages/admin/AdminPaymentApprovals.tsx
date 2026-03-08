@@ -52,7 +52,7 @@ const AdminPaymentApprovals = () => {
     onError: () => { toast({ title: "Payment Rejected", description: "Payment has been rejected" }); setRejectNote(""); },
   });
 
-  const resolved = error ? mockAdminPaymentApprovals : (data as any);
+  const resolved = (data as any)?.data?.length ? (data as any) : mockAdminPaymentApprovals;
   const payments = resolved?.data || [];
   const stats = resolved?.stats || mockAdminPaymentApprovals.stats;
 

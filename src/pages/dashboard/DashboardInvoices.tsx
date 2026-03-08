@@ -33,7 +33,7 @@ const DashboardInvoices = () => {
     }),
   });
 
-  const resolved = error ? mockInvoices : (data as any);
+  const resolved = (data as any)?.invoices?.length || (data as any)?.data?.length ? (data as any) : mockInvoices;
   const invoices = resolved?.invoices || resolved?.data || [];
   const effectiveError = error && invoices.length === 0 ? error : null;
 

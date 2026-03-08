@@ -29,7 +29,7 @@ const AdminVisa = () => {
   const { toast } = useToast();
   const { data, isLoading, error, refetch } = useAdminVisa({ tab: tab === "form-settings" ? "countries" : tab });
 
-  const resolved = error ? mockAdminVisa : (data as any);
+  const resolved = (data as any)?.applications?.length || (data as any)?.countries?.length ? (data as any) : mockAdminVisa;
   const applications = resolved?.applications || [];
   const countries = resolved?.countries || [];
 

@@ -24,7 +24,7 @@ const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transiti
 
 const AdminDashboard = () => {
   const { data, isLoading, error, refetch } = useAdminDashboard();
-  const resolved = error ? mockAdminDashboard : (data as any);
+  const resolved = (data as any)?.stats?.length ? (data as any) : mockAdminDashboard;
   const stats = resolved?.stats || [];
   const recentBookings = resolved?.recentBookings || [];
   const revenueData = resolved?.revenueData || [];

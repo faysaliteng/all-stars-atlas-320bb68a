@@ -47,7 +47,7 @@ const DashboardBookings = () => {
   });
 
   // Use API data or fallback to mock
-  const resolved = error ? mockDashboardBookings : (data as any);
+  const resolved = (data as any)?.bookings?.length ? (data as any) : mockDashboardBookings;
   const bookings = resolved?.bookings || [];
   const total = resolved?.total || 0;
   const tabCounts = resolved?.tabCounts || {};

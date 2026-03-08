@@ -36,7 +36,7 @@ const DashboardSearchHistory = () => {
     onError: () => toast({ title: "Cleared", description: "Search history has been cleared" }),
   });
 
-  const resolved = error ? mockSearchHistory : (data as any);
+  const resolved = (data as any)?.data?.length ? (data as any) : mockSearchHistory;
   const searches = resolved?.data || [];
   const total = resolved?.total || searches.length;
 

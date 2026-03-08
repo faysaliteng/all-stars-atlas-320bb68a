@@ -32,7 +32,7 @@ const DashboardPayLater = () => {
     }),
   });
 
-  const resolved = error ? mockPayLater : (data as any);
+  const resolved = (data as any)?.items?.length || (data as any)?.data?.length ? (data as any) : mockPayLater;
   const items = resolved?.items || resolved?.data || [];
   const summary = resolved?.summary || {};
   const effectiveError = error && items.length === 0 ? error : null;

@@ -37,8 +37,8 @@ const DashboardHome = () => {
   const { data: bookingsData, isLoading: bookingsLoading, error: bookingsError, refetch: retryBookings } = useDashboardBookings({ limit: 4 });
 
   // Use API data or fallback to mock data when API is unreachable
-  const resolvedStats = statsError ? mockDashboardStats : (statsData as any);
-  const resolvedBookings = statsError ? mockDashboardBookings : (bookingsData as any);
+  const resolvedStats = (statsData as any)?.stats?.length ? (statsData as any) : mockDashboardStats;
+  const resolvedBookings = (bookingsData as any)?.bookings?.length ? (bookingsData as any) : mockDashboardBookings;
 
   const stats = resolvedStats?.stats || [];
   const upcomingTrip = resolvedStats?.upcomingTrip;

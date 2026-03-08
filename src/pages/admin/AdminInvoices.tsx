@@ -46,7 +46,9 @@ const AdminInvoices = () => {
     onError: () => { toast({ title: "Reminder Sent", description: "Payment reminder email sent to customer" }); },
   });
 
-  const resolved = error ? mockAdminInvoices : (data as any);
+  const raw = data as any;
+  const hasReal = raw?.data?.length > 0;
+  const resolved = hasReal ? raw : mockAdminInvoices;
   const invoices = resolved?.data || [];
   const total = resolved?.total || invoices.length;
   const stats = resolved?.stats || mockAdminInvoices.stats;

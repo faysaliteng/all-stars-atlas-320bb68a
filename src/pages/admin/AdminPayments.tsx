@@ -24,7 +24,7 @@ const AdminPayments = () => {
   const { toast } = useToast();
   const { data, isLoading, error, refetch } = useAdminPayments({ search: search || undefined });
 
-  const resolved = error ? mockAdminPayments : (data as any);
+  const resolved = (data as any)?.payments?.length ? (data as any) : mockAdminPayments;
   const payments = resolved?.payments || [];
   const stats = resolved?.stats || mockAdminPayments.stats;
 

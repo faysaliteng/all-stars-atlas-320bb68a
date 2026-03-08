@@ -15,7 +15,7 @@ const DashboardWishlist = () => {
   const { data, isLoading, error, refetch } = useDashboardWishlist();
   const removeMutation = useRemoveWishlistItem();
   const { toast } = useToast();
-  const resolved = error ? mockWishlist : (data as any);
+  const resolved = (data as any)?.items?.length ? (data as any) : mockWishlist;
   const items = resolved?.items || [];
 
   const removeItem = async (id: number | string) => {

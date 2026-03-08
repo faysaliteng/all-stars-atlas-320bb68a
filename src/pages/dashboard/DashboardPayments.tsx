@@ -47,7 +47,7 @@ const DashboardPayments = () => {
   const submitPayment = useSubmitPayment();
   const { toast } = useToast();
 
-  const resolved = error ? mockPayments : (data as any);
+  const resolved = (data as any)?.payments?.length || (data as any)?.history?.length ? (data as any) : mockPayments;
   const paymentHistory = resolved?.payments || resolved?.paymentHistory || [];
   const bankAccounts = resolved?.bankAccounts || [];
   const enabledMethodIds: string[] = resolved?.enabledPaymentMethods || allPaymentMethods.map(m => m.id);

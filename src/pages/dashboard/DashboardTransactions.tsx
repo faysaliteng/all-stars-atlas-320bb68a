@@ -33,7 +33,7 @@ const DashboardTransactions = () => {
     page, limit: Number(perPage),
   });
 
-  const resolved = error ? mockTransactions : (data as any);
+  const resolved = (data as any)?.transactions?.length ? (data as any) : mockTransactions;
   const transactions = resolved?.transactions || [];
   const summary = resolved?.summary || {};
   const total = resolved?.total || 0;

@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plane, Building2, Search, Eye, Download, MoreHorizontal, RotateCcw, XCircle, FileText, Globe, Palmtree, CreditCard } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { generateTicketPDF } from "@/lib/pdf-generator";
 import { useDashboardBookings } from "@/hooks/useApiData";
 import DataLoader from "@/components/DataLoader";
 import { useToast } from "@/hooks/use-toast";
@@ -139,12 +140,22 @@ const DashboardBookings = () => {
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => setViewBooking(booking)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => toast({ title: "Downloading...", description: "E-Ticket PDF is being prepared." })}><FileText className="w-4 h-4 mr-2" /> Download E-Ticket</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              generateTicketPDF({
+                                id: booking.id, pnr: booking.pnr || booking.id, airline: "Seven Trip",
+                                flightNo: booking.ticketNo || "ST-001",
+                                from: booking.title?.split('→')[0]?.trim() || booking.title?.split('–')[0]?.trim() || "Origin",
+                                to: booking.title?.split('→')[1]?.trim() || booking.title?.split('–')[1]?.trim() || "Destination",
+                                date: booking.date, time: "—", passenger: "Traveller",
+                                seat: "—", class: "Economy",
+                              });
+                              toast({ title: "Downloaded", description: `E-Ticket PDF saved` });
+                            }}><FileText className="w-4 h-4 mr-2" /> Download E-Ticket</DropdownMenuItem>
                             {(booking.status === "Confirmed" || booking.status === "confirmed") && (<>
                               <DropdownMenuItem onClick={() => toast({ title: "Request Submitted", description: "Reissue request has been submitted." })}><RotateCcw className="w-4 h-4 mr-2" /> Request Reissue</DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Request Submitted", description: "Refund request has been submitted." })}><XCircle className="w-4 h-4 mr-2" /> Request Refund</DropdownMenuItem>
                             </>)}
-                            {booking.status === "On Hold" && <DropdownMenuItem onClick={() => toast({ title: "Redirecting...", description: "Redirecting to payments." })}><CreditCard className="w-4 h-4 mr-2" /> Pay Now</DropdownMenuItem>}
+                            {booking.status === "On Hold" && <DropdownMenuItem onClick={() => { window.location.href = "/dashboard/payments"; }}><CreditCard className="w-4 h-4 mr-2" /> Pay Now</DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

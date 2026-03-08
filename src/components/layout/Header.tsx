@@ -61,7 +61,7 @@ const Header = () => {
       }`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14 lg:h-[60px]">
-            <Link to="/" className="flex items-center gap-2 lg:gap-2.5 group -ml-4 lg:-ml-8">
+            <Link to="/" className="flex items-center gap-2 lg:gap-2.5 group -ml-2 lg:-ml-4">
               <img src="/images/seven-trip-logo.png" alt="Seven Trip" className="h-36 lg:h-48 w-auto mt-4 drop-shadow-[0_0_12px_rgba(29,106,229,0.5)]" />
             </Link>
 

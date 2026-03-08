@@ -425,7 +425,7 @@ const VisaApplication = () => {
           </div>
         </div>
       </div>
-      <AuthGateModal open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={() => { setAuthOpen(false); navigate("/booking/confirmation"); }} title="Sign in to apply for visa" />
+      <AuthGateModal open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={() => { setAuthOpen(false); }} title="Sign in to apply for visa" />
     </div>
   );
 };

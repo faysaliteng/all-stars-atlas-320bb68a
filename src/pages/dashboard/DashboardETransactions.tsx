@@ -53,7 +53,11 @@ const DashboardETransactions = () => {
           <h1 className="text-xl sm:text-2xl font-bold">E-Transactions</h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">Online payment transactions via bKash, Nagad & Card</p>
         </div>
-        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toast({ title: "Exporting...", description: "Your e-transactions CSV is being prepared." })}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
+        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => {
+          downloadCSV('e-transactions', ['Entry Type', 'Reference', 'Amount', 'Gateway Fee', 'Status', 'Created On'],
+            transactions.map((t: any) => [t.entryType, t.reference, t.amount, t.gatewayFee, t.status, t.createdOn]));
+          toast({ title: "Exported", description: "E-transactions CSV downloaded." });
+        }}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">

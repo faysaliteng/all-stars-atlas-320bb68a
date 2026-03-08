@@ -9,7 +9,7 @@ export const useCmsPageContent = (slug: string) => {
     queryKey: ["cms", "page", slug],
     queryFn: async () => {
       try {
-        const data = await api.get<CmsPageContent>(`/cms/pages/${encodeURIComponent(slug)}`);
+        const data = await api.get<CmsPageContent>(`/cms/pages${slug.startsWith('/') ? slug : `/${slug}`}`);
         return data;
       } catch {
         // Fallback to defaults when API is unavailable

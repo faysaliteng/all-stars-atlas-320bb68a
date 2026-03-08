@@ -148,7 +148,7 @@ const DashboardInvoices = () => {
                                 {inv.tax > 0 && <div className="flex justify-between text-sm"><span>Tax</span><span>৳{inv.tax?.toLocaleString()}</span></div>}
                                 {inv.discount > 0 && <div className="flex justify-between text-sm text-success"><span>Discount</span><span>-৳{inv.discount?.toLocaleString()}</span></div>}
                                 <Separator />
-                                <div className="flex justify-between font-bold text-lg"><span>Total</span><span>৳{inv.amount?.toLocaleString()}</span></div>
+                                <div className="flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">৳{inv.amount?.toLocaleString()}</span></div>
                               </div>
                               <div className="flex gap-2 pt-2">
                                 <Button className="flex-1 font-bold" onClick={() => downloadPDF(inv)}><Download className="w-4 h-4 mr-1" /> Download PDF</Button>
@@ -157,7 +157,7 @@ const DashboardInvoices = () => {
                             </div>
                           </DialogContent>
                         </Dialog>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadPDF(inv)}><Download className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadPDF(inv)} title="Download PDF"><Download className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>

@@ -15,12 +15,12 @@ const AdminReports = () => {
   const { toast } = useToast();
 
   const { data, isLoading, error, refetch } = useAdminReports({ period });
-  const resolved = (data as any)?.kpis ? (data as any) : mockAdminReports;
+  const resolved = (data as any) || {};
 
-  const kpis = resolved.kpis;
-  const revenueData = resolved.revenueData;
-  const bookingData = resolved.bookingData;
-  const pieData = resolved.pieData;
+  const kpis = resolved.kpis || [];
+  const revenueData = resolved.revenueData || [];
+  const bookingData = resolved.bookingData || [];
+  const pieData = resolved.pieData || [];
 
   const handleExport = () => {
     downloadCSV('reports-revenue', ['Month', 'Revenue'], revenueData.map((r: any) => [r.month, r.revenue]));

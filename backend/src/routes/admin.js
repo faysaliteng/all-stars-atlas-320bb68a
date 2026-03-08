@@ -274,12 +274,17 @@ router.get('/visa', async (req, res) => {
     params.push(parseInt(limit), offset);
     const [rows] = await db.query(sql, params);
 
-    const data = rows.map(v => ({
-      id: v.id, country: v.country, visaType: v.visa_type, status: v.status,
-      processingFee: v.processing_fee ? parseFloat(v.processing_fee) : 0,
-      user: { name: `${v.first_name} ${v.last_name}`, email: v.user_email },
-      submittedAt: v.submitted_at, processedAt: v.processed_at, notes: v.notes,
-    }));
+    const data = rows.map(v => {
+      const info = JSON.parse(v.applicant_info || '{}');
+      const docs = v.documents ? JSON.parse(v.documents) : [];
+      return {
+        id: v.id, country: v.country, visaType: v.visa_type, status: v.status,
+        processingFee: v.processing_fee ? parseFloat(v.processing_fee) : 0,
+        user: { name: `${v.first_name} ${v.last_name}`, email: v.user_email },
+        submittedAt: v.submitted_at, processedAt: v.processed_at, notes: v.notes,
+        applicantInfo: info, documents: docs,
+      };
+    });
     res.json({ data, total: countResult[0].total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(countResult[0].total / parseInt(limit)) });
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }
 });

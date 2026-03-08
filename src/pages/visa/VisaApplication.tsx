@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +21,8 @@ const VisaApplication = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
   const { data: page, isLoading } = useCmsPageContent("/visa/apply");
   const config = page?.visaConfig;
 
@@ -355,11 +359,33 @@ const VisaApplication = () => {
               {step < steps.length ? (
                 <Button onClick={() => setStep(step + 1)} className="font-bold">Continue <ArrowRight className="w-4 h-4 ml-1" /></Button>
               ) : (
-                <Button className="font-bold shadow-lg shadow-primary/20" disabled={!agreed} onClick={() => {
+                <Button className="font-bold shadow-lg shadow-primary/20" disabled={!agreed || submitting} onClick={async () => {
                   if (!isAuthenticated) { setAuthOpen(true); return; }
-                  navigate("/booking/confirmation");
+                  setSubmitting(true);
+                  try {
+                    await api.post('/visa/apply', {
+                      country: country?.name || selectedCountry,
+                      visaType: selectedType,
+                      processingFee: grandTotal,
+                      applicantInfo: {
+                        ...form,
+                        selectedCountry,
+                        selectedType,
+                        processingType,
+                        travellers,
+                        countryName: country?.name,
+                        baseFee, serviceFee, expressExtra, grandTotal,
+                      },
+                    });
+                    toast({ title: "Application Submitted", description: "Your visa application has been submitted successfully." });
+                    navigate("/booking/confirmation");
+                  } catch (err: any) {
+                    toast({ title: "Submission Failed", description: err?.message || "Could not submit application. Please try again.", variant: "destructive" });
+                  } finally {
+                    setSubmitting(false);
+                  }
                 }}>
-                  <Shield className="w-4 h-4 mr-1" /> Submit Application & Pay ৳{grandTotal.toLocaleString()}
+                  <Shield className="w-4 h-4 mr-1" /> {submitting ? "Submitting..." : `Submit Application & Pay ৳${grandTotal.toLocaleString()}`}
                 </Button>
               )}
             </div>
@@ -399,7 +425,7 @@ const VisaApplication = () => {
           </div>
         </div>
       </div>
-      <AuthGateModal open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={() => { setAuthOpen(false); navigate("/booking/confirmation"); }} title="Sign in to apply for visa" />
+      <AuthGateModal open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={() => { setAuthOpen(false); }} title="Sign in to apply for visa" />
     </div>
   );
 };

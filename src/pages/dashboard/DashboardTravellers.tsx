@@ -10,7 +10,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useDashboardTravellers, useCreateTraveller, useDeleteTraveller } from "@/hooks/useApiData";
 import DataLoader from "@/components/DataLoader";
-import { mockTravellers } from "@/lib/mock-data";
+
 
 const DashboardTravellers = () => {
   const { toast } = useToast();

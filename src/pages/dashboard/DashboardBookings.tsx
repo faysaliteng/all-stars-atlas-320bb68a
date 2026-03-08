@@ -52,8 +52,7 @@ const DashboardBookings = () => {
     page,
   });
 
-  const isApiData = !!(data as any)?.bookings?.length;
-  const resolved = isApiData ? (data as any) : mockDashboardBookings;
+  const resolved = (data as any) || {};
   const allBookings = resolved?.bookings || [];
 
   // Local filtering for mock data (API handles its own filtering)

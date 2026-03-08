@@ -24,8 +24,7 @@ const DashboardTravellers = () => {
   const createTraveller = useCreateTraveller();
   const deleteTraveller = useDeleteTraveller();
 
-  const isApiData = !!(data as any)?.travellers?.length;
-  const resolved = isApiData ? (data as any) : mockTravellers;
+  const resolved = (data as any) || {};
   const baseTravellers = resolved?.travellers || [];
   const travellers = [...localTravellers, ...baseTravellers].filter((t: any) => !removedIds.has(t.id));
 

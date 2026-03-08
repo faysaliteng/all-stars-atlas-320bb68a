@@ -30,8 +30,7 @@ const DashboardSearchHistory = () => {
     }),
   });
 
-  const isApiData = !!(data as any)?.data?.length;
-  const resolved = isApiData ? (data as any) : mockSearchHistory;
+  const resolved = (data as any) || {};
   const searches = cleared ? [] : (resolved?.data || []);
 
   // Always filter locally (API may not support it for mock)

@@ -18,8 +18,7 @@ const DashboardWishlist = () => {
   const removeWishlist = useRemoveWishlistItem();
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
-  const isApiData = !!(data as any)?.items?.length;
-  const resolved = isApiData ? (data as any) : mockWishlist;
+  const resolved = (data as any) || {};
   const allItems = resolved?.items || [];
   const items = allItems.filter((item: any) => !removedIds.has(item.id));
 

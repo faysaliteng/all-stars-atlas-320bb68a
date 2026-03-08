@@ -31,11 +31,9 @@ const DashboardPayLater = () => {
     }),
   });
 
-  const isApiData = !!((data as any)?.items?.length || (data as any)?.data?.length);
-  const resolved = isApiData ? (data as any) : mockPayLater;
+  const resolved = (data as any) || {};
   const allItems = resolved?.items || resolved?.data || [];
   const summary = resolved?.summary || {};
-  const effectiveError = error && allItems.length === 0 ? error : null;
 
   // Local filtering for mock data
   const items = allItems.filter((item: any) => {

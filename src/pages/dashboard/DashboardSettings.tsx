@@ -28,7 +28,7 @@ const DashboardSettings = () => {
   const changePassword = useChangePassword();
   const { toast } = useToast();
 
-  const resolved = (data as any)?.profile || (data as any)?.user ? (data as any) : mockSettings;
+  const resolved = (data as any) || {};
   const profile = resolved?.profile || resolved?.user || {};
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [pwForm, setPwForm] = useState({ current: '', newPassword: '', confirm: '' });

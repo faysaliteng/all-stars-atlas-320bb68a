@@ -50,12 +50,11 @@ const DashboardPayments = () => {
   const submitPayment = useSubmitPayment();
   const { toast } = useToast();
 
-  const resolved = (data as any)?.payments?.length || (data as any)?.history?.length ? (data as any) : mockPayments;
+  const resolved = (data as any) || {};
   const paymentHistory = resolved?.payments || resolved?.paymentHistory || [];
   const bankAccounts = resolved?.bankAccounts || [];
   const enabledMethodIds: string[] = resolved?.enabledPaymentMethods || allPaymentMethods.map(m => m.id);
   const availableMethods = allPaymentMethods.filter(m => enabledMethodIds.includes(m.id));
-  const effectiveError = error && paymentHistory.length === 0 ? error : null;
 
   // Auto-select first available method
   const activeMethod = paymentMethod && enabledMethodIds.includes(paymentMethod) ? paymentMethod : (availableMethods[0]?.id || "");

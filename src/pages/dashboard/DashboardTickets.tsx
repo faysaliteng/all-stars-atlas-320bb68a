@@ -23,7 +23,7 @@ const DashboardTickets = () => {
   const [search, setSearch] = useState("");
 
   const { data, isLoading, error, refetch } = useDashboardTickets({ search: search || undefined });
-  const resolved = (data as any)?.tickets?.length ? (data as any) : mockTickets;
+  const resolved = (data as any) || {};
   const tickets = resolved?.tickets || [];
 
   const filtered = tickets.filter((t: any) => {

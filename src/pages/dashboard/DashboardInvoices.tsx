@@ -35,7 +35,8 @@ const DashboardInvoices = () => {
     }),
   });
 
-  const resolved = (data as any)?.invoices?.length ? (data as any) : mockInvoices;
+  const resolved = (data as any) || {};
+  const invoices = resolved?.invoices || [];
   const invoices = resolved?.invoices || [];
 
   const filtered = invoices.filter((inv: any) => {

@@ -36,8 +36,7 @@ const DashboardTransactions = () => {
     page, limit: Number(perPage),
   });
 
-  const isApiData = !!(data as any)?.transactions?.length;
-  const resolved = isApiData ? (data as any) : mockTransactions;
+  const resolved = (data as any) || {};
   const allTransactions = resolved?.transactions || [];
   const summary = resolved?.summary || {};
 

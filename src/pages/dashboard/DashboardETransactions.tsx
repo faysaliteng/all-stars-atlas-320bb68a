@@ -40,8 +40,7 @@ const DashboardETransactions = () => {
     }),
   });
 
-  const isApiData = !!((data as any)?.transactions?.length || (data as any)?.data?.length);
-  const resolved = isApiData ? (data as any) : mockETransactions;
+  const resolved = (data as any) || {};
   const allTransactions = resolved?.transactions || resolved?.data || [];
 
   // Local filtering for mock data

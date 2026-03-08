@@ -32,9 +32,35 @@ const AdminVisa = () => {
   const { toast } = useToast();
   const { data, isLoading, error, refetch } = useAdminVisa({ tab: tab === "form-settings" ? "countries" : tab });
 
-  const resolved = (data as any)?.applications?.length || (data as any)?.countries?.length ? (data as any) : mockAdminVisa;
+  // Map API response (which has { data: [...] } with nested applicantInfo) to flat format
+  const apiApps = (data as any)?.data?.map((v: any) => {
+    const info = v.applicantInfo || {};
+    return {
+      id: v.id, applicant: v.user?.name || `${info.firstName || ''} ${info.lastName || ''}`.trim(),
+      country: v.country, type: v.visaType, status: v.status,
+      fee: `৳${(v.processingFee || info.grandTotal || 0).toLocaleString()}`,
+      date: v.submittedAt,
+      // Flatten all applicant info for the detail dialog
+      firstName: info.firstName, lastName: info.lastName, dob: info.dob, gender: info.gender,
+      nationality: info.nationality, nidNumber: info.nidNumber, tinNumber: info.tinNumber,
+      passportNumber: info.passportNumber, passportExpiry: info.passportExpiry,
+      passportIssueDate: info.passportIssueDate, passportIssuePlace: info.passportIssuePlace,
+      email: info.email || v.user?.email, phone: info.phone, altPhone: info.altPhone,
+      currentAddress: info.currentAddress, permanentAddress: info.permanentAddress,
+      occupation: info.occupation, employer: info.employer, monthlyIncome: info.monthlyIncome,
+      fatherName: info.fatherName, motherName: info.motherName, spouseName: info.spouseName,
+      emergencyContact: info.emergencyContact, emergencyPhone: info.emergencyPhone, emergencyRelation: info.emergencyRelation,
+      travelDate: info.travelDate, returnDate: info.returnDate, previousVisits: info.previousVisits,
+      purposeOfVisit: info.purposeOfVisit, hotelName: info.hotelName, hotelAddress: info.hotelAddress,
+      processingType: info.processingType, travellers: info.travellers,
+      documents: v.documents?.length ? v.documents : (info.documents || []),
+      notes: v.notes || info.notes,
+    };
+  }) || [];
+
+  const resolved = apiApps.length > 0 ? { applications: apiApps, countries: [] } : mockAdminVisa;
   const applications = resolved?.applications || [];
-  const countries = resolved?.countries || [];
+  const countries = (data as any)?.countries || resolved?.countries || [];
 
   const handleApprove = (v: any) => toast({ title: "Visa Approved", description: `Application ${v.id} approved for ${v.applicant}` });
   const handleReject = (v: any) => toast({ title: "Visa Rejected", description: `Application ${v.id} rejected` });

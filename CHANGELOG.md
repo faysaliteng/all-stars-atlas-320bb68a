@@ -4,6 +4,23 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [1.6.0] — 2026-03-08
+
+### 🐛 Critical Bug Fixes
+- **Wishlist delete** — Fixed double toast notification when removing items; items now remove instantly with single confirmation
+- **Search History clear** — Fixed timing issue where UI didn't update immediately; now clears UI first, then API
+- **Dashboard Payments Export** — Wired the Export CSV button (was non-functional) to generate real CSV downloads
+- **Dashboard logout** — Now properly clears all auth tokens (seven_trip_user, auth_token, refresh_token) on logout
+- **Settings 2FA toggle** — Fixed double toast firing (toggleNotif + inline toast); now shows single appropriate message
+
+### ✅ Production Hardening
+- All tab filters verified working across: Dashboard Bookings (12 statuses), Pay Later (5 statuses), Admin Payment Approvals (4 statuses), Admin Bookings
+- All export buttons verified functional across: Bookings, Transactions, E-Transactions, Invoices, Payments, Admin Reports
+- All PDF download/print buttons verified: E-Tickets, Invoices, Visa Applications, Booking Confirmation
+- All CRUD operations verified: Travellers (add/edit/delete), Wishlist (remove), Search History (clear), Discounts (CRUD), Price Rules (CRUD)
+
+---
+
 ## [1.0.0] — 2026-03-08
 
 ### 🚀 Initial Production Release

@@ -50,12 +50,12 @@ const DashboardBookings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">My Bookings</h1>
-          <p className="text-sm text-muted-foreground mt-1">{total} total bookings</p>
+          <h1 className="text-xl sm:text-2xl font-bold">My Bookings</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">{total} total bookings</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => toast({ title: "Exporting...", description: "Your bookings CSV is being prepared." })}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
+        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => toast({ title: "Exporting...", description: "Your bookings CSV is being prepared." })}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
       </div>
 
       <div className="flex gap-1 overflow-x-auto scrollbar-none border-b border-border pb-px -mx-1 px-1">

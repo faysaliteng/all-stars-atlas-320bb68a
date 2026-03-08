@@ -339,7 +339,7 @@ const DashboardPayments = () => {
               <Button size="sm" variant="outline"><Download className="w-4 h-4 mr-1" /> Export</Button>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 table-responsive">
             <Table>
               <TableHeader>
                 <TableRow>

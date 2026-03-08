@@ -17,9 +17,9 @@ const AdminUsers = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold">Users</h1>
-        <div className="flex gap-2"><Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1.5" /> Export</Button><Button size="sm"><UserPlus className="w-4 h-4 mr-1.5" /> Add User</Button></div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold">Users</h1>
+        <div className="flex gap-2 w-full sm:w-auto"><Button variant="outline" size="sm" className="flex-1 sm:flex-initial"><Download className="w-4 h-4 mr-1.5" /> Export</Button><Button size="sm" className="flex-1 sm:flex-initial"><UserPlus className="w-4 h-4 mr-1.5" /> Add User</Button></div>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[{ label: "Total Users", value: stats.total || "0" }, { label: "Active", value: stats.active || "0" }, { label: "Suspended", value: stats.suspended || "0" }, { label: "New (30d)", value: stats.newThisMonth || "0" }].map((s, i) => (

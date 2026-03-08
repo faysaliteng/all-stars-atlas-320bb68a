@@ -14,8 +14,17 @@ const ESIMPlans = () => {
   const { data: page } = useCmsPageContent("/esim");
   const listing = page?.listingConfig;
 
-  const { data, isLoading, error, refetch } = useESIMPlans({ country: selectedCountry !== "all" ? selectedCountry : undefined });
-  const countries = (data as any)?.countries || [];
+  const { data: rawData, isLoading, error, refetch } = useESIMPlans({ country: selectedCountry !== "all" ? selectedCountry : undefined });
+  const apiData = (rawData as any) || {};
+  const plans = apiData.data || [];
+  // Group plans by country for display
+  const groupedByCountry = plans.reduce((acc: any, plan: any) => {
+    const key = plan.country || 'Other';
+    if (!acc[key]) acc[key] = { id: key, country: key, flag: '', plans: [] };
+    acc[key].plans.push(plan);
+    return acc;
+  }, {} as Record<string, any>);
+  const countries = Object.values(groupedByCountry);
 
   const countryFilters = listing?.esimCountries || [
     { value: "thailand", label: "Thailand" }, { value: "malaysia", label: "Malaysia" },

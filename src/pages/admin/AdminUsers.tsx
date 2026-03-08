@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import DataLoader from "@/components/DataLoader";
 import { mockAdminUsers } from "@/lib/mock-data";
 import { downloadCSV } from "@/lib/csv-export";
+import { config } from "@/lib/config";
 
 const AdminUsers = () => {
   const [search, setSearch] = useState("");

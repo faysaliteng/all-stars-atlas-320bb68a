@@ -401,7 +401,7 @@ const AdminSettings = () => {
                           ))}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button size="sm" className="h-8 text-xs" onClick={() => toast.success(`${apiItem.name} settings saved!`)}>Save & Test Connection</Button>
+                          <Button size="sm" className="h-8 text-xs" onClick={() => handleSaveApiConnection(apiItem)}>Save & Test Connection</Button>
                           {apiItem.docs && <Button size="sm" variant="ghost" className="h-8 text-xs" asChild><a href={apiItem.docs} target="_blank" rel="noopener noreferrer">View Docs ↗</a></Button>}
                         </div>
                       </div>

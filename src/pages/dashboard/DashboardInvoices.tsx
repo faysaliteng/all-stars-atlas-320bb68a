@@ -23,7 +23,7 @@ const DashboardInvoices = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const invoices = mockInvoices?.invoices || mockInvoices?.data || [];
+  const invoices = mockInvoices?.invoices || [];
 
   const filtered = invoices.filter((inv: any) => {
     if (filter !== "all" && inv.status?.toLowerCase() !== filter) return false;

@@ -44,6 +44,15 @@ const BANK_STORAGE_KEY = 'seventrip_bank_accounts';
 const SETTINGS_STORAGE_KEY = 'seventrip_admin_settings';
 const API_KEYS_STORAGE_KEY = 'seventrip_api_keys';
 const NOTIFICATION_STORAGE_KEY = 'seventrip_notifications';
+const SOCIAL_OAUTH_STORAGE_KEY = 'seventrip_social_oauth';
+
+function loadSocialOAuth(): Record<string, Record<string, string>> {
+  try { const s = localStorage.getItem(SOCIAL_OAUTH_STORAGE_KEY); if (s) return JSON.parse(s); } catch {} return {};
+}
+function saveSocialOAuth(data: Record<string, Record<string, string>>) {
+  localStorage.setItem(SOCIAL_OAUTH_STORAGE_KEY, JSON.stringify(data));
+}
+const NOTIFICATION_STORAGE_KEY = 'seventrip_notifications';
 
 function loadApiKeys(): Record<string, Record<string, string>> {
   try { const s = localStorage.getItem(API_KEYS_STORAGE_KEY); if (s) return JSON.parse(s); } catch {} return {};

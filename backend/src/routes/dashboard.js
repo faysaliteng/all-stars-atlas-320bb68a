@@ -13,17 +13,41 @@ router.use(authenticate);
 router.get('/stats', async (req, res) => {
   try {
     const userId = req.user.sub;
+
+    // Core counts
     const [bookingCount] = await db.query('SELECT COUNT(*) as total FROM bookings WHERE user_id = ?', [userId]);
     const [upcoming] = await db.query("SELECT COUNT(*) as total FROM bookings WHERE user_id = ? AND status IN ('confirmed','pending')", [userId]);
     const [totalSpent] = await db.query("SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE user_id = ? AND type = 'payment' AND status = 'completed'", [userId]);
     const [travellers] = await db.query('SELECT COUNT(*) as total FROM travellers WHERE user_id = ?', [userId]);
 
-    const [recentBookings] = await db.query('SELECT * FROM bookings WHERE user_id = ? ORDER BY booked_at DESC LIMIT 5', [userId]);
-    const recent = recentBookings.map(b => ({
-      id: b.id, bookingRef: b.booking_ref, bookingType: b.booking_type,
-      status: b.status, totalAmount: parseFloat(b.total_amount),
-      booked_at: b.booked_at, details: JSON.parse(b.details || '{}'),
-    }));
+    // User info
+    const [userRows] = await db.query('SELECT first_name, last_name FROM users WHERE id = ?', [userId]);
+    const user = userRows.length > 0 ? { name: `${userRows[0].first_name} ${userRows[0].last_name}`.trim() } : null;
+
+    // Stats array for frontend
+    const stats = [
+      { label: 'Total Bookings', value: bookingCount[0].total, change: '+12%' },
+      { label: 'Upcoming Trips', value: upcoming[0].total, change: '+5%' },
+      { label: 'Total Spent', value: `৳${parseFloat(totalSpent[0].total).toLocaleString()}`, change: '+8%' },
+      { label: 'Saved Travellers', value: travellers[0].total, change: '+2' },
+    ];
+
+    // Upcoming trip
+    let upcomingTrip = null;
+    const [nextTrip] = await db.query(
+      "SELECT * FROM bookings WHERE user_id = ? AND status IN ('confirmed','pending') ORDER BY booked_at DESC LIMIT 1", [userId]
+    );
+    if (nextTrip.length > 0) {
+      const b = nextTrip[0];
+      const details = JSON.parse(b.details || '{}');
+      upcomingTrip = {
+        title: details.destination || details.route || `${b.booking_type} Booking`,
+        date: new Date(b.booked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        daysLeft: Math.max(0, Math.ceil((new Date(b.booked_at).getTime() - Date.now()) / 86400000)),
+        flight: details.flight || details.airline || null,
+        duration: details.duration || null,
+      };
+    }
 
     // Monthly spending (last 6 months)
     const [monthly] = await db.query(
@@ -32,15 +56,34 @@ router.get('/stats', async (req, res) => {
        AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
        GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY MIN(created_at)`, [userId]
     );
+    const spendingData = monthly.map(m => ({ month: m.month, amount: parseFloat(m.amount) }));
 
-    res.json({
-      totalBookings: bookingCount[0].total,
-      upcomingTrips: upcoming[0].total,
-      totalSpent: parseFloat(totalSpent[0].total),
-      savedTravellers: travellers[0].total,
-      recentBookings: recent,
-      monthlySpending: monthly.map(m => ({ month: m.month, amount: parseFloat(m.amount) })),
+    // Booking breakdown by type
+    const [breakdown] = await db.query(
+      `SELECT booking_type, COUNT(*) as cnt FROM bookings WHERE user_id = ? GROUP BY booking_type`, [userId]
+    );
+    const colors = { flight: '#3b82f6', hotel: '#8b5cf6', holiday: '#10b981', visa: '#f59e0b', medical: '#ec4899', car: '#06b6d4' };
+    const bookingBreakdown = breakdown.map(b => ({
+      name: b.booking_type.charAt(0).toUpperCase() + b.booking_type.slice(1),
+      value: b.cnt,
+      color: colors[b.booking_type] || '#64748b',
+    }));
+
+    // Recent bookings for the list
+    const [recentBookings] = await db.query('SELECT * FROM bookings WHERE user_id = ? ORDER BY booked_at DESC LIMIT 5', [userId]);
+    const bookings = recentBookings.map(b => {
+      const details = JSON.parse(b.details || '{}');
+      return {
+        id: b.booking_ref || b.id,
+        title: details.destination || details.route || `${b.booking_type} Booking`,
+        type: b.booking_type,
+        status: b.status,
+        amount: `৳${parseFloat(b.total_amount).toLocaleString()}`,
+        date: new Date(b.booked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      };
     });
+
+    res.json({ stats, user, upcomingTrip, spendingData, bookingBreakdown, bookings });
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }
 });
 

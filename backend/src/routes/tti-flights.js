@@ -44,16 +44,30 @@ async function ttiRequest(method, body) {
   const config = await getTTIConfig();
   if (!config) throw new Error('TTI API not configured — set credentials in Admin → Settings → API Integrations');
   const url = `${config.url}/${method}`;
+  console.log(`[TTI] → ${method} | URL: ${url}`);
+  console.log(`[TTI] → Request body:`, JSON.stringify(body, null, 2));
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  const responseText = await res.text();
+  console.log(`[TTI] ← ${method} | Status: ${res.status} | Body length: ${responseText.length}`);
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`TTI ${method} failed (${res.status}): ${text.slice(0, 500)}`);
+    console.error(`[TTI] ← ERROR: ${responseText.slice(0, 1000)}`);
+    throw new Error(`TTI ${method} failed (${res.status}): ${responseText.slice(0, 500)}`);
   }
-  return res.json();
+  try {
+    const json = JSON.parse(responseText);
+    console.log(`[TTI] ← Parsed OK. Keys:`, Object.keys(json));
+    if (json.Segments) console.log(`[TTI] ← Segments: ${json.Segments.length}`);
+    if (json.FareInfo?.Itineraries) console.log(`[TTI] ← Itineraries: ${json.FareInfo.Itineraries.length}`);
+    if (json.ResponseInfo?.Errors?.length) console.log(`[TTI] ← ERRORS:`, JSON.stringify(json.ResponseInfo.Errors));
+    return json;
+  } catch (e) {
+    console.error(`[TTI] ← JSON parse failed:`, responseText.slice(0, 500));
+    throw new Error(`TTI ${method}: invalid JSON response`);
+  }
 }
 
 /**
@@ -261,4 +275,4 @@ function getAirlineName(code) {
   return names[code] || code;
 }
 
-module.exports = { searchFlights, ttiRequest, getAirlineName, clearTTIConfigCache };
+module.exports = { searchFlights, ttiRequest, getTTIConfig, getAirlineName, clearTTIConfigCache };

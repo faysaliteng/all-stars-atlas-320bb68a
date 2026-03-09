@@ -80,7 +80,7 @@
 │   │   ├── constants.ts      # API endpoints, enums
 │   │   ├── keep-alive.ts    # Server warm-up on first visit
 │   │   ├── prefetch.ts      # Route prefetching on hover
-│   │   ├── pdf-generator.ts  # E-ticket PDF generation
+│   │   ├── pdf-generator.ts  # Invoice, Money Receipt & E-ticket PDFs (with QR codes)
 │   │   └── cms-defaults.ts   # CMS page defaults
 │   └── pages/                # Route pages
 │       ├── Index.tsx          # Homepage (CMS-driven, 11 sections)
@@ -119,6 +119,8 @@
 - **Flight Search** — One-way, round-trip, multi-city (2-5 segments), domestic/international toggle, 740+ airports, cabin class, passenger count, fare types (Regular/Student/Umrah). **Real-time GDS via TTI/ZENITH API (Air Astra) + BDFare** + local database results merged via `Promise.allSettled`. Google Flights-style cards with airline logos (60+ airlines via Kiwi CDN), timeline segments, layover badges, and advanced filters (stops, price, time, airline). **Round-trip results split into Outbound/Return sections with paired selection and sticky total bar.**
 - **Flight Booking** — Enterprise 4-step flow: (1) Itinerary Review → (2) Passenger Info (Title, Passport, DOB, Nationality per pax) → (3) Extras (Meal selection with 7 options, Extra Baggage 5-30kg, Seat selection) → (4) Review & Pay with real-time fare breakdown. Auth gate for unauthenticated users.
 - **E-Ticket PDF** — Professional airline-standard PDF with company branding, airline logos, segment boxes (Terminal/Aircraft/Flight No), passenger names in LAST/FIRST format, generated via jsPDF
+- **Invoice PDF** — Multi-line item invoice matching professional format with QR code, grand total in words, auto-pagination for large invoices
+- **Money Receipt PDF** — Professional receipt matching banking format with line items, totals, "received with gratitude" text, signature area, QR code verification
 - **Hotel Search** — Location, dates, guests, grid/list view, wishlist hearts, star rating & price filters
 - **Visa Services** — 20 countries, step-by-step application, document upload
 - **Holiday Packages** — Tour grid with detail pages, pricing, itineraries
@@ -149,7 +151,7 @@
 | Transactions | Running balance ledger with debit/credit |
 | E-Transactions | Digital gateway fee tracking |
 | Payments | Receipt upload for manual payment verification |
-| Invoices | Auto-generated PDF invoices |
+| Invoices | Auto-generated Invoice PDF + Money Receipt PDF with QR codes |
 | Pay Later | Due management & reminders |
 | Travellers | Saved passenger profiles for faster booking |
 | Wishlist | Saved hotels |
@@ -165,7 +167,7 @@
 | Payments | Payment tracking & history |
 | Payment Approvals | Receipt image viewer, approve/reject workflow |
 | Discounts & Pricing | Coupon codes, seasonal pricing rules (DB-backed) |
-| Invoices | Invoice management & reminders |
+| Invoices | Invoice management, Money Receipt download, reminders |
 | Reports | Revenue, booking, user analytics with export |
 | Visa | Application management, status updates |
 | CMS: All Pages | 40+ page content management with defaults |
@@ -261,7 +263,7 @@ npm test
 ## 📦 Dependencies
 
 ### Frontend
-React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui (40+ components), Framer Motion, React Query, React Router v6, React Hook Form, Zod, jsPDF, Recharts, date-fns
+React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui (40+ components), Framer Motion, React Query, React Router v6, React Hook Form, Zod, jsPDF, qrcode, Recharts, date-fns
 
 ### Backend
 Express, mysql2, bcryptjs, jsonwebtoken, multer, uuid, cors, helmet, morgan, express-rate-limit, dotenv
@@ -283,4 +285,14 @@ Express, mysql2, bcryptjs, jsonwebtoken, multer, uuid, cors, helmet, morgan, exp
 
 ## 📄 License
 
-Proprietary — Seven Trip Bangladesh Ltd. All rights reserved.
+Proprietary — Evan International (Seven Trip). All rights reserved.
+
+---
+
+## 📞 Contact
+
+**Seven Trip** — A concern of Evan International  
+📞 +880 1749-373748  
+📧 support@seventrip.com.bd  
+📍 Beena Kanon, Flat-4A, House-03, Road-17, Block-E, Banani, Dhaka-1213  
+🌐 www.seventrip.com.bd

@@ -394,10 +394,11 @@ const SearchWidget = () => {
   };
 
   const handleMedicalSearch = () => {
+    if (!medicalDate) { toast.error("Please select a travel date for medical appointment"); return; }
     const params = new URLSearchParams();
     if (medicalCountry) params.set('country', medicalCountry);
     if (treatmentType) params.set('treatment', treatmentType);
-    if (medicalDate) params.set('date', format(medicalDate, 'yyyy-MM-dd'));
+    params.set('date', format(medicalDate, 'yyyy-MM-dd'));
     params.set('patients', String(medicalPatients));
     navigate(`/medical?${params.toString()}`);
   };

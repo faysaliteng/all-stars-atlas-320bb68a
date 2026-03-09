@@ -385,11 +385,38 @@ router.post('/book', authenticate, async (req, res) => {
       baseFare, taxes, serviceCharge,
     };
 
+    // If this is a TTI/Air Astra flight, create booking in GDS first
+    let gdsPnr = null;
+    let gdsBookingResult = null;
+    const flightSource = flightData?.source || '';
+    if (flightSource === 'tti' || (flightData?.airlineCode === '2A' || flightData?.airlineCode === 'S2')) {
+      console.log('[Booking] TTI/Air Astra flight detected — creating GDS booking...');
+      try {
+        gdsBookingResult = await ttiCreateBooking({ flightData, passengers: passengers || [], contactInfo: contactInfo || {} });
+        if (gdsBookingResult.success && gdsBookingResult.pnr) {
+          gdsPnr = gdsBookingResult.pnr;
+          console.log('[Booking] TTI PNR created:', gdsPnr);
+          // Use TTI time limit if available
+          if (gdsBookingResult.ticketTimeLimit && payLater) {
+            const ttiDeadline = new Date(gdsBookingResult.ticketTimeLimit);
+            if (!isNaN(ttiDeadline.getTime()) && ttiDeadline > new Date()) {
+              paymentDeadline = ttiDeadline;
+            }
+          }
+        } else {
+          console.warn('[Booking] TTI booking failed:', gdsBookingResult.error, '— proceeding with local booking only');
+        }
+      } catch (ttiErr) {
+        console.error('[Booking] TTI CreateBooking exception:', ttiErr.message, '— proceeding with local booking');
+      }
+    }
+
     await db.query(
       `INSERT INTO bookings (id, user_id, booking_type, booking_ref, status, total_amount, payment_method, payment_status, details, passenger_info, contact_info, payment_deadline)
        VALUES (?, ?, 'flight', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [bookingId, req.user.sub, bookingRef, status, totalAmount || 0, paymentMethod || 'pay_later', payStatus,
-       JSON.stringify(details), JSON.stringify(passengers || []), JSON.stringify(contactInfo || {}),
+       JSON.stringify({ ...details, gdsPnr, gdsBookingResult: gdsBookingResult || null }),
+       JSON.stringify(passengers || []), JSON.stringify(contactInfo || {}),
        paymentDeadline]
     );
 
@@ -406,7 +433,7 @@ router.post('/book', authenticate, async (req, res) => {
       await db.query(
         `INSERT INTO tickets (id, booking_id, user_id, ticket_no, pnr, status, details)
          VALUES (?, ?, ?, ?, ?, 'active', ?)`,
-        [uuidv4(), bookingId, req.user.sub, ticketNo, bookingRef.slice(-6).toUpperCase(),
+        [uuidv4(), bookingId, req.user.sub, ticketNo, gdsPnr || bookingRef.slice(-6).toUpperCase(),
          JSON.stringify({ airline: flightData?.airline, flightNumber: flightData?.flightNumber, origin, destination, departureTime, passenger: passengers?.[0]?.firstName + ' ' + passengers?.[0]?.lastName })]
       );
     }

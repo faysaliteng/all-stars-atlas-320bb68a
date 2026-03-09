@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -502,6 +502,19 @@ const FlightResults = () => {
     flights.length > 0 ? Math.max(...flights.map((f: any) => f.price || 0)) : 200000,
     [flights]
   );
+
+  // Sync price range with actual data
+  const minPrice = useMemo(() =>
+    flights.length > 0 ? Math.min(...flights.map((f: any) => f.price || 0)) : 0,
+    [flights]
+  );
+
+  // Update price range when data loads
+  useEffect(() => {
+    if (flights.length > 0) {
+      setPriceRange([Math.max(0, minPrice - 100), maxPrice]);
+    }
+  }, [minPrice, maxPrice, flights.length]);
 
   const toggleAirline = useCallback((a: string) =>
     setSelectedAirlines(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]),

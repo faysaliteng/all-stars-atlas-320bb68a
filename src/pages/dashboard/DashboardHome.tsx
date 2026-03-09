@@ -68,6 +68,9 @@ const DashboardHome = () => {
   return (
     <DataLoader isLoading={statsLoading && bookingsLoading} error={statsError || bookingsError} skeleton="dashboard" retry={statsRefetch}>
       <motion.div className="space-y-6" variants={container} initial="hidden" animate="show">
+        {/* Payment Reminders */}
+        <PaymentReminderBanner bookings={recentBookings} />
+
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">

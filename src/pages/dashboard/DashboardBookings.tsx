@@ -75,7 +75,9 @@ const DashboardBookings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* Payment Reminders at top */}
+      <PaymentReminderBanner bookings={allBookings} />
+
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">My Bookings</h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">{total} total bookings</p>

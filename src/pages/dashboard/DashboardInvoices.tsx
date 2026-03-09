@@ -58,6 +58,22 @@ const DashboardInvoices = () => {
     toast({ title: "Downloaded", description: `${inv.invoiceNo}.pdf saved` });
   };
 
+  const downloadReceipt = (inv: any) => {
+    generateMoneyReceiptPDF({
+      receiptNo: `RCT-${inv.invoiceNo?.replace('INV-', '') || Date.now()}`,
+      customerName: inv.customerName,
+      customerPhone: inv.customerPhone || "",
+      customerAddress: inv.customerAddress || "",
+      items: [{ description: inv.serviceType ? `${inv.serviceType.charAt(0).toUpperCase() + inv.serviceType.slice(1)} Booking` : "Service", pax: 1, unitPrice: inv.amount || 0, totalPrice: inv.amount || 0 }],
+      totalAmount: inv.amount || 0,
+      due: inv.status === "Paid" ? 0 : inv.amount || 0,
+      discount: inv.discount || 0,
+      grandTotal: inv.amount || 0,
+      date: inv.date || new Date().toLocaleDateString(),
+    });
+    toast({ title: "Downloaded", description: "Money Receipt PDF saved" });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

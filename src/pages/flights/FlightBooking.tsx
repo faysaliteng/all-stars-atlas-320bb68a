@@ -478,12 +478,12 @@ const FlightBooking = () => {
                   <span className="text-muted-foreground">Total Amount</span>
                   <span className="font-bold text-primary">৳{grandTotal.toLocaleString()}</span>
                 </div>
-                {bookingResult.payLater && deadlineInfo && (
+                {bookingResult.payLater && bookingResult.paymentDeadline && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Payment Deadline</span>
                     <span className="font-bold text-destructive flex items-center gap-1">
                       <Timer className="w-3.5 h-3.5" />
-                      {deadlineInfo.label}
+                      {new Date(bookingResult.paymentDeadline).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                 )}

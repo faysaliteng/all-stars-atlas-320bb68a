@@ -198,7 +198,7 @@ const HotelDetail = () => {
         onOpenChange={setAuthOpen}
         onAuthenticated={() => {
           setAuthOpen(false);
-          if (selectedRoom) navigateToConfirmation(selectedRoom);
+          if (selectedRoom) submitBooking(selectedRoom);
         }}
         title="Sign in to book your hotel"
         description="Create an account or sign in to complete your reservation."

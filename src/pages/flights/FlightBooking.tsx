@@ -852,7 +852,7 @@ const FlightBooking = () => {
             <div className="flex gap-3">
               {step > 1 && <Button variant="outline" onClick={() => setStep(step - 1)}>Back</Button>}
               {step < 4 ? (
-                <Button onClick={() => setStep(step + 1)} className="font-bold">Continue <ArrowRight className="w-4 h-4 ml-1" /></Button>
+                <Button onClick={handleContinue} className="font-bold">Continue <ArrowRight className="w-4 h-4 ml-1" /></Button>
               ) : isBiman ? (
                 <Button className="font-bold shadow-lg shadow-primary/20" onClick={handleConfirmBooking} disabled={bookingLoading}>
                   {bookingLoading ? "Processing..." : <>

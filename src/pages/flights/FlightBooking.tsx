@@ -15,8 +15,8 @@ import {
   UtensilsCrossed, Armchair, Plus, Briefcase, Users, FileText,
   ArrowLeftRight, AlertCircle,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useFlightDetails } from "@/hooks/useApiData";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useCmsPageContent } from "@/hooks/useCmsContent";
 import { useCmsPageContent } from "@/hooks/useCmsContent";
 import { useAuth } from "@/hooks/useAuth";
 import AuthGateModal from "@/components/AuthGateModal";

@@ -372,7 +372,7 @@ const CMSBlog = () => {
             {/* Permalink */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>Permalink:</span>
-              <code className="bg-muted px-2 py-0.5 rounded">seventrip.com.bd/blog/{editingPost.slug || 'post-url'}</code>
+              <code className="bg-muted px-2 py-0.5 rounded">seven-trip.com/blog/{editingPost.slug || 'post-url'}</code>
               <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px]" onClick={() => {
                 const s = prompt("Edit slug:", editingPost.slug);
                 if (s !== null) updateField('slug', slugify(s));

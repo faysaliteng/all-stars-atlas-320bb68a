@@ -432,11 +432,15 @@ const SearchWidget = () => {
   };
 
   const handlePayBill = () => {
+    if (!billCategory) { toast.error("Please select a bill category"); return; }
+    if (!billerName) { toast.error("Please enter a biller name"); return; }
+    if (!accountNumber) { toast.error("Please enter your account number"); return; }
+    if (!billAmount) { toast.error("Please enter the bill amount"); return; }
     const params = new URLSearchParams();
-    if (billCategory) params.set('category', billCategory);
-    if (billerName) params.set('biller', billerName);
-    if (accountNumber) params.set('account', accountNumber);
-    if (billAmount) params.set('amount', billAmount);
+    params.set('category', billCategory);
+    params.set('biller', billerName);
+    params.set('account', accountNumber);
+    params.set('amount', billAmount);
     navigate(`/paybill?${params.toString()}`);
   };
 

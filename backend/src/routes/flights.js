@@ -16,46 +16,81 @@ router.get('/tti-diagnostic', async (req, res) => {
       return res.json({ success: false, error: 'TTI not configured in database. Go to Admin → Settings → API Integrations → Air Astra TTI', config: null });
     }
 
+    const results = { environment: config.environment, apiUrl: config.url, agencyId: config.agencyId, agencyName: config.agencyName };
+
     // Test 1: Ping
-    let pingResult = null;
     try {
-      pingResult = await ttiRequest('Ping', { RequestInfo: { AuthenticationKey: config.key } });
+      results.ping = await ttiRequest('Ping', { RequestInfo: { AuthenticationKey: config.key } });
     } catch (e) {
-      pingResult = { error: e.message };
+      results.ping = { error: e.message };
     }
 
-    // Test 2: Search DAC→CGP tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    let searchResult = null;
+    // Test 2: Search DAC→CGP (3 days from now to ensure inventory)
+    const searchDate = new Date();
+    searchDate.setDate(searchDate.getDate() + 3);
     try {
       const searchReq = {
         RequestInfo: { AuthenticationKey: config.key },
         Passengers: [{ PassengerTypeCode: 'ADT', PassengerQuantity: 1 }],
-        OriginDestinations: [{ OriginCode: 'DAC', DestinationCode: 'CGP', TargetDate: `/Date(${tomorrow.getTime()})/` }],
+        OriginDestinations: [{ OriginCode: 'DAC', DestinationCode: 'CGP', TargetDate: `/Date(${searchDate.getTime()})/` }],
         FareDisplaySettings: { SaleCurrencyCode: 'BDT' },
       };
-      searchResult = await ttiRequest('SearchFlights', searchReq);
+      const raw = await ttiRequest('SearchFlights', searchReq);
+      results.testSearch = {
+        route: 'DAC → CGP',
+        date: searchDate.toISOString().slice(0, 10),
+        segmentCount: raw?.Segments?.length || 0,
+        itineraryCount: raw?.FareInfo?.Itineraries?.length || 0,
+        errors: raw?.ResponseInfo?.Errors || [],
+        rawKeys: raw ? Object.keys(raw) : [],
+      };
     } catch (e) {
-      searchResult = { error: e.message };
+      results.testSearch = { error: e.message };
     }
 
-    res.json({
-      success: true,
-      environment: config.environment,
-      apiUrl: config.url,
-      agencyId: config.agencyId,
-      ping: pingResult,
-      testSearch: {
-        route: 'DAC → CGP',
-        date: tomorrow.toISOString().slice(0, 10),
-        segmentCount: searchResult?.Segments?.length || 0,
-        itineraryCount: searchResult?.FareInfo?.Itineraries?.length || 0,
-        errors: searchResult?.ResponseInfo?.Errors || [],
-        rawKeys: searchResult ? Object.keys(searchResult) : [],
-        error: searchResult?.error || null,
-      },
-    });
+    // Test 3: Try alternate URL patterns if main search returned 0
+    if (results.testSearch?.segmentCount === 0 && !results.testSearch?.error) {
+      const baseUrl = config.url.replace(/\/+$/, '');
+      const alternateUrls = [
+        baseUrl + '.svc/json',
+        baseUrl.replace('/TTI.PublicApi', '/TTI.PublicApi.svc/json'),
+        baseUrl + '/json',
+      ].filter(u => u !== baseUrl);
+
+      results.alternateUrlTests = [];
+      for (const altUrl of alternateUrls) {
+        try {
+          const testUrl = `${altUrl}/SearchFlights`;
+          console.log(`[TTI-DIAG] Trying alternate URL: ${testUrl}`);
+          const altRes = await fetch(testUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              RequestInfo: { AuthenticationKey: config.key },
+              Passengers: [{ PassengerTypeCode: 'ADT', PassengerQuantity: 1 }],
+              OriginDestinations: [{ OriginCode: 'DAC', DestinationCode: 'CGP', TargetDate: `/Date(${searchDate.getTime()})/` }],
+              FareDisplaySettings: { SaleCurrencyCode: 'BDT' },
+            }),
+          });
+          const text = await altRes.text();
+          let parsed;
+          try { parsed = JSON.parse(text); } catch { parsed = null; }
+          results.alternateUrlTests.push({
+            url: altUrl,
+            status: altRes.status,
+            segments: parsed?.Segments?.length || 0,
+            itineraries: parsed?.FareInfo?.Itineraries?.length || 0,
+            keys: parsed ? Object.keys(parsed) : [],
+            bodyPreview: text.slice(0, 300),
+          });
+        } catch (e) {
+          results.alternateUrlTests.push({ url: altUrl, error: e.message });
+        }
+      }
+    }
+
+    results.success = true;
+    res.json(results);
   } catch (err) {
     console.error('TTI diagnostic error:', err);
     res.status(500).json({ success: false, error: err.message });

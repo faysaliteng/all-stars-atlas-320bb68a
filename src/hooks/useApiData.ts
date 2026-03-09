@@ -119,7 +119,7 @@ export const useCarSearch = (params?: Record<string, string | number | boolean |
 // ============ ESIM ============
 
 export const useESIMPlans = (params?: Record<string, string | number | boolean | undefined>) =>
-  useQuery({ queryKey: ['esim', 'plans', params], queryFn: () => api.get(API_ENDPOINTS.ESIM_PLANS, params) });
+  useQuery({ queryKey: ['esim', 'plans', params], queryFn: () => api.get(API_ENDPOINTS.ESIM_PLANS, params), enabled: !!params });
 
 export const usePurchaseESIM = () =>
   useMutation({ mutationFn: (data: Record<string, unknown>) => api.post(API_ENDPOINTS.ESIM_PURCHASE, data) });

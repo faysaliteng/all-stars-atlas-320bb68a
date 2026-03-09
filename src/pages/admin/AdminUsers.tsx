@@ -271,7 +271,7 @@ const AdminUsers = () => {
               <div className="space-y-1.5"><Label>Last Name</Label><Input value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} placeholder="Ahmed" /></div>
             </div>
             <div className="space-y-1.5"><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} placeholder="rahim@email.com" /></div>
-            <div className="space-y-1.5"><Label>Phone</Label><Input value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} placeholder="+880 1234-567890" /></div>
+            <div className="space-y-1.5"><Label>Phone</Label><Input value={newUser.phone} onChange={e => setNewUser(p => ({ ...p, phone: e.target.value }))} placeholder="+880 1XXX-XXXXXX" /></div>
             <div className="space-y-1.5"><Label>Role</Label>
               <Select value={newUser.role} onValueChange={v => setNewUser(p => ({ ...p, role: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>

@@ -278,15 +278,32 @@ const SearchWidget = () => {
   }, [multiCitySegments.length]);
 
   const domesticAirports = useMemo(() => AIRPORTS.filter(a => a.country === "BD"), []);
+  const internationalAirports = useMemo(() => AIRPORTS.filter(a => a.country !== "BD"), []);
 
-  const scopedFromAirports = AIRPORTS;
-  const scopedToAirports = AIRPORTS;
+  // Domestic: both FROM and TO must be BD airports
+  // International: FROM is BD, TO is international (or vice versa)
+  const scopedFromAirports = flightScope === "domestic" ? domesticAirports : AIRPORTS;
+  const scopedToAirports = flightScope === "domestic" ? domesticAirports : AIRPORTS;
 
-  // When switching to domestic, reset to BD airports if needed
+  // Filter multi-city airports based on scope
+  const scopedMultiCityAirports = flightScope === "domestic" ? domesticAirports : AIRPORTS;
+
+  // When switching scope, reset airports that don't match
   useEffect(() => {
     if (flightScope === "domestic") {
       if (fromAirport && fromAirport.country !== "BD") setFromAirport(domesticAirports[0]);
       if (toAirport && toAirport.country !== "BD") setToAirport(domesticAirports[1] || null);
+      // Reset multi-city segments to BD airports
+      setMultiCitySegments(prev => prev.map((seg, i) => ({
+        from: seg.from && seg.from.country !== "BD" ? (i === 0 ? domesticAirports[0] : null) : seg.from,
+        to: seg.to && seg.to.country !== "BD" ? null : seg.to,
+        date: seg.date,
+      })));
+    } else {
+      // International: if both are BD, set destination to first international
+      if (fromAirport?.country === "BD" && toAirport?.country === "BD") {
+        setToAirport(null);
+      }
     }
   }, [flightScope]);
 
@@ -366,6 +383,9 @@ const SearchWidget = () => {
       return;
     }
     if (!fromAirport || !toAirport) { toast.error("Please select departure and arrival airports"); return; }
+    if (fromAirport.code === toAirport.code) { toast.error("Departure and arrival airports cannot be the same"); return; }
+    if (flightScope === "domestic" && (fromAirport.country !== "BD" || toAirport.country !== "BD")) { toast.error("Domestic flights must be within Bangladesh"); return; }
+    if (flightScope === "international" && fromAirport.country === "BD" && toAirport.country === "BD") { toast.error("International flights need at least one airport outside Bangladesh"); return; }
     if (!departDate) { toast.error("Please select a departure date"); return; }
     if (tripType === 'roundtrip' && !returnDate) { toast.error("Please select a return date for round trip"); return; }
     const params = new URLSearchParams({
@@ -568,11 +588,11 @@ const SearchWidget = () => {
             {multiCitySegments.map((segment, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-0 border border-border rounded-2xl bg-background shadow-sm relative">
                 <div className="md:col-span-4 search-field border-b md:border-b-0 flex-col items-start">
-                  <AirportInput label={`From (Flight ${index + 1})`} value={segment.from} onChange={(a) => updateSegment(index, 'from', a)} placeholder="Type city or airport..." airports={AIRPORTS} />
+                  <AirportInput label={`From (Flight ${index + 1})`} value={segment.from} onChange={(a) => updateSegment(index, 'from', a)} placeholder="Type city or airport..." airports={scopedMultiCityAirports} />
                 </div>
 
                 <div className="md:col-span-4 search-field border-b md:border-b-0 flex-col items-start">
-                  <AirportInput label={`To (Flight ${index + 1})`} value={segment.to} onChange={(a) => updateSegment(index, 'to', a)} placeholder="Where to?" airports={AIRPORTS} />
+                  <AirportInput label={`To (Flight ${index + 1})`} value={segment.to} onChange={(a) => updateSegment(index, 'to', a)} placeholder="Where to?" airports={scopedMultiCityAirports} />
                 </div>
 
                 <div className="md:col-span-3 search-field border-b md:border-b-0 flex-col items-start">

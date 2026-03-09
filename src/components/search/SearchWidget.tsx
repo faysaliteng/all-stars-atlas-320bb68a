@@ -19,6 +19,20 @@ import { TREATMENT_TYPES, RECHARGE_OPERATORS, BILL_CATEGORIES } from "@/lib/cons
 
 
 
+const COUNTRY_NAMES: Record<string, string> = {
+  BD: "Bangladesh", IN: "India", PK: "Pakistan", LK: "Sri Lanka", NP: "Nepal", MV: "Maldives", BT: "Bhutan", MM: "Myanmar",
+  TH: "Thailand", MY: "Malaysia", SG: "Singapore", ID: "Indonesia", VN: "Vietnam", PH: "Philippines", KH: "Cambodia", LA: "Laos",
+  CN: "China", JP: "Japan", KR: "South Korea", TW: "Taiwan", HK: "Hong Kong", MO: "Macau",
+  AE: "UAE", SA: "Saudi Arabia", QA: "Qatar", OM: "Oman", BH: "Bahrain", KW: "Kuwait", JO: "Jordan", LB: "Lebanon", IL: "Israel", IQ: "Iraq", IR: "Iran",
+  TR: "Turkey", GE: "Georgia", AZ: "Azerbaijan", UZ: "Uzbekistan", KZ: "Kazakhstan",
+  GB: "United Kingdom", FR: "France", DE: "Germany", IT: "Italy", ES: "Spain", PT: "Portugal", NL: "Netherlands", BE: "Belgium", CH: "Switzerland", AT: "Austria",
+  SE: "Sweden", NO: "Norway", DK: "Denmark", FI: "Finland", IE: "Ireland", PL: "Poland", CZ: "Czech Republic", GR: "Greece", RO: "Romania", HU: "Hungary",
+  RU: "Russia", UA: "Ukraine",
+  US: "United States", CA: "Canada", MX: "Mexico", BR: "Brazil", AR: "Argentina", CL: "Chile", CO: "Colombia", PE: "Peru",
+  AU: "Australia", NZ: "New Zealand", FJ: "Fiji",
+  EG: "Egypt", KE: "Kenya", ZA: "South Africa", NG: "Nigeria", ET: "Ethiopia", MA: "Morocco", TN: "Tunisia", GH: "Ghana", TZ: "Tanzania",
+};
+
 const HOTEL_CITIES = [
   "Cox's Bazar", "Dhaka", "Chittagong", "Sylhet", "Sreemangal", "Gazipur", "Rajshahi", "Rangpur",
   "Bangkok", "Singapore", "Kuala Lumpur", "Dubai", "Maldives", "Kolkata", "Kathmandu", "Istanbul",

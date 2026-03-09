@@ -87,7 +87,7 @@ const AdminSettings = () => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(DEFAULT_BANK_ACCOUNTS);
   const [newBank, setNewBank] = useState<Partial<BankAccount>>({});
   const [showAddBank, setShowAddBank] = useState(false);
-  const [generalForm, setGeneralForm] = useState({ siteName: 'Seven Trip', supportEmail: 'support@seventrip.com.bd', currency: 'bdt', language: 'en' });
+  const [generalForm, setGeneralForm] = useState({ siteName: 'Seven Trip', supportEmail: 'support@seven-trip.com', currency: 'bdt', language: 'en' });
 
   // Load all settings from backend on mount
   useEffect(() => {

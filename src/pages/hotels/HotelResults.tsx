@@ -183,6 +183,7 @@ const HotelResults = () => {
             </DataLoader>
           </div>
         </div>
+        )}
       </div>
 
       {showFilters && (

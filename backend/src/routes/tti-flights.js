@@ -350,4 +350,108 @@ function getAirlineName(code) {
   return names[code] || code;
 }
 
-module.exports = { searchFlights, ttiRequest, getTTIConfig, getAirlineName, clearTTIConfigCache };
+/**
+ * Create a booking in TTI/Zenith GDS
+ * This sends passenger + itinerary data to TTI to create a real PNR
+ */
+async function createBooking({ flightData, passengers, contactInfo }) {
+  const config = await getTTIConfig();
+  if (!config) throw new Error('TTI API not configured');
+
+  // Build passenger list for TTI
+  let refCounter = 1;
+  const ttiPassengers = passengers.map((p, i) => ({
+    Ref: String(refCounter++),
+    PassengerTypeCode: 'AD', // TODO: detect child/infant from DOB
+    Title: p.title || 'Mr',
+    FirstName: (p.firstName || '').toUpperCase(),
+    LastName: (p.lastName || '').toUpperCase(),
+    DateOfBirth: p.dob ? `/Date(${new Date(p.dob).getTime()})/` : null,
+    Gender: p.title === 'Mr' ? 'M' : 'F',
+    Nationality: p.nationality || 'BD',
+    PassportNumber: p.passport || null,
+    PassportExpiry: p.passportExpiry ? `/Date(${new Date(p.passportExpiry).getTime()})/` : null,
+    Email: p.email || contactInfo?.email || '',
+    Phone: p.phone || contactInfo?.phone || '',
+  }));
+
+  // Build segments from flight data
+  const segments = [];
+  const legs = flightData.legs || [];
+  if (legs.length > 0) {
+    legs.forEach((leg, i) => {
+      segments.push({
+        Ref: String(i + 1),
+        FlightNumber: leg.flightNumber || flightData.flightNumber,
+        AirlineCode: leg.airlineCode || flightData.airlineCode,
+        Origin: leg.origin || flightData.origin,
+        Destination: leg.destination || flightData.destination,
+        DepartureDate: leg.departureTime ? `/Date(${new Date(leg.departureTime).getTime()})/` : null,
+        CabinClass: flightData.cabinClass || 'Economy',
+      });
+    });
+  } else {
+    segments.push({
+      Ref: '1',
+      FlightNumber: flightData.flightNumber,
+      AirlineCode: flightData.airlineCode,
+      Origin: flightData.origin,
+      Destination: flightData.destination,
+      DepartureDate: flightData.departureTime ? `/Date(${new Date(flightData.departureTime).getTime()})/` : null,
+      CabinClass: flightData.cabinClass || 'Economy',
+    });
+  }
+
+  const request = {
+    RequestInfo: { AuthenticationKey: config.key },
+    Passengers: ttiPassengers,
+    Segments: segments,
+    ContactInfo: {
+      Email: contactInfo?.email || passengers[0]?.email || '',
+      Phone: contactInfo?.phone || passengers[0]?.phone || '',
+    },
+    AgencyInfo: {
+      AgencyId: config.agencyId,
+      AgencyName: config.agencyName,
+    },
+  };
+
+  console.log('[TTI] Creating booking for', flightData.origin, '→', flightData.destination, 'flight', flightData.flightNumber);
+
+  try {
+    const response = await ttiRequest('CreateBooking', request);
+
+    if (response.ResponseInfo?.Error) {
+      const err = response.ResponseInfo.Error;
+      console.error('[TTI] CreateBooking error:', err);
+      throw new Error(`TTI booking error: ${err.Message || err.Code || 'Unknown error'}`);
+    }
+
+    // Extract PNR from response
+    const pnr = response.BookingReference || response.PNR || response.RecordLocator || 
+                 response.Booking?.Reference || response.Booking?.PNR || null;
+    const ttiBookingId = response.BookingId || response.Booking?.Id || null;
+    const ticketTimeLimit = response.TicketTimeLimit || response.TimeLimit || null;
+
+    console.log('[TTI] Booking created — PNR:', pnr, 'BookingId:', ttiBookingId);
+
+    return {
+      success: true,
+      pnr,
+      ttiBookingId,
+      ticketTimeLimit: ticketTimeLimit ? parseTTIDate(ticketTimeLimit)?.toISOString() : null,
+      rawResponse: response,
+    };
+  } catch (err) {
+    console.error('[TTI] CreateBooking failed:', err.message);
+    // Don't throw — let the caller decide whether to fail the whole booking
+    return {
+      success: false,
+      error: err.message,
+      pnr: null,
+      ttiBookingId: null,
+    };
+  }
+}
+
+module.exports = { searchFlights, createBooking, ttiRequest, getTTIConfig, getAirlineName, clearTTIConfigCache };

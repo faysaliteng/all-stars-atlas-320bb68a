@@ -72,8 +72,6 @@ const AdminDiscounts = () => {
     mutationFn: (newRules: any[]) => api.put('/admin/discounts', { section: 'price_rules', priceRules: newRules }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'discounts'] }),
   });
-  const [dForm, setDForm] = useState(emptyDiscount);
-  const [rForm, setRForm] = useState(emptyRule);
 
   const filteredDiscounts = discounts.filter(d => {
     if (search && !d.name.toLowerCase().includes(search.toLowerCase()) && !d.code.toLowerCase().includes(search.toLowerCase())) return false;
@@ -89,7 +87,7 @@ const AdminDiscounts = () => {
   });
 
   const totalActive = discounts.filter(d => d.status === "active").length;
-  const totalRedemptions = discounts.reduce((sum, d) => sum + d.usageCount, 0);
+  const totalRedemptions = discounts.reduce((sum, d) => sum + (d.usageCount || 0), 0);
   const pctDiscounts = discounts.filter(d => d.type === "percentage");
   const avgDiscount = pctDiscounts.length > 0 ? Math.round(pctDiscounts.reduce((sum, d) => sum + d.value, 0) / pctDiscounts.length) : 0;
 
@@ -103,16 +101,14 @@ const AdminDiscounts = () => {
       service: dForm.service, status: dForm.activate ? "active" : "draft", usageCount: 0,
       usageLimit: 500, startDate: dForm.startDate || "2026-01-01", endDate: dForm.endDate || "2026-12-31",
     };
-    const updated = addToCollection(DISCOUNT_KEY, defaultDiscounts, newD);
-    setDiscounts([...updated]);
+    saveDiscounts.mutate([newD, ...discounts]);
     toast({ title: "Discount Created", description: `"${newD.code}" created successfully.` });
     setShowCreateDiscount(false);
     setDForm(emptyDiscount);
   };
 
   const deleteDiscount = (d: any) => {
-    const updated = removeFromCollection(DISCOUNT_KEY, defaultDiscounts, d.id);
-    setDiscounts([...updated]);
+    saveDiscounts.mutate(discounts.filter(x => x.id !== d.id));
     toast({ title: "Deleted", description: `"${d.code}" removed.`, variant: "destructive" });
   };
 
@@ -122,23 +118,20 @@ const AdminDiscounts = () => {
       id: `PR-${Date.now()}`, name: rForm.name, service: rForm.service, type: rForm.type,
       value: Number(rForm.value) || 0, basis: rForm.basis, status: rForm.active ? "active" : "paused", appliedTo: rForm.appliedTo || "All",
     };
-    const updated = addToCollection(RULE_KEY, defaultPriceRules, newR);
-    setPriceRules([...updated]);
+    saveRules.mutate([newR, ...priceRules]);
     toast({ title: "Price Rule Created", description: `"${newR.name}" saved.` });
     setShowCreateRule(false);
     setRForm(emptyRule);
   };
 
   const deleteRule = (r: any) => {
-    const updated = removeFromCollection(RULE_KEY, defaultPriceRules, r.id);
-    setPriceRules([...updated]);
+    saveRules.mutate(priceRules.filter(x => x.id !== r.id));
     toast({ title: "Deleted", description: `"${r.name}" removed.`, variant: "destructive" });
   };
 
   const toggleRule = (r: any) => {
     const newStatus = r.status === "active" ? "paused" : "active";
-    const updated = updateInCollection(RULE_KEY, defaultPriceRules, r.id, { status: newStatus });
-    setPriceRules([...updated]);
+    saveRules.mutate(priceRules.map(x => x.id === r.id ? { ...x, status: newStatus } : x));
     toast({ title: newStatus === "active" ? "Activated" : "Paused", description: `${r.name} is now ${newStatus}.` });
   };
 

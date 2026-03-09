@@ -85,7 +85,7 @@ const HotelDetail = () => {
                               <p className="text-xl font-black text-primary">৳{room.price.toLocaleString()}</p>
                               <p className="text-[10px] text-muted-foreground mb-2">per night</p>
                               <Button size="sm" className="font-bold" asChild>
-                                <Link to={`/booking/confirmation`} state={{ booking: { type: "hotel", hotelName: hotel.name, roomType: room.name, amount: room.price } }}>
+                                <Link to={`/booking/confirmation`} state={{ booking: { type: "Hotel", route: `${hotel.name} — ${hotel.location}`, baseFare: room.price, taxes: Math.round(room.price * 0.15), total: Math.round(room.price * 1.15), paymentMethod: "Pending" } }}>
                                   Book Now
                                 </Link>
                               </Button>

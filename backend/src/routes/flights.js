@@ -388,7 +388,7 @@ router.post('/book', authenticate, async (req, res) => {
     await db.query(
       `INSERT INTO bookings (id, user_id, booking_type, booking_ref, status, total_amount, payment_method, payment_status, details, passenger_info, contact_info, payment_deadline)
        VALUES (?, ?, 'flight', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [bookingId, req.user.sub, bookingRef, totalAmount || 0, paymentMethod || 'pay_later', payStatus,
+      [bookingId, req.user.sub, bookingRef, status, totalAmount || 0, paymentMethod || 'pay_later', payStatus,
        JSON.stringify(details), JSON.stringify(passengers || []), JSON.stringify(contactInfo || {}),
        paymentDeadline]
     );

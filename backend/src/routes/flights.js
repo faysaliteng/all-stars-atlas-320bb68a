@@ -117,20 +117,26 @@ router.get('/search', async (req, res) => {
     const childCount = parseInt(children) || 0;
     const infantCount = parseInt(infants) || 0;
 
-    // Fetch from both sources in parallel
-    const [dbFlights, ttiFlights] = await Promise.allSettled([
+    // ── Multi-provider parallel search ──
+    const searchParams = {
+      origin: originCode,
+      destination: destCode,
+      departDate: dDate,
+      returnDate: rDate || undefined,
+      adults: adultCount,
+      children: childCount,
+      infants: infantCount,
+      cabinClass: cabClass || undefined,
+    };
+
+    const [dbFlights, ttiFlights, bdfFlights] = await Promise.allSettled([
       searchDB({ originCode, destCode, dDate, cabClass, page, limit }),
-      ttiSearch({
-        origin: originCode,
-        destination: destCode,
-        departDate: dDate,
-        returnDate: rDate || undefined,
-        adults: adultCount,
-        children: childCount,
-        infants: infantCount,
-        cabinClass: cabClass || undefined,
-      }).catch(err => {
-        console.error('TTI search failed (continuing with DB only):', err.message, err.stack);
+      ttiSearch(searchParams).catch(err => {
+        console.error('TTI search failed (continuing with other providers):', err.message);
+        return [];
+      }),
+      bdfSearch(searchParams).catch(err => {
+        console.error('BDFare search failed (continuing with other providers):', err.message);
         return [];
       }),
     ]);

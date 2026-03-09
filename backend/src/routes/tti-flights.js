@@ -70,7 +70,7 @@ async function ttiRequest(method, body) {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ request: body }),  // WCF requires wrapping in "request"
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -119,17 +119,19 @@ async function searchFlights({ origin, destination, departDate, returnDate, adul
   const config = await getTTIConfig();
   if (!config) throw new Error('TTI API not configured');
 
+  let refCounter = 1;
   const passengers = [];
-  if (adults > 0) passengers.push({ PassengerTypeCode: 'ADT', PassengerQuantity: parseInt(adults) });
-  if (children > 0) passengers.push({ PassengerTypeCode: 'CHD', PassengerQuantity: parseInt(children) });
-  if (infants > 0) passengers.push({ PassengerTypeCode: 'INF', PassengerQuantity: parseInt(infants) });
+  if (adults > 0) passengers.push({ Ref: String(refCounter++), PassengerTypeCode: 'ADT', PassengerQuantity: parseInt(adults) });
+  if (children > 0) passengers.push({ Ref: String(refCounter++), PassengerTypeCode: 'CHD', PassengerQuantity: parseInt(children) });
+  if (infants > 0) passengers.push({ Ref: String(refCounter++), PassengerTypeCode: 'INF', PassengerQuantity: parseInt(infants) });
 
+  let odRef = 1;
   const originDestinations = [
-    { OriginCode: origin, DestinationCode: destination, TargetDate: `/Date(${new Date(departDate).getTime()})/` }
+    { Ref: String(odRef++), OriginCode: origin, DestinationCode: destination, TargetDate: `/Date(${new Date(departDate).getTime()})/` }
   ];
   if (returnDate) {
     originDestinations.push(
-      { OriginCode: destination, DestinationCode: origin, TargetDate: `/Date(${new Date(returnDate).getTime()})/` }
+      { Ref: String(odRef++), OriginCode: destination, DestinationCode: origin, TargetDate: `/Date(${new Date(returnDate).getTime()})/` }
     );
   }
 
@@ -142,9 +144,10 @@ async function searchFlights({ origin, destination, departDate, returnDate, adul
 
   const response = await ttiRequest('SearchFlights', request);
 
-  if (response.ResponseInfo && response.ResponseInfo.Errors && response.ResponseInfo.Errors.length > 0) {
-    const errMsg = response.ResponseInfo.Errors.map(e => e.Message || e.Code || 'Unknown').join('; ');
-    throw new Error(`TTI search error: ${errMsg}`);
+  // TTI returns Error (singular object) not Errors (array)
+  if (response.ResponseInfo?.Error) {
+    const err = response.ResponseInfo.Error;
+    throw new Error(`TTI search error: ${err.Message || err.Code || err.FullText || 'Unknown'}`);
   }
 
   return normalizeTTIResponse(response, origin, destination);

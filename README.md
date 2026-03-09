@@ -151,7 +151,7 @@
 | Transactions | Running balance ledger with debit/credit |
 | E-Transactions | Digital gateway fee tracking |
 | Payments | Receipt upload for manual payment verification |
-| Invoices | Auto-generated PDF invoices |
+| Invoices | Auto-generated Invoice PDF + Money Receipt PDF with QR codes |
 | Pay Later | Due management & reminders |
 | Travellers | Saved passenger profiles for faster booking |
 | Wishlist | Saved hotels |

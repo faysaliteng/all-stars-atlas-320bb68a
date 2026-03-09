@@ -138,7 +138,7 @@ const AirportInput = ({ label, value, onChange, placeholder, airports: airportLi
             >
               <span className="text-sm font-black text-primary w-10 shrink-0">{a.code}</span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate">{a.city}</div>
+                <div className="text-sm font-semibold truncate">{a.city}, {COUNTRY_NAMES[a.country] || a.country}</div>
                 <div className="text-[11px] text-muted-foreground truncate">{a.name}</div>
               </div>
             </button>

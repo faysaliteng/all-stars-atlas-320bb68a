@@ -57,12 +57,41 @@ const FlightBooking = () => {
   const { toast } = useToast();
   const config = page?.bookingConfig;
 
+  // Read selected flight info from URL params
+  const [searchParams] = useSearchParams();
+  const flightId = searchParams.get("flightId");
+
+  // Fetch actual flight details if flightId is provided
+  const { data: flightRaw } = useFlightDetails(flightId || undefined);
+  const selectedFlight = (flightRaw as any)?.data || (flightRaw as any) || null;
+
   const handleFinalAction = () => {
     if (!isAuthenticated) {
       setAuthOpen(true);
       return;
     }
-    navigate("/booking/confirmation");
+    navigate("/booking/confirmation", {
+      state: {
+        booking: {
+          type: "Flight",
+          bookingRef: `ST-FL-${Date.now().toString(36).toUpperCase()}`,
+          route: `${selectedFlight?.origin || selectedFlight?.from || "DAC"} → ${selectedFlight?.destination || selectedFlight?.to || "CXB"}`,
+          flightNo: selectedFlight?.flightNumber || selectedFlight?.flightNo || "—",
+          airline: selectedFlight?.airline || "—",
+          class: selectedFlight?.cabinClass || selectedFlight?.class || "Economy",
+          departTime: selectedFlight?.departureTime ? new Date(selectedFlight.departureTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) : selectedFlight?.departTime || "—",
+          arriveTime: selectedFlight?.arrivalTime ? new Date(selectedFlight.arrivalTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) : selectedFlight?.arriveTime || "—",
+          date: selectedFlight?.departureTime ? new Date(selectedFlight.departureTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "—",
+          stops: selectedFlight?.stops === 0 ? "Non-stop" : `${selectedFlight?.stops || 0} Stop`,
+          passenger: "Traveller",
+          baseFare: selectedFlight?.price || 0,
+          taxes: Math.round((selectedFlight?.price || 0) * 0.12),
+          serviceCharge: 250,
+          total: Math.round((selectedFlight?.price || 0) * 1.12) + 250,
+          paymentMethod: "Card",
+        },
+      },
+    });
   };
 
   if (isLoading) {

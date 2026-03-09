@@ -82,8 +82,10 @@ const HotelResults = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold">{page?.pageTitle ? `${page.pageTitle} - ` : "Hotels in "}{searchMeta.location || 'your destination'}</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">{searchMeta.dates || ''} • {hotels.length} properties</p>
+              <h1 className="text-xl sm:text-2xl font-bold">{page?.pageTitle || "Hotel Reservation"} – {destination || "your destination"}</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {checkIn && checkOut ? `${checkIn} → ${checkOut}` : ""} • {hotels.length} properties
+              </p>
             </div>
             <Button variant="outline" size="sm" asChild><Link to="/">Modify Search</Link></Button>
           </div>

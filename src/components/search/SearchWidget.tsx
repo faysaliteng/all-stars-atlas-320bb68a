@@ -450,8 +450,8 @@ const SearchWidget = () => {
   };
 
   const handleCarSearch = () => {
-    if (!pickupDate) { toast.error("Please select a pickup date"); return; }
-    if (!dropoffDate) { toast.error("Please select a drop-off date"); return; }
+    if (!pickupDate) { toast.error("Please select a pickup date"); addDateError("pickupDate"); return; }
+    if (!dropoffDate) { toast.error("Please select a drop-off date"); addDateError("dropoffDate"); return; }
     const params = new URLSearchParams({ pickup: pickupCity, dropoff: dropoffCity });
     params.set('pickupDate', format(pickupDate, 'yyyy-MM-dd'));
     params.set('dropoffDate', format(dropoffDate, 'yyyy-MM-dd'));

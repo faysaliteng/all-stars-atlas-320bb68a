@@ -291,20 +291,23 @@ const FlightBooking = () => {
     const errors: Record<string, string> = {};
     if (currentStep === 1 && !outboundFlight) { toast({ title: "No Flight Selected", description: "Please go back and select a flight.", variant: "destructive" }); return false; }
     if (currentStep === 2) {
-      const p = passengers[0];
-      if (!p.title) errors.title = "Title is required";
-      if (!p.firstName?.trim()) errors.firstName = "First name is required";
-      if (!p.lastName?.trim()) errors.lastName = "Last name is required";
-      if (!p.dob) errors.dob = "Date of birth is required";
-      if (!p.nationality?.trim()) errors.nationality = "Nationality is required";
-      if (!p.email?.trim()) errors.email = "Email is required";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) errors.email = "Invalid email format";
-      if (!p.phone?.trim()) errors.phone = "Phone number is required";
-      if (p.firstName && p.firstName.trim().length < 2) errors.firstName = "First name too short";
-      if (p.lastName && p.lastName.trim().length < 2) errors.lastName = "Last name too short";
-      if (p.dob) { const dobDate = new Date(p.dob); if (dobDate >= new Date()) errors.dob = "Date of birth must be in the past"; }
-      if (!domestic && !p.passport?.trim()) errors.passport = "Passport required for international flights";
-      if (p.passport && p.passport.trim().length > 0 && p.passport.trim().length < 5) errors.passport = "Invalid passport number";
+      for (let pi = 0; pi < passengers.length; pi++) {
+        const p = passengers[pi];
+        const paxLabel = paxTypes[pi]?.label || `Passenger ${pi + 1}`;
+        if (!p.title) { errors[`title_${pi}`] = `${paxLabel}: Title is required`; }
+        if (!p.firstName?.trim()) { errors[`firstName_${pi}`] = `${paxLabel}: First name is required`; }
+        if (!p.lastName?.trim()) { errors[`lastName_${pi}`] = `${paxLabel}: Last name is required`; }
+        if (!p.dob) { errors[`dob_${pi}`] = `${paxLabel}: Date of birth is required`; }
+        if (!p.nationality?.trim()) { errors[`nationality_${pi}`] = `${paxLabel}: Nationality is required`; }
+        if (pi === 0 && !p.email?.trim()) { errors.email = "Email is required"; }
+        else if (pi === 0 && p.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) { errors.email = "Invalid email format"; }
+        if (pi === 0 && !p.phone?.trim()) { errors.phone = "Phone number is required"; }
+        if (p.firstName && p.firstName.trim().length < 2) { errors[`firstName_${pi}`] = `${paxLabel}: First name too short`; }
+        if (p.lastName && p.lastName.trim().length < 2) { errors[`lastName_${pi}`] = `${paxLabel}: Last name too short`; }
+        if (p.dob) { const dobDate = new Date(p.dob); if (dobDate >= new Date()) errors[`dob_${pi}`] = `${paxLabel}: Date of birth must be in the past`; }
+        if (!domestic && !p.passport?.trim()) { errors[`passport_${pi}`] = `${paxLabel}: Passport required for international flights`; }
+        if (p.passport && p.passport.trim().length > 0 && p.passport.trim().length < 5) { errors[`passport_${pi}`] = `${paxLabel}: Invalid passport number`; }
+      }
       if (Object.keys(errors).length > 0) { setFieldErrors(errors); toast({ title: "Missing Passenger Info", description: Object.values(errors)[0], variant: "destructive" }); return false; }
     }
     setFieldErrors({}); return true;

@@ -162,12 +162,14 @@
 | Module | Features |
 |--------|----------|
 | Dashboard | Revenue charts (Recharts), booking stats, recent activity |
-| Bookings | All bookings, status management, notes, **real-time GDS operations** (Ticket/Cancel/Void via TTI, BDFare, FlyHub, Sabre) |
+| Bookings | All bookings, status management, notes, **real-time GDS operations** (Ticket/Cancel/Void via TTI, BDFare, FlyHub, Sabre). TTI ticketing handled manually with admin warning. |
 | Users | User list, role assignment, ID verification status |
 | Payments | Payment tracking & history |
 | Payment Approvals | Receipt image viewer, approve/reject workflow |
-| Discounts & Pricing | Coupon codes, seasonal pricing rules (DB-backed) |
-| Invoices | Invoice management, Money Receipt download, reminders |
+| Discounts & Pricing | Coupon codes, seasonal pricing rules, price rule management (DB-backed via `system_settings`) |
+| Markup & Revenue | Per-service markup config (base fare, tax, SSR, min/max markup, ticket issue charge) |
+| Currency Management | Multi-currency exchange rates with markup, auto-update toggle, converter |
+| Invoices | Invoice management, Money Receipt download, payment reminders (email notification) |
 | Reports | Revenue, booking, user analytics with export |
 | Visa | Application management, status updates |
 | CMS: All Pages | 40+ page content management with defaults |

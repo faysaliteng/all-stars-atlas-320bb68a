@@ -20,7 +20,6 @@ import { useCmsPageContent } from "@/hooks/useCmsContent";
 import { useAuth } from "@/hooks/useAuth";
 import AuthGateModal from "@/components/AuthGateModal";
 import { api } from "@/lib/api";
-import SeatMap from "@/components/flights/SeatMap";
 import type { BookingFormField } from "@/lib/cms-defaults";
 
 // ─── Bangladesh domestic airports ───

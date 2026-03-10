@@ -33,6 +33,28 @@ interface PassportScannerProps {
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+/** Compress image to max dimensions and JPEG quality to reduce payload size */
+function compressImage(dataUrl: string, maxDim = 1200, quality = 0.7): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const ratio = Math.min(maxDim / width, maxDim / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
 const PassportScanner = ({ open, onOpenChange, onConfirm }: PassportScannerProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,18 +76,17 @@ const PassportScanner = ({ open, onOpenChange, onConfirm }: PassportScannerProps
     setFile(f);
     setOcrError(null);
 
-    // Generate preview
+    // Generate preview and compress for OCR
     let base64Data = "";
     if (f.type.startsWith("image/")) {
       const reader = new FileReader();
-      base64Data = await new Promise<string>((resolve) => {
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          setPreview(result);
-          resolve(result);
-        };
+      const rawDataUrl = await new Promise<string>((resolve) => {
+        reader.onload = (e) => resolve(e.target?.result as string);
         reader.readAsDataURL(f);
       });
+      setPreview(rawDataUrl);
+      // Compress before sending to avoid "Request Entity Too Large"
+      base64Data = await compressImage(rawDataUrl, 1200, 0.7);
     } else {
       setPreview(null);
       const reader = new FileReader();

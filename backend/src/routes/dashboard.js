@@ -269,7 +269,7 @@ router.get('/tickets', async (req, res) => {
     const [rows] = await db.query(sql, params);
     const data = rows.map(t => ({
       id: t.id, bookingId: t.booking_id, ticketNo: t.ticket_no, pnr: t.pnr,
-      status: t.status, pdfUrl: t.pdf_url, details: JSON.parse(t.details || '{}'), issuedAt: t.issued_at,
+      status: t.status, pdfUrl: t.pdf_url, details: safeJsonParse(t.details, {}), issuedAt: t.issued_at,
     }));
     res.json({ data, total: data.length, page: 1, limit: 50, totalPages: 1 });
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }

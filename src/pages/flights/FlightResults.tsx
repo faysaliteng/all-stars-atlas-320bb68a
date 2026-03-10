@@ -345,7 +345,7 @@ const FlightCard = ({
                                 <p className="text-xl sm:text-2xl font-black">{formatTime(leg.arrivalTime)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">{formatDate(leg.arrivalTime)}</p>
                                 <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                                  Terminal: {leg.destinationTerminal || "D"}, {getAirportName(legDest)} ({legDest})
+                                  {leg.destinationTerminal ? `Terminal: ${leg.destinationTerminal}, ` : ""}{getAirportName(legDest)} ({legDest})
                                 </p>
                               </div>
                             </div>

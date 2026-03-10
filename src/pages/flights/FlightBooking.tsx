@@ -22,6 +22,9 @@ import { useAuth } from "@/hooks/useAuth";
 import AuthGateModal from "@/components/AuthGateModal";
 import { api } from "@/lib/api";
 import type { BookingFormField } from "@/lib/cms-defaults";
+import PassportScanner from "@/components/PassportScanner";
+import SearchPassengerModal from "@/components/SearchPassengerModal";
+import ShareItineraryModal from "@/components/ShareItineraryModal";
 
 // ─── Bangladesh domestic airports ───
 const BD_AIRPORTS = ["DAC", "CXB", "CGP", "ZYL", "JSR", "RJH", "SPD", "BZL", "IRD", "TKR"];

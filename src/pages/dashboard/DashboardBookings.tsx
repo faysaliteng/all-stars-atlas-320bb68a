@@ -450,7 +450,7 @@ const DashboardBookings = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div><h1 className="text-xl sm:text-2xl font-bold">My Bookings</h1><p className="text-xs sm:text-sm text-muted-foreground mt-1">{total} total bookings</p></div>
         <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => {
-          downloadCSV('bookings', ['ID', 'Type', 'Route', 'Date', 'Status', 'Amount'], bookings.map((b: any) => [b.id, b.type, b.title, b.date, b.status, b.amount]));
+          downloadCSV('bookings', ['ID', 'Type', 'Route', 'Date', 'Status', 'Amount'], bookings.map((b: any) => [b.id, b.type, b.title, b.date, displayStatus(b.status), b.amount]));
           toast({ title: "Exported", description: "Bookings CSV downloaded." });
         }}><Download className="w-4 h-4 mr-1.5" /> Export</Button>
       </div>

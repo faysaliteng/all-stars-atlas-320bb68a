@@ -162,7 +162,7 @@
 | Module | Features |
 |--------|----------|
 | Dashboard | Revenue charts (Recharts), booking stats, recent activity |
-| Bookings | All bookings, status management, notes |
+| Bookings | All bookings, status management, notes, **real-time GDS operations** (Ticket/Cancel/Void via TTI, BDFare, FlyHub, Sabre) |
 | Users | User list, role assignment, ID verification status |
 | Payments | Payment tracking & history |
 | Payment Approvals | Receipt image viewer, approve/reject workflow |

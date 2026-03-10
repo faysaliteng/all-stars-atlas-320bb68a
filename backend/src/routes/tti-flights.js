@@ -542,21 +542,39 @@ async function createBooking({ flightData, passengers, contactInfo }) {
   const config = await getTTIConfig();
   if (!config) throw new Error('TTI API not configured');
 
-  // Build passenger list for TTI
+  // Build passenger list for TTI — must match WCF DataContract format
+  // TTI expects the same structure as search passengers (with PassengerQuantity)
+  // plus personal details in specific sub-objects
   let refCounter = 1;
   const ttiPassengers = passengers.map((p, i) => ({
     Ref: String(refCounter++),
     PassengerTypeCode: 'AD',
-    Title: p.title || 'Mr',
+    PassengerQuantity: 1,
+    Title: (p.title || 'Mr').toUpperCase(),
     FirstName: (p.firstName || '').toUpperCase(),
     LastName: (p.lastName || '').toUpperCase(),
+    GivenName: (p.firstName || '').toUpperCase(),
+    Surname: (p.lastName || '').toUpperCase(),
     DateOfBirth: p.dob ? `/Date(${new Date(p.dob).getTime()})/` : null,
     Gender: p.title === 'Mr' ? 'M' : 'F',
+    GenderCode: p.title === 'Mr' ? 'M' : 'F',
     Nationality: p.nationality || 'BD',
+    NationalityCode: p.nationality || 'BD',
     PassportNumber: p.passport || null,
     PassportExpiry: p.passportExpiry ? `/Date(${new Date(p.passportExpiry).getTime()})/` : null,
+    DocumentInfo: p.passport ? {
+      DocumentNumber: p.passport,
+      DocumentType: 'P',
+      ExpiryDate: p.passportExpiry ? `/Date(${new Date(p.passportExpiry).getTime()})/` : null,
+      NationalityCode: p.nationality || 'BD',
+    } : null,
+    ContactInfo: {
+      Email: p.email || contactInfo?.email || '',
+      Phone: p.phone || contactInfo?.phone || '',
+    },
     Email: p.email || contactInfo?.email || '',
     Phone: p.phone || contactInfo?.phone || '',
+    Extensions: null,
   }));
 
   // ── TTI CreateBooking requires the original FareInfo (Itineraries + ETTicketFares) 

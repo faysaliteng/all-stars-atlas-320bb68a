@@ -584,7 +584,7 @@ const FlightBooking = () => {
                             const updated = [...passengers]; updated[pi].title = v;
                             if (v === "Mr" || v === "Master") updated[pi].gender = "Male";
                             else updated[pi].gender = "Female";
-                            setPassengers(updated); setFieldErrors(prev => { const n = {...prev}; delete n.title; return n; });
+                            setPassengers(updated); setFieldErrors(prev => { const n = {...prev}; delete n[`title_${pi}`]; return n; });
                           }}>
                             <SelectTrigger className={`h-10 sm:h-11 ${fieldErrors.title ? "border-destructive ring-destructive/20 ring-2" : ""}`}><SelectValue placeholder="Title" /></SelectTrigger>
                             <SelectContent>

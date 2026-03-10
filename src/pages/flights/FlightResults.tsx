@@ -185,11 +185,11 @@ const FlightCard = ({
           </div>
 
           {/* Flight times section */}
-          <div className="flex-1 flex items-center p-4 sm:p-5">
-            <div className="flex-1 flex items-center gap-3 sm:gap-5">
+          <div className="flex-1 flex items-center p-3 sm:p-5">
+            <div className="flex-1 flex items-center gap-2 sm:gap-5">
               {/* Departure */}
               <div className="text-center shrink-0">
-                <p className="text-xl sm:text-2xl font-black tracking-tight">{departTime}</p>
+                <p className="text-lg sm:text-2xl font-black tracking-tight">{departTime}</p>
                 <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{departDateStr}</p>
               </div>
 

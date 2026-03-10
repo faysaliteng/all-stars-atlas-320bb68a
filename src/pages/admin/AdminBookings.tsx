@@ -64,6 +64,7 @@ const AdminBookings = () => {
   const [payLinkEmail, setPayLinkEmail] = useState("");
   const [payLinkName, setPayLinkName] = useState("");
   const [payLinkPlatform, setPayLinkPlatform] = useState("email");
+  const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 

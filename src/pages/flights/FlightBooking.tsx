@@ -379,8 +379,8 @@ const FlightBooking = () => {
   };
 
   const handleConfirmBooking = () => {
-    const p = passengers[0];
-    if (!p.firstName || !p.lastName) { toast({ title: "Missing Info", description: "Please fill in all passenger details.", variant: "destructive" }); setStep(2); return; }
+    const allFilled = passengers.every(p => p.firstName && p.lastName);
+    if (!allFilled) { toast({ title: "Missing Info", description: "Please fill in all passenger details.", variant: "destructive" }); setStep(2); return; }
     if (!agreedTerms) { toast({ title: "Terms Required", description: "Please agree to the Terms & Conditions.", variant: "destructive" }); return; }
     if (!isAuthenticated) { setAuthOpen(true); return; }
     if (isBiman) {

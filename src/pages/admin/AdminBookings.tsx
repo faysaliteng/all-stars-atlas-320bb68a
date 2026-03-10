@@ -133,7 +133,13 @@ const AdminBookings = () => {
     try {
       const result: any = await api.put(`/admin/bookings/${b.rawId || b.id}`, updates);
 
-      if (result?.gdsAction?.success) {
+      if (result?.gdsAction?.skipped) {
+        // GDS was intentionally skipped (e.g., TTI has no ticketing API)
+        toast({
+          title: "✅ Status Updated (Manual)",
+          description: `${result.message || 'Booking updated'}. Note: GDS action skipped — ${result.gdsAction.methodUsed || 'no API available'}. Update the airline system manually if needed.`,
+        });
+      } else if (result?.gdsAction?.success) {
         const tickets = result.gdsAction.ticketNumbers || [];
         toast({
           title: "✅ GDS Action Successful",

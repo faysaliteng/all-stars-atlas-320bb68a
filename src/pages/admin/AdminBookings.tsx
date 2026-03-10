@@ -278,6 +278,9 @@ const AdminBookings = () => {
                         {!["cancelled", "completed", "refunded", "void", "failed"].includes(b.status) && (
                           <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); updateBooking(b, { status: "cancelled" }); }}><XCircle className="w-4 h-4 mr-2" /> Cancel</DropdownMenuItem>
                         )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); archiveBooking(b); }}><Archive className="w-4 h-4 mr-2" /> Archive</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(b); }}><Trash2 className="w-4 h-4 mr-2" /> Delete Permanently</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

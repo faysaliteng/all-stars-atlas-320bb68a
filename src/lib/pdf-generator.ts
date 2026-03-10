@@ -1223,11 +1223,6 @@ export async function printTicketPDF(ticket: TicketData) {
     printWindow.onload = () => { printWindow.print(); };
   }
 }
-
-interface PassengerInfo {
-  title?: string;
-  firstName: string;
-  lastName: string;
   passport?: string;
   seat?: string;
   ticketNumber?: string;

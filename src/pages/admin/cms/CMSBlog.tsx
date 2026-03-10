@@ -79,9 +79,7 @@ function generateDefaultContent(post: any): string {
 }
 
 function defaultPosts(): BlogPost[] {
-  return BLOG_POSTS.map(p => ({
-    ...p, id: String(p.id), content: generateDefaultContent(p), tags: [p.category] as string[], seoTitle: p.title, seoDescription: p.excerpt, seoKeywords: p.category.toLowerCase(), slug: slugify(p.title), featured: false, allowComments: true,
-  } as BlogPost));
+  return [];
 }
 
 // ─── Rich Text Toolbar ───

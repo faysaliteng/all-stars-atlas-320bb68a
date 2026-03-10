@@ -329,7 +329,7 @@ function normalizeTTIResponse(response, originCode, destinationCode, isRoundTrip
         price: pricePerDirection,
         totalRoundTripPrice: isRoundTrip && odCount > 1 ? totalItinPrice : undefined,
         currency: currency,
-        refundable: false,
+        refundable: isRefundable,
         baggage: '20kg',
         aircraft: firstLeg.aircraft,
         legs: legs,

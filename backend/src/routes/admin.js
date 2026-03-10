@@ -382,10 +382,18 @@ router.get('/reports', async (req, res) => {
     const totalRevenue = data.reduce((sum, d) => sum + parseFloat(d.revenue || 0), 0);
     const totalBookings = data.reduce((sum, d) => sum + d.bookings, 0);
 
+    // Calculate real growth rate: compare current period vs prior
+    let growthRate = 0;
+    if (data.length >= 2) {
+      const lastVal = parseFloat(data[data.length - 1].revenue);
+      const prevVal = parseFloat(data[data.length - 2].revenue);
+      if (prevVal > 0) growthRate = Math.round(((lastVal - prevVal) / prevVal) * 100 * 10) / 10;
+    }
+
     res.json({
       type, dateFrom, dateTo,
       data: data.map(d => ({ period: d.period, revenue: parseFloat(d.revenue), bookings: d.bookings })),
-      summary: { totalRevenue, totalBookings, averageOrderValue: totalBookings > 0 ? Math.round(totalRevenue / totalBookings) : 0, growthRate: 12.5 },
+      summary: { totalRevenue, totalBookings, averageOrderValue: totalBookings > 0 ? Math.round(totalRevenue / totalBookings) : 0, growthRate },
     });
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }
 });

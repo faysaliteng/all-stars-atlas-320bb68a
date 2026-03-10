@@ -1129,35 +1129,80 @@ async function voidTicket({ pnr, ticketNumber }) {
 
   console.log('[TTI VOID] Voiding ticket:', ticketNumber, 'PNR:', pnr);
 
-  try {
-    const request = {
-      RequestInfo: { AuthenticationKey: config.key },
-      BookingReference: pnr,
-      AgencyInfo: { AgencyId: config.agencyId, AgencyName: config.agencyName },
-      CancelTicketSettings: {
-        Action: 'Void',
-        Type: 'Void',
-        TicketNumber: ticketNumber,
+  const requestVariants = [
+    {
+      label: 'Bare + BookingRef inside CancelTicketSettings',
+      bare: true,
+      body: {
+        RequestInfo: { AuthenticationKey: config.key },
+        CancelTicketSettings: {
+          Action: 'Void',
+          BookingReference: pnr,
+          TicketNumber: ticketNumber,
+        },
       },
-    };
+    },
+    {
+      label: 'Bare + BookingRef top-level',
+      bare: true,
+      body: {
+        RequestInfo: { AuthenticationKey: config.key },
+        BookingReference: pnr,
+        CancelTicketSettings: { Action: 'Void', Type: 'Void', TicketNumber: ticketNumber },
+      },
+    },
+    {
+      label: 'Wrapped + BookingRef inside CancelTicketSettings',
+      bare: false,
+      body: {
+        RequestInfo: { AuthenticationKey: config.key },
+        CancelTicketSettings: {
+          Action: 'Void',
+          BookingReference: pnr,
+          TicketNumber: ticketNumber,
+        },
+      },
+    },
+    {
+      label: 'Wrapped + BookingRef top-level',
+      bare: false,
+      body: {
+        RequestInfo: { AuthenticationKey: config.key },
+        BookingReference: pnr,
+        AgencyInfo: { AgencyId: config.agencyId, AgencyName: config.agencyName },
+        CancelTicketSettings: { Action: 'Void', Type: 'Void', TicketNumber: ticketNumber },
+      },
+    },
+  ];
 
-    console.log('[TTI VOID] Request:', JSON.stringify(request));
+  for (const variant of requestVariants) {
+    try {
+      console.log(`[TTI VOID] Trying: ${variant.label}`);
+      const response = variant.bare
+        ? await ttiRequestBare('Cancel', variant.body)
+        : await ttiRequest('Cancel', variant.body);
 
-    const response = await ttiRequest('Cancel', request);
+      console.log('[TTI VOID] Response:', JSON.stringify(response).substring(0, 3000));
 
-    console.log('[TTI VOID] Full response keys:', Object.keys(response));
-    console.log('[TTI VOID] Full response:', JSON.stringify(response).substring(0, 3000));
+      if (response.ResponseInfo?.Error) {
+        const errMsg = response.ResponseInfo.Error.Message || response.ResponseInfo.Error.Code || 'Unknown';
+        console.error(`[TTI VOID] ❌ Variant "${variant.label}" error: ${errMsg}`);
+        if (errMsg.includes('Missing field') || errMsg.includes('not found') || errMsg.includes('NullReference')) {
+          continue;
+        }
+        throw new Error(`TTI void error: ${errMsg}`);
+      }
 
-    if (response.ResponseInfo?.Error) {
-      throw new Error(`TTI void error: ${response.ResponseInfo.Error.Message || response.ResponseInfo.Error.Code}`);
+      console.log(`[TTI VOID] ✅ Ticket voided via "${variant.label}":`, ticketNumber);
+      return { success: true, rawResponse: response, methodUsed: `Cancel (${variant.label})` };
+    } catch (err) {
+      if (err.message.startsWith('TTI void error:')) throw err;
+      console.error(`[TTI VOID] Variant "${variant.label}" failed:`, err.message);
+      continue;
     }
-
-    console.log('[TTI VOID] ✅ Ticket voided:', ticketNumber);
-    return { success: true, rawResponse: response, methodUsed: 'Cancel (Void action)' };
-  } catch (err) {
-    console.error('[TTI VOID] ❌ Failed:', err.message);
-    return { success: false, error: err.message };
   }
+
+  return { success: false, error: `TTI Void API: all request formats failed for PNR ${pnr}.` };
 }
 
-module.exports = { searchFlights, createBooking, issueTicket, cancelBooking, voidTicket, ttiRequest, getTTIConfig, getAirlineName, clearTTIConfigCache };
+module.exports = { searchFlights, createBooking, issueTicket, cancelBooking, voidTicket, ttiRequest, ttiRequestBare, getTTIConfig, getAirlineName, clearTTIConfigCache };

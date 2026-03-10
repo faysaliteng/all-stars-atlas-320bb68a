@@ -248,14 +248,22 @@ function slugify(text: string): string {
 const CMSBlog = () => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const [posts, setPosts] = useState<BlogPost[]>(() =>
-    getCollection(STORE_KEY, defaultPosts()) as BlogPost[]
-  );
+  const { data: apiPosts } = useQuery({ queryKey: ['cms', 'blog'], queryFn: () => api.get('/cms/blog'), retry: 1 });
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [initialized, setInitialized] = useState(false);
   const [editorMode, setEditorMode] = useState<"list" | "edit">("list");
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [activeTab, setActiveTab] = useState("editor");
   const [filterStatus, setFilterStatus] = useState("all");
   const [autoSaveIndicator, setAutoSaveIndicator] = useState("");
+
+  useEffect(() => {
+    if (apiPosts && !initialized) {
+      const raw = (apiPosts as any)?.data || (apiPosts as any)?.posts || [];
+      setPosts(raw.map((p: any) => ({ ...emptyPost, ...p, id: String(p.id) })));
+      setInitialized(true);
+    }
+  }, [apiPosts, initialized]);
 
   const filtered = posts.filter(p => {
     if (search && !p.title.toLowerCase().includes(search.toLowerCase()) && !p.author?.toLowerCase().includes(search.toLowerCase())) return false;
@@ -263,7 +271,7 @@ const CMSBlog = () => {
     return true;
   });
 
-  const handleSave = (asDraft = false) => {
+  const handleSave = async (asDraft = false) => {
     if (!editingPost) return;
     const post = { ...editingPost };
     if (asDraft) post.status = "draft";
@@ -274,16 +282,21 @@ const CMSBlog = () => {
     if (!post.seoTitle) post.seoTitle = post.title;
     if (!post.seoDescription) post.seoDescription = post.excerpt;
 
-    if (post.id && posts.some(p => p.id === post.id)) {
-      const updated = updateInCollection(STORE_KEY, defaultPosts(), post.id, post as any) as BlogPost[];
-      setPosts([...updated]);
-      toast({ title: "✓ Post Saved", description: `"${post.title}" has been updated.` });
-    } else {
-      post.id = `post-${Date.now()}`;
-      post.date = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      const updated = addToCollection(STORE_KEY, defaultPosts(), post as any) as BlogPost[];
-      setPosts([...updated]);
-      toast({ title: "✓ Post Created", description: `"${post.title}" has been created.` });
+    try {
+      if (post.id && posts.some(p => p.id === post.id)) {
+        await api.put(`/cms/blog/${post.id}`, post);
+        setPosts(prev => prev.map(p => p.id === post.id ? post : p));
+        toast({ title: "✓ Post Saved", description: `"${post.title}" has been updated.` });
+      } else {
+        post.id = `post-${Date.now()}`;
+        post.date = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        const result = await api.post('/cms/blog', post) as any;
+        post.id = result?.id || post.id;
+        setPosts(prev => [post, ...prev]);
+        toast({ title: "✓ Post Created", description: `"${post.title}" has been created.` });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to save post", variant: "destructive" });
     }
     setEditingPost(post);
     setAutoSaveIndicator("Saved just now");
@@ -296,17 +309,17 @@ const CMSBlog = () => {
     setActiveTab("editor");
   };
 
-  const handleDelete = (post: any) => {
+  const handleDelete = async (post: any) => {
     if (!confirm(`Delete "${post.title}"? This cannot be undone.`)) return;
-    const updated = removeFromCollection(STORE_KEY, defaultPosts(), post.id) as BlogPost[];
-    setPosts([...updated]);
+    try { await api.delete(`/cms/blog/${post.id}`); } catch {}
+    setPosts(prev => prev.filter(p => p.id !== post.id));
     toast({ title: "Deleted", description: `"${post.title}" has been removed.`, variant: "destructive" });
   };
 
-  const handleDuplicate = (post: any) => {
+  const handleDuplicate = async (post: any) => {
     const dup = { ...post, id: `post-${Date.now()}`, title: `${post.title} (Copy)`, status: "draft", views: 0, slug: `${post.slug}-copy` };
-    const updated = addToCollection(STORE_KEY, defaultPosts(), dup as any) as BlogPost[];
-    setPosts([...updated]);
+    try { const result = await api.post('/cms/blog', dup) as any; dup.id = result?.id || dup.id; } catch {}
+    setPosts(prev => [dup, ...prev]);
     toast({ title: "Duplicated", description: `Copy of "${post.title}" created as draft.` });
   };
 

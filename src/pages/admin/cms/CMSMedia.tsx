@@ -15,14 +15,23 @@ const STORE_KEY = "cms_media";
 const CMSMedia = () => {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [media, setMedia] = useState<any[]>(() => getCollection(STORE_KEY, MEDIA_FILES.map(m => ({ ...m, id: String(m.id) }))));
+  const { data: apiData } = useQuery({ queryKey: ['cms', 'media'], queryFn: () => api.get('/cms/media'), retry: 1 });
+  const [media, setMedia] = useState<any[]>([]);
+  const [initialized, setInitialized] = useState(false);
   const [previewItem, setPreviewItem] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
-  const defaults = MEDIA_FILES.map(m => ({ ...m, id: String(m.id) }));
-  const filtered = media.filter(m => m.name.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    if (apiData && !initialized) {
+      const raw = (apiData as any)?.data || (apiData as any)?.media || [];
+      setMedia(raw.map((m: any) => ({ ...m, id: String(m.id) })));
+      setInitialized(true);
+    }
+  }, [apiData, initialized]);
+
+  const filtered = media.filter(m => m.name?.toLowerCase().includes(search.toLowerCase()));
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -35,29 +44,17 @@ const CMSMedia = () => {
           formData.append('file', file);
           const result = await api.upload<any>('/admin/cms/media/upload', formData);
           const newMedia = {
-            id: `media-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            id: result?.id || `media-${Date.now()}-${Math.random().toString(36).slice(2)}`,
             name: result.filename || file.name,
             type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'document',
             size: `${(file.size / 1024).toFixed(0)} KB`,
             url: result.url || URL.createObjectURL(file),
             uploaded: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
           };
-          const updated = addToCollection(STORE_KEY, defaults, newMedia);
-          setMedia([...updated]);
+          setMedia(prev => [newMedia, ...prev]);
           toast.success(`${file.name} uploaded`);
         } catch {
-          // Fallback: store locally if API fails
-          const newMedia = {
-            id: `media-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            name: file.name,
-            type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'document',
-            size: file.size < 1024 * 1024 ? `${(file.size / 1024).toFixed(0)} KB` : `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-            url: URL.createObjectURL(file),
-            uploaded: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-          };
-          const updated = addToCollection(STORE_KEY, defaults, newMedia);
-          setMedia([...updated]);
-          toast.success(`${file.name} added locally`);
+          toast.error(`Failed to upload ${file.name}`);
         }
       }
     } finally {
@@ -65,9 +62,9 @@ const CMSMedia = () => {
     }
   };
 
-  const handleDelete = (m: any) => {
-    const updated = removeFromCollection(STORE_KEY, defaults, m.id);
-    setMedia([...updated]);
+  const handleDelete = async (m: any) => {
+    try { await api.delete(`/cms/media/${m.id}`); } catch {}
+    setMedia(prev => prev.filter(x => x.id !== m.id));
     toast.success(`${m.name} deleted`);
   };
 

@@ -14,17 +14,25 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-const STORE_KEY = "cms_destinations";
 const emptyDest = { name: "", country: "", type: "domestic" as const, hotels: 0, img: "", featured: false, description: "" };
 
 const CMSDestinations = () => {
-  const [destinations, setDestinations] = useState(() => getCollection(STORE_KEY, DESTINATIONS.map(d => ({ ...d, id: String(d.id) }))));
+  const { data: apiData } = useQuery({ queryKey: ['cms', 'destinations'], queryFn: () => api.get('/cms/destinations'), retry: 1 });
+  const [destinations, setDestinations] = useState<any[]>([]);
+  const [initialized, setInitialized] = useState(false);
   const [filter, setFilter] = useState<"all" | "domestic" | "international">("all");
   const [showDialog, setShowDialog] = useState(false);
   const [editingDest, setEditingDest] = useState<any>(null);
   const [form, setForm] = useState(emptyDest);
 
-  const defaults = DESTINATIONS.map(d => ({ ...d, id: String(d.id) }));
+  useEffect(() => {
+    if (apiData && !initialized) {
+      const raw = (apiData as any)?.data || (apiData as any)?.destinations || [];
+      setDestinations(raw.map((d: any) => ({ ...d, id: String(d.id) })));
+      setInitialized(true);
+    }
+  }, [apiData, initialized]);
+
   const filtered = filter === "all" ? destinations : destinations.filter(d => d.type === filter);
 
   const openNew = () => { setEditingDest(null); setForm(emptyDest); setShowDialog(true); };
@@ -34,30 +42,34 @@ const CMSDestinations = () => {
     setShowDialog(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name) { toast.error("Name is required"); return; }
-    if (editingDest) {
-      const updated = updateInCollection(STORE_KEY, defaults, editingDest.id, { ...form });
-      setDestinations([...updated]);
-      toast.success(`"${form.name}" updated`);
-    } else {
-      const newDest = { ...form, id: `dest-${Date.now()}` };
-      const updated = addToCollection(STORE_KEY, defaults, newDest);
-      setDestinations([...updated]);
-      toast.success(`"${form.name}" added`);
+    try {
+      if (editingDest) {
+        await api.put(`/cms/destinations/${editingDest.id}`, form);
+        setDestinations(prev => prev.map(d => d.id === editingDest.id ? { ...d, ...form } : d));
+        toast.success(`"${form.name}" updated`);
+      } else {
+        const result = await api.post('/cms/destinations', form) as any;
+        const newDest = { ...form, id: result?.id || `dest-${Date.now()}` };
+        setDestinations(prev => [newDest, ...prev]);
+        toast.success(`"${form.name}" added`);
+      }
+    } catch {
+      toast.error("Failed to save destination");
     }
     setShowDialog(false);
   };
 
-  const handleDelete = (d: any) => {
-    const updated = removeFromCollection(STORE_KEY, defaults, d.id);
-    setDestinations([...updated]);
+  const handleDelete = async (d: any) => {
+    try { await api.delete(`/cms/destinations/${d.id}`); } catch {}
+    setDestinations(prev => prev.filter(x => x.id !== d.id));
     toast.success(`"${d.name}" removed`);
   };
 
-  const toggleFeatured = (d: any) => {
-    const updated = updateInCollection(STORE_KEY, defaults, d.id, { featured: !d.featured });
-    setDestinations([...updated]);
+  const toggleFeatured = async (d: any) => {
+    try { await api.put(`/cms/destinations/${d.id}`, { featured: !d.featured }); } catch {}
+    setDestinations(prev => prev.map(x => x.id === d.id ? { ...x, featured: !x.featured } : x));
   };
 
   return (

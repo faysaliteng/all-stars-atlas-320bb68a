@@ -13,25 +13,33 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-const STORE_KEY = "cms_email_templates";
 const emptyTemplate = { name: "", subject: "", trigger: "", active: true, lastEdited: "", body: "" };
 
 const CMSEmailTemplates = () => {
-  const [templates, setTemplates] = useState(() => getCollection(STORE_KEY, EMAIL_TEMPLATES.map(t => ({ ...t, id: String(t.id), body: "" }))));
+  const { data: apiData } = useQuery({ queryKey: ['cms', 'email-templates'], queryFn: () => api.get('/cms/email-templates'), retry: 1 });
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [initialized, setInitialized] = useState(false);
   const [search, setSearch] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingTpl, setEditingTpl] = useState<any>(null);
   const [form, setForm] = useState(emptyTemplate);
   const [previewTpl, setPreviewTpl] = useState<any>(null);
 
-  const defaults = EMAIL_TEMPLATES.map(t => ({ ...t, id: String(t.id), body: "" }));
-  const filtered = templates.filter(t => t.name.toLowerCase().includes(search.toLowerCase()) || t.trigger.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    if (apiData && !initialized) {
+      const raw = (apiData as any)?.data || (apiData as any)?.templates || [];
+      setTemplates(raw.map((t: any) => ({ ...t, id: String(t.id) })));
+      setInitialized(true);
+    }
+  }, [apiData, initialized]);
 
-  const toggleActive = (id: string) => {
+  const filtered = templates.filter(t => t.name.toLowerCase().includes(search.toLowerCase()) || t.trigger?.toLowerCase().includes(search.toLowerCase()));
+
+  const toggleActive = async (id: string) => {
     const tpl = templates.find(t => String(t.id) === id);
     if (!tpl) return;
-    const updated = updateInCollection(STORE_KEY, defaults, id, { active: !tpl.active });
-    setTemplates([...updated]);
+    try { await api.put(`/cms/email-templates/${id}`, { active: !tpl.active }); } catch {}
+    setTemplates(prev => prev.map(t => String(t.id) === id ? { ...t, active: !t.active } : t));
   };
 
   const openNew = () => { setEditingTpl(null); setForm(emptyTemplate); setShowDialog(true); };
@@ -41,25 +49,29 @@ const CMSEmailTemplates = () => {
     setShowDialog(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.subject) { toast.error("Name and Subject are required"); return; }
     const now = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    if (editingTpl) {
-      const updated = updateInCollection(STORE_KEY, defaults, editingTpl.id, { ...form, lastEdited: now });
-      setTemplates([...updated]);
-      toast.success(`"${form.name}" updated`);
-    } else {
-      const newTpl = { ...form, id: `tpl-${Date.now()}`, lastEdited: now };
-      const updated = addToCollection(STORE_KEY, defaults, newTpl);
-      setTemplates([...updated]);
-      toast.success(`"${form.name}" created`);
+    try {
+      if (editingTpl) {
+        await api.put(`/cms/email-templates/${editingTpl.id}`, { ...form, lastEdited: now });
+        setTemplates(prev => prev.map(t => t.id === editingTpl.id ? { ...t, ...form, lastEdited: now } : t));
+        toast.success(`"${form.name}" updated`);
+      } else {
+        const result = await api.post('/cms/email-templates', { ...form, lastEdited: now }) as any;
+        const newTpl = { ...form, id: result?.id || `tpl-${Date.now()}`, lastEdited: now };
+        setTemplates(prev => [newTpl, ...prev]);
+        toast.success(`"${form.name}" created`);
+      }
+    } catch {
+      toast.error("Failed to save template");
     }
     setShowDialog(false);
   };
 
-  const handleDelete = (t: any) => {
-    const updated = removeFromCollection(STORE_KEY, defaults, String(t.id));
-    setTemplates([...updated]);
+  const handleDelete = async (t: any) => {
+    try { await api.delete(`/cms/email-templates/${String(t.id)}`); } catch {}
+    setTemplates(prev => prev.filter(x => x.id !== String(t.id)));
     toast.success(`"${t.name}" deleted`);
   };
 

@@ -28,7 +28,7 @@ const statusLabelMap: Record<string, string> = {
   confirmed: "Confirmed", pending: "Pending", in_progress: "In Progress",
   completed: "Completed", cancelled: "Cancelled", void: "Void",
   refund: "Refund", exchange: "Exchange", expired: "Expired",
-  un_confirmed: "Un-Confirmed",
+  un_confirmed: "Un-Confirmed", ticketed: "Ticketed",
 };
 function displayStatus(status: string) { return statusLabelMap[status] || status; }
 

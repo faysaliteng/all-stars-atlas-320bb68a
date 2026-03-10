@@ -166,15 +166,15 @@ const FlightBooking = () => {
   const { data: page, isLoading } = useCmsPageContent("/flights/book");
   const { toast } = useToast();
 
-  const [selectedMeal, setSelectedMeal] = useState("standard");
+  const [selectedMeal, setSelectedMeal] = useState("");
   const [selectedBaggage, setSelectedBaggage] = useState<string[]>([]);
-  const [selectedSeats, setSelectedSeats] = useState<Record<number, string>>({});
-  const [seatPrices, setSeatPrices] = useState<Record<number, number>>({});
 
-  // Ancillary data from API
-  const [mealOptions, setMealOptions] = useState(DEFAULT_MEALS);
-  const [baggageOptions, setBaggageOptions] = useState(DEFAULT_BAGGAGE);
-  const [ancillarySource, setAncillarySource] = useState("standard");
+  // Ancillary data from real API ONLY — no fake fallbacks
+  const [mealOptions, setMealOptions] = useState<{ id: string; name: string; price: number; desc: string; icon?: string }[]>([]);
+  const [baggageOptions, setBaggageOptions] = useState<{ id: string; name: string; price: number; desc: string; icon?: string }[]>([]);
+  const [ancillarySource, setAncillarySource] = useState("none");
+  const [ancillaryLoading, setAncillaryLoading] = useState(false);
+  const hasRealExtras = ancillarySource !== "none" && ancillarySource !== "standard";
 
   const [passengers, setPassengers] = useState([{
     title: "", firstName: "", lastName: "", dob: "", nationality: "", passport: "", passportExpiry: "", email: "", phone: "", gender: "", documentCountry: "BD",

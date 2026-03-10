@@ -23,9 +23,10 @@ import DataLoader from "@/components/DataLoader";
 import { downloadCSV } from "@/lib/csv-export";
 
 const ALL_STATUSES = [
-  { value: "on_hold", label: "On Hold", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  { value: "on_hold", label: "Reserved", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
   { value: "pending", label: "Pending", color: "bg-warning/10 text-warning" },
   { value: "confirmed", label: "Confirmed", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+  { value: "ticketed", label: "Ticketed", color: "bg-accent/10 text-accent" },
   { value: "processing", label: "Processing", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
   { value: "completed", label: "Completed", color: "bg-primary/10 text-primary" },
   { value: "cancelled", label: "Cancelled", color: "bg-destructive/10 text-destructive" },
@@ -36,6 +37,9 @@ const ALL_STATUSES = [
   { value: "exchange", label: "Exchange", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
   { value: "no_show", label: "No Show", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
 ];
+
+// Map DB status to display label
+const statusLabel = (status: string) => ALL_STATUSES.find(s => s.value === status)?.label || status?.replace(/_/g, ' ');
 
 const PAYMENT_STATUSES = ["unpaid", "paid", "partial", "refunded", "pending"];
 const PAYMENT_METHODS = ["bkash", "nagad", "rocket", "card", "bank_transfer", "pay_later"];

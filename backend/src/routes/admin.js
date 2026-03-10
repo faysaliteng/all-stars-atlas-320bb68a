@@ -510,6 +510,10 @@ router.get('/settings', async (req, res) => {
         try { settings.bankAccounts = JSON.parse(r.setting_value); } catch {}
       } else if (r.setting_key === 'notifications') {
         try { settings.notifications = JSON.parse(r.setting_value); } catch {}
+      } else if (r.setting_key === 'markup_config') {
+        try { settings.markup_config = JSON.parse(r.setting_value); } catch {}
+      } else if (r.setting_key === 'currency_rates') {
+        try { settings.currency_rates = JSON.parse(r.setting_value); } catch {}
       } else {
         settings[r.setting_key] = r.setting_value;
       }
@@ -522,6 +526,11 @@ router.get('/settings', async (req, res) => {
       defaultCurrency: settings.currency || 'BDT',
       apiKeys,
       socialOAuth,
+      settings: {
+        ...settings,
+        markup_config: settings.markup_config || null,
+        currency_rates: settings.currency_rates || null,
+      },
       paymentMethods: settings.paymentMethods || null,
       bankAccounts: settings.bankAccounts || null,
       notificationPrefs: settings.notifications || null,
@@ -579,6 +588,20 @@ router.put('/settings', async (req, res) => {
       const val = JSON.stringify(notifications);
       await db.query('INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?', ['notifications', val, val]);
       return res.json({ message: 'Notification preferences saved' });
+    }
+
+    // Markup config
+    if (req.body.markup_config) {
+      const val = JSON.stringify(req.body.markup_config);
+      await db.query('INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()', ['markup_config', val, val]);
+      return res.json({ message: 'Markup config saved' });
+    }
+
+    // Currency rates
+    if (req.body.currency_rates) {
+      const val = JSON.stringify(req.body.currency_rates);
+      await db.query('INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()', ['currency_rates', val, val]);
+      return res.json({ message: 'Currency rates saved' });
     }
 
     // General settings
@@ -740,7 +763,21 @@ router.get('/invoices', async (req, res) => {
 // POST /admin/invoices/:id/remind
 router.post('/invoices/:id/remind', async (req, res) => {
   try {
-    // In production, this would send an email
+    const [rows] = await db.query(
+      `SELECT b.booking_ref, b.total_amount, u.email, u.first_name FROM bookings b JOIN users u ON b.user_id = u.id WHERE b.id = ?`,
+      [req.params.id]
+    );
+    if (rows.length > 0 && rows[0].email) {
+      try {
+        await notifyPayment(rows[0].email, rows[0].first_name, {
+          bookingRef: rows[0].booking_ref,
+          amount: parseFloat(rows[0].total_amount),
+          type: 'reminder',
+        });
+      } catch (notifyErr) {
+        console.error('Payment reminder notification failed:', notifyErr.message);
+      }
+    }
     res.json({ message: 'Payment reminder sent' });
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }
 });

@@ -105,19 +105,19 @@
 │   ├── robots.txt            # Crawler rules
 │   └── favicon.png           # App icon
 ├── BACKEND_API_SPEC.md       # 90+ API endpoint spec
-├── CHANGELOG.md              # Version history
+├── CHANGELOG.md              # Version history (v1.0–v3.2)
 ├── Deployment.md             # VPS deployment guide
 └── developer_documentation.md # Dev handbook
 ```
 
 ---
 
-## 🎯 Features (100% Complete — Audited 2026-03-10)
+## 🎯 Features (100% Complete — Audited 2026-03-10 v3.2)
 
 ### Public Site (10 Services)
 - **Homepage** — 11 CMS-driven sections with parallax hero video, animated counters, and section reordering
 - **Flight Search** — One-way, round-trip, multi-city (2-5 segments), domestic/international toggle, 740+ airports, cabin class, passenger count, fare types (Regular/Student/Umrah). **Real-time GDS via TTI/ZENITH API (Air Astra) + BDFare** + local database results merged via `Promise.allSettled`. Google Flights-style cards with airline logos (60+ airlines via Kiwi CDN), timeline segments, layover badges, and advanced filters (stops, price, time, airline). **Round-trip results split into Outbound/Return sections with paired selection and sticky total bar.**
-- **Flight Booking** — Enterprise 4-step flow: (1) Itinerary Review → (2) Passenger Info (Title, Passport, DOB, Nationality per pax) → (3) Extras (Meal selection with 7 options, Extra Baggage 5-30kg, Seat selection) → (4) Review & Pay with real-time fare breakdown. Auth gate for unauthenticated users.
+- **Flight Booking** — Enterprise 3-4 step flow: (1) Itinerary Review → (2) Passenger Info (Title, Passport, DOB, Nationality per pax) → (3) Extras (only shown when real GDS ancillary data exists — no mock options) → (4) Review & Pay with real-time fare breakdown using actual GDS tax data. Auth gate for unauthenticated users. Real PNR creation via TTI/ZENITH API for Air Astra reservations.
 - **E-Ticket PDF** — Professional airline-standard PDF with company branding, airline logos, segment boxes (Terminal/Aircraft/Flight No), passenger names in LAST/FIRST format, generated via jsPDF
 - **Invoice PDF** — Multi-line item invoice matching professional format with QR code, grand total in words, auto-pagination for large invoices
 - **Money Receipt PDF** — Professional receipt matching banking format with line items, totals, "received with gratitude" text, signature area, QR code verification
@@ -162,12 +162,14 @@
 | Module | Features |
 |--------|----------|
 | Dashboard | Revenue charts (Recharts), booking stats, recent activity |
-| Bookings | All bookings, status management, notes, **real-time GDS operations** (Ticket/Cancel/Void via TTI, BDFare, FlyHub, Sabre) |
+| Bookings | All bookings, status management, notes, **real-time GDS operations** (Ticket/Cancel/Void via TTI, BDFare, FlyHub, Sabre). TTI ticketing handled manually with admin warning. |
 | Users | User list, role assignment, ID verification status |
 | Payments | Payment tracking & history |
 | Payment Approvals | Receipt image viewer, approve/reject workflow |
-| Discounts & Pricing | Coupon codes, seasonal pricing rules (DB-backed) |
-| Invoices | Invoice management, Money Receipt download, reminders |
+| Discounts & Pricing | Coupon codes, seasonal pricing rules, price rule management (DB-backed via `system_settings`) |
+| Markup & Revenue | Per-service markup config (base fare, tax, SSR, min/max markup, ticket issue charge) |
+| Currency Management | Multi-currency exchange rates with markup, auto-update toggle, converter |
+| Invoices | Invoice management, Money Receipt download, payment reminders (email notification) |
 | Reports | Revenue, booking, user analytics with export |
 | Visa | Application management, status updates |
 | CMS: All Pages | 40+ page content management with defaults |
@@ -181,9 +183,10 @@
 ### GDS & API Integrations (All Admin-Panel Configurable)
 | Integration | File | Description |
 |-------------|------|-------------|
-| **TTI/ZENITH (Air Astra)** | `tti-flights.js` | Real-time flight search via Agency ID 10000240 |
+| **TTI/ZENITH (Air Astra)** | `tti-flights.js` | Real-time flight search + booking (PNR creation). Cancel via `Cancel` method. Ticketing = manual (no API). |
 | **BDFare** | `bdf-flights.js` | Bangladesh flight aggregator (US-Bangla, Novoair, Biman) |
 | **FlyHub** | `flyhub-flights.js` | 450+ airline flight aggregator with token auth |
+| **Sabre GDS** | `sabre-flights.js` | International flights via Bargain Finder Max V5 |
 | **HotelBeds** | `hotelbeds.js` | 180,000+ hotels worldwide with SHA256 signature |
 | **Airalo** | `airalo.js` | eSIM for 200+ countries with QR delivery |
 | **SSL Wireless** | `ssl-recharge.js` | Mobile recharge (GP/Robi/BL/TT) + bill payments |
@@ -275,7 +278,7 @@ Express, mysql2, bcryptjs, jsonwebtoken, multer, uuid, cors, helmet, morgan, exp
 | Document | Description |
 |----------|-------------|
 | [README.md](./README.md) | This file — project overview |
-| [CHANGELOG.md](./CHANGELOG.md) | Version history (v1.0–v2.7) |
+| [CHANGELOG.md](./CHANGELOG.md) | Version history (v1.0–v3.2) |
 | [BACKEND_API_SPEC.md](./BACKEND_API_SPEC.md) | 90+ API endpoints with request/response schemas |
 | [Deployment.md](./Deployment.md) | VPS deployment automation guide (Ubuntu 24.04, Nginx, PM2, SSL) |
 | [developer_documentation.md](./developer_documentation.md) | Developer handbook (architecture, patterns, conventions) |
@@ -293,6 +296,6 @@ Proprietary — Evan International (Seven Trip). All rights reserved.
 
 **Seven Trip** — A concern of Evan International  
 📞 +880 1749-373748  
-📧 support@seventrip.com.bd  
+📧 support@seven-trip.com  
 📍 Beena Kanon, Flat-4A, House-03, Road-17, Block-E, Banani, Dhaka-1213  
-🌐 www.seventrip.com.bd
+🌐 www.seven-trip.com

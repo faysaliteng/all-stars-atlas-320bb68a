@@ -141,7 +141,9 @@ function parsePassportText(text) {
     if (mrz1.startsWith('P')) {
       // Country code (positions 2-4)
       const countryCode = mrz1.substring(2, 5).replace(/</g, '');
-      result.country = countryCode;
+      // Convert ISO 3166 alpha-3 to alpha-2 for common codes
+      const countryMap = { BGD: 'BD', IND: 'IN', USA: 'US', GBR: 'GB', PAK: 'PK', NPL: 'NP', LKA: 'LK', MMR: 'MM', MYS: 'MY', SGP: 'SG', ARE: 'AE', SAU: 'SA', KWT: 'KW', QAT: 'QA', BHR: 'BH', OMN: 'OM', CAN: 'CA', AUS: 'AU' };
+      result.country = countryMap[countryCode] || countryCode;
 
       // Names: after position 5, split by <<
       const nameSection = mrz1.substring(5);

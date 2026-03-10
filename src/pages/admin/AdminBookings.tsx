@@ -124,7 +124,7 @@ const AdminBookings = () => {
 
   const stats = {
     total: bookings.length,
-    confirmed: bookings.filter((b: any) => b.status === "confirmed" || b.status === "completed").length,
+    confirmed: bookings.filter((b: any) => ["confirmed", "completed", "ticketed"].includes(b.status)).length,
     pending: bookings.filter((b: any) => ["pending", "on_hold", "processing"].includes(b.status)).length,
     cancelled: bookings.filter((b: any) => ["cancelled", "failed", "void", "no_show"].includes(b.status)).length,
   };

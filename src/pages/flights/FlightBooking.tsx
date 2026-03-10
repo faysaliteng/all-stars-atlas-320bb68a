@@ -544,11 +544,11 @@ const FlightBooking = () => {
                       <Users className="w-5 h-5 text-accent" /> Enter Traveler Details
                     </CardTitle>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => setPassportScanOpen(true)}>
+                      <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => { setActivePaxIndex(0); setPassportScanOpen(true); }}>
                         <ScanLine className="w-3.5 h-3.5 mr-1" /> Passport Scan
                       </Button>
                       {isAuthenticated && (
-                        <Button variant="outline" size="sm" className="text-xs h-8 border-accent/30 text-accent hover:bg-accent/10" onClick={() => setSearchPaxOpen(true)}>
+                        <Button variant="outline" size="sm" className="text-xs h-8 border-accent/30 text-accent hover:bg-accent/10" onClick={() => { setActivePaxIndex(0); setSearchPaxOpen(true); }}>
                           <Search className="w-3.5 h-3.5 mr-1" /> Saved Passenger
                         </Button>
                       )}

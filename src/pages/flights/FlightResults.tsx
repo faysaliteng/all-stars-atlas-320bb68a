@@ -544,7 +544,7 @@ const FlightResults = () => {
 
   const handleBookRoundTrip = () => {
     if (!selectedOutbound || !selectedReturn) return;
-    navigate(`/flights/book?roundTrip=true`, { state: { outboundFlight: selectedOutbound, returnFlight: selectedReturn } });
+    navigate(`/flights/book?roundTrip=true&adults=${adults}&children=${children}&infants=${infants}&cabin=${cabinClass || "economy"}`, { state: { outboundFlight: selectedOutbound, returnFlight: selectedReturn } });
   };
 
   const roundTripTotal = (selectedOutbound?.price || 0) + (selectedReturn?.price || 0);

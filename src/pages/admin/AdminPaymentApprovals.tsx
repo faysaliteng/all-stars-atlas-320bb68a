@@ -107,8 +107,7 @@ const AdminPaymentApprovals = () => {
       qc.invalidateQueries({ queryKey: ['admin', 'payment-approvals'] });
       refetch();
     } catch {
-      setLocalUpdates(prev => ({ ...prev, [id]: "Rejected" }));
-      toast({ title: "Payment Rejected", description: "Payment has been rejected" });
+      toast({ title: "Error", description: "Failed to reject payment", variant: "destructive" });
       setRejectNote("");
     } finally {
       setActionLoading(null);

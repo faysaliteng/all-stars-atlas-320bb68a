@@ -1223,9 +1223,6 @@ export async function printTicketPDF(ticket: TicketData) {
     printWindow.onload = () => { printWindow.print(); };
   }
 }
-
-
-  from?: string;
   to?: string;
   date?: string;
   time?: string;

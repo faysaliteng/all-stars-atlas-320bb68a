@@ -559,8 +559,22 @@ const FlightBooking = () => {
                 <CardContent className="p-3 sm:p-5">
                   {passengers.map((pax, pi) => (
                     <div key={pi} className="space-y-3 sm:space-y-4">
-                      {pi > 0 && <Separator className="my-4" />}
-                      <Badge variant="outline" className="text-xs mb-3">Adult Traveler {pi + 1}</Badge>
+                      {pi > 0 && <Separator className="my-5" />}
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-xs mb-3">{paxTypes[pi]?.label || `Passenger ${pi + 1}`} Traveler</Badge>
+                        {pi > 0 && (
+                          <div className="flex gap-2 mb-3">
+                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setActivePaxIndex(pi); setPassportScanOpen(true); }}>
+                              <ScanLine className="w-3 h-3 mr-1" /> Scan
+                            </Button>
+                            {isAuthenticated && (
+                              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setActivePaxIndex(pi); setSearchPaxOpen(true); }}>
+                                <Search className="w-3 h-3 mr-1" /> Saved
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Row 1: Title + Gender + DOB + Nationality */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">

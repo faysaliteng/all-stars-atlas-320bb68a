@@ -57,6 +57,14 @@ const AdminBookings = () => {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [issueTicketOpen, setIssueTicketOpen] = useState(false);
+  const [cancelFlightOpen, setCancelFlightOpen] = useState(false);
+  const [sendPayLinkOpen, setSendPayLinkOpen] = useState(false);
+  const [issueNotes, setIssueNotes] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [payLinkEmail, setPayLinkEmail] = useState("");
+  const [payLinkName, setPayLinkName] = useState("");
+  const [payLinkPlatform, setPayLinkPlatform] = useState("email");
   const { toast } = useToast();
   const qc = useQueryClient();
 

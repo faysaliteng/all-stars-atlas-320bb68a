@@ -301,7 +301,7 @@ const AdminBookings = () => {
                   <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{b.type}</Badge></TableCell>
                   <TableCell className="hidden lg:table-cell text-sm">{b.route}</TableCell>
                   <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{b.date}</TableCell>
-                  <TableCell><Badge variant="outline" className={`text-[11px] capitalize ${getStatusStyle(b.status)}`}>{b.status?.replace(/_/g, ' ')}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className={`text-[11px] capitalize ${getStatusStyle(b.status)}`}>{statusLabel(b.status)}</Badge></TableCell>
                   <TableCell className="hidden lg:table-cell"><Badge variant="outline" className="text-[10px] capitalize">{b.paymentStatus}</Badge></TableCell>
                   <TableCell className="text-right font-semibold text-sm">{b.amount}</TableCell>
                   <TableCell>

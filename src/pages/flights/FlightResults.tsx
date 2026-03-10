@@ -15,82 +15,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useFlightSearch } from "@/hooks/useApiData";
 import { useCmsPageContent } from "@/hooks/useCmsContent";
 import DataLoader from "@/components/DataLoader";
+import { AIRPORTS } from "@/lib/airports";
 
-/* ─── Airline logo CDN ─── */
-const AIRLINE_LOGOS: Record<string, string> = {
-  "2A": "https://images.kiwi.com/airlines/64/2A.png", "S2": "https://images.kiwi.com/airlines/64/S2.png",
-  "BG": "https://images.kiwi.com/airlines/64/BG.png", "BS": "https://images.kiwi.com/airlines/64/BS.png",
-  "VQ": "https://images.kiwi.com/airlines/64/VQ.png", "RX": "https://images.kiwi.com/airlines/64/RX.png",
-  "EK": "https://images.kiwi.com/airlines/64/EK.png", "QR": "https://images.kiwi.com/airlines/64/QR.png",
-  "SQ": "https://images.kiwi.com/airlines/64/SQ.png", "TG": "https://images.kiwi.com/airlines/64/TG.png",
-  "6E": "https://images.kiwi.com/airlines/64/6E.png", "G9": "https://images.kiwi.com/airlines/64/G9.png",
-  "MH": "https://images.kiwi.com/airlines/64/MH.png", "TK": "https://images.kiwi.com/airlines/64/TK.png",
-  "CX": "https://images.kiwi.com/airlines/64/CX.png", "AI": "https://images.kiwi.com/airlines/64/AI.png",
-  "UL": "https://images.kiwi.com/airlines/64/UL.png", "SV": "https://images.kiwi.com/airlines/64/SV.png",
-  "FZ": "https://images.kiwi.com/airlines/64/FZ.png", "ET": "https://images.kiwi.com/airlines/64/ET.png",
-  "LH": "https://images.kiwi.com/airlines/64/LH.png", "BA": "https://images.kiwi.com/airlines/64/BA.png",
-  "AF": "https://images.kiwi.com/airlines/64/AF.png", "KL": "https://images.kiwi.com/airlines/64/KL.png",
-  "EY": "https://images.kiwi.com/airlines/64/EY.png", "WY": "https://images.kiwi.com/airlines/64/WY.png",
-  "GF": "https://images.kiwi.com/airlines/64/GF.png", "PG": "https://images.kiwi.com/airlines/64/PG.png",
-  "OZ": "https://images.kiwi.com/airlines/64/OZ.png", "KE": "https://images.kiwi.com/airlines/64/KE.png",
-  "NH": "https://images.kiwi.com/airlines/64/NH.png", "JL": "https://images.kiwi.com/airlines/64/JL.png",
-  "AA": "https://images.kiwi.com/airlines/64/AA.png", "UA": "https://images.kiwi.com/airlines/64/UA.png",
-  "DL": "https://images.kiwi.com/airlines/64/DL.png", "AC": "https://images.kiwi.com/airlines/64/AC.png",
-  "PK": "https://images.kiwi.com/airlines/64/PK.png", "BR": "https://images.kiwi.com/airlines/64/BR.png",
-  "CI": "https://images.kiwi.com/airlines/64/CI.png", "CA": "https://images.kiwi.com/airlines/64/CA.png",
-  "MU": "https://images.kiwi.com/airlines/64/MU.png", "CZ": "https://images.kiwi.com/airlines/64/CZ.png",
-  "GA": "https://images.kiwi.com/airlines/64/GA.png", "VN": "https://images.kiwi.com/airlines/64/VN.png",
-  "QF": "https://images.kiwi.com/airlines/64/QF.png", "NZ": "https://images.kiwi.com/airlines/64/NZ.png",
-  "PR": "https://images.kiwi.com/airlines/64/PR.png", "AK": "https://images.kiwi.com/airlines/64/AK.png",
-  "FR": "https://images.kiwi.com/airlines/64/FR.png", "U2": "https://images.kiwi.com/airlines/64/U2.png",
-  "W6": "https://images.kiwi.com/airlines/64/W6.png", "IB": "https://images.kiwi.com/airlines/64/IB.png",
-  "AY": "https://images.kiwi.com/airlines/64/AY.png", "LX": "https://images.kiwi.com/airlines/64/LX.png",
-  "OS": "https://images.kiwi.com/airlines/64/OS.png", "SK": "https://images.kiwi.com/airlines/64/SK.png",
-  "LO": "https://images.kiwi.com/airlines/64/LO.png", "W5": "https://images.kiwi.com/airlines/64/W5.png",
-  "HU": "https://images.kiwi.com/airlines/64/HU.png",
-};
-
+/* ─── Airline logo — dynamic CDN, no hardcoded map ─── */
 function getAirlineLogo(code?: string): string | null {
   if (!code) return null;
-  return AIRLINE_LOGOS[code] || `https://images.kiwi.com/airlines/64/${code}.png`;
+  return `https://images.kiwi.com/airlines/64/${code}.png`;
 }
 
-/* ─── Airport names ─── */
-const AIRPORT_NAMES: Record<string, string> = {
-  DAC: "Hazrat Shahjalal International Airport",
-  CXB: "Cox's Bazar Airport",
-  CGP: "Shah Amanat International Airport",
-  ZYL: "Osmani International Airport",
-  RJH: "Shah Makhdum Airport",
-  JSR: "Jessore Airport",
-  SPD: "Saidpur Airport",
-  BZL: "Barisal Airport",
-  DXB: "Dubai International Airport",
-  DOH: "Hamad International Airport",
-  SIN: "Changi Airport",
-  BKK: "Suvarnabhumi Airport",
-  KUL: "Kuala Lumpur International Airport",
-  DEL: "Indira Gandhi International Airport",
-  BOM: "Chhatrapati Shivaji International Airport",
-  CCU: "Netaji Subhas Chandra Bose International Airport",
-  LHR: "Heathrow Airport",
-  JFK: "John F. Kennedy International Airport",
-  IST: "Istanbul Airport",
-  JED: "King Abdulaziz International Airport",
-  RUH: "King Khalid International Airport",
-  MCT: "Muscat International Airport",
-  BAH: "Bahrain International Airport",
-  CMB: "Bandaranaike International Airport",
-  HKG: "Hong Kong International Airport",
-  NRT: "Narita International Airport",
-  ICN: "Incheon International Airport",
-  PEK: "Beijing Capital International Airport",
-  SYD: "Sydney Kingsford Smith Airport",
-  AUH: "Abu Dhabi International Airport",
-  KTM: "Tribhuvan International Airport",
-};
+/* ─── Airport names — from airports.ts registry (no hardcoded map) ─── */
+const AIRPORT_NAME_MAP = new Map(AIRPORTS.map(a => [a.code, a.name]));
 function getAirportName(code: string): string {
-  return AIRPORT_NAMES[code] || `${code} Airport`;
+  return AIRPORT_NAME_MAP.get(code) || `${code} Airport`;
 }
 
 function formatTime(datetime?: string): string {
@@ -188,13 +124,18 @@ const FlightCard = ({
   const duration = flight.duration || "";
   const stops = flight.stops ?? 0;
   const price = flight.price ?? 0;
+  const baseFare = flight.baseFare ?? price;
+  const taxes = flight.taxes ?? 0;
   const refundable = flight.refundable ?? false;
   const nextDay = isNextDay(flight.departureTime, flight.arrivalTime);
   const legs = flight.legs || [];
   const stopCodes = flight.stopCodes || [];
   const aircraft = flight.aircraft || legs[0]?.aircraft || "";
   const source = flight.source || "db";
-  const baggage = flight.baggage || "20 kg";
+  const baggage = flight.baggage || null;
+  const handBaggage = flight.handBaggage || null;
+  const cancellationPolicy = flight.cancellationPolicy || null;
+  const dateChangePolicy = flight.dateChangePolicy || null;
   const [activeDetailTab, setActiveDetailTab] = useState("itinerary");
 
   const stopsLabel = stops === 0 ? "Non-Stop" : `${stops} Stop${stops > 1 ? "s" : ""}`;
@@ -382,7 +323,7 @@ const FlightCard = ({
                                 <p className="text-xl sm:text-2xl font-black">{formatTime(leg.departureTime)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">{legDepartDate}</p>
                                 <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                                  Terminal: {leg.originTerminal || "D"}, {getAirportName(legOrigin)} ({legOrigin})
+                                  {leg.originTerminal ? `Terminal: ${leg.originTerminal}, ` : ""}{getAirportName(legOrigin)} ({legOrigin})
                                 </p>
                               </div>
 
@@ -404,7 +345,7 @@ const FlightCard = ({
                                 <p className="text-xl sm:text-2xl font-black">{formatTime(leg.arrivalTime)}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">{formatDate(leg.arrivalTime)}</p>
                                 <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                                  Terminal: {leg.destinationTerminal || "D"}, {getAirportName(legDest)} ({legDest})
+                                  {leg.destinationTerminal ? `Terminal: ${leg.destinationTerminal}, ` : ""}{getAirportName(legDest)} ({legDest})
                                 </p>
                               </div>
                             </div>
@@ -434,48 +375,52 @@ const FlightCard = ({
                     </div>
                   )}
 
-                  {/* Fare Summary Tab */}
+                  {/* Fare Summary Tab — real API data */}
                   {activeDetailTab === "fare" && (
                     <div className="max-w-md space-y-2 text-sm">
-                      <div className="flex justify-between py-1.5"><span className="text-muted-foreground">Base Fare</span><span className="font-semibold">৳{price.toLocaleString()}</span></div>
-                      <div className="flex justify-between py-1.5"><span className="text-muted-foreground">Taxes & Fees</span><span className="font-semibold">Included</span></div>
+                      <div className="flex justify-between py-1.5"><span className="text-muted-foreground">Base Fare</span><span className="font-semibold">৳{baseFare.toLocaleString()}</span></div>
+                      <div className="flex justify-between py-1.5"><span className="text-muted-foreground">Taxes & Fees</span><span className="font-semibold">{taxes > 0 ? `৳${taxes.toLocaleString()}` : "Included"}</span></div>
                       <Separator />
                       <div className="flex justify-between py-1.5 text-base"><span className="font-bold">Total Fare</span><span className="font-black text-accent">৳{price.toLocaleString()}</span></div>
                       <p className="text-[11px] text-muted-foreground mt-2"><Info className="w-3 h-3 inline mr-1" />{refundable ? "This fare is refundable. Cancellation charges may apply." : "This fare is partially refundable. Change and cancellation fees apply."}</p>
                     </div>
                   )}
 
-                  {/* Baggage Tab */}
+                  {/* Baggage Tab — real API data */}
                   {activeDetailTab === "baggage" && (
                     <div className="max-w-md space-y-3">
-                      <div className="flex items-center gap-3 p-3 bg-accent/5 rounded-xl border border-accent/10"><Luggage className="w-5 h-5 text-accent" /><div><p className="text-sm font-semibold">Checked Baggage</p><p className="text-xs text-muted-foreground">{baggage} per passenger</p></div></div>
-                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"><Luggage className="w-4 h-4 text-muted-foreground" /><div><p className="text-sm font-semibold">Hand Baggage</p><p className="text-xs text-muted-foreground">7 kg · 1 piece</p></div></div>
-                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"><span className="text-sm font-medium">Cabin Class</span><span className="text-sm text-muted-foreground ml-auto">{cabin}</span></div>
+                      <div className="flex items-center gap-3 p-3 bg-accent/5 rounded-xl border border-accent/10"><Luggage className="w-5 h-5 text-accent" /><div><p className="text-sm font-semibold">Checked Baggage</p><p className="text-xs text-muted-foreground">{baggage ? `${baggage} per passenger` : "As per airline policy"}</p></div></div>
+                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"><Luggage className="w-4 h-4 text-muted-foreground" /><div><p className="text-sm font-semibold">Hand Baggage</p><p className="text-xs text-muted-foreground">{handBaggage ? `${handBaggage} per passenger` : "As per airline policy"}</p></div></div>
+                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"><span className="text-sm font-medium">Cabin Class</span><span className="text-sm text-muted-foreground ml-auto">{cabinDisplay}</span></div>
                     </div>
                   )}
 
-                  {/* Cancellation Tab */}
+                  {/* Cancellation Tab — real API data */}
                   {activeDetailTab === "cancellation" && (
                     <div className="max-w-md space-y-3">
                       <div className={`flex items-center gap-3 p-3 rounded-xl border ${refundable ? "bg-accent/5 border-accent/20" : "bg-warning/5 border-warning/20"}`}>
                         <Shield className={`w-5 h-5 ${refundable ? "text-accent" : "text-warning"}`} />
-                        <div><p className="text-sm font-semibold">{refundable ? "Refundable Fare" : "Partially Refundable"}</p><p className="text-xs text-muted-foreground">{refundable ? "Full refund available (cancellation fees may apply)" : "Cancellation charges apply as per airline policy"}</p></div>
+                        <div><p className="text-sm font-semibold">{refundable ? "Refundable Fare" : "Non-Refundable Fare"}</p><p className="text-xs text-muted-foreground">{refundable ? "Full refund available (cancellation fees may apply)" : "Cancellation charges apply as per airline policy"}</p></div>
                       </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1.5 border-b border-border/50"><span className="text-muted-foreground">Before Departure</span><span className="font-semibold">{refundable ? "Refundable (fees apply)" : "Partially refundable"}</span></div>
-                        <div className="flex justify-between py-1.5 border-b border-border/50"><span className="text-muted-foreground">After Departure</span><span className="font-semibold text-destructive">Non-refundable</span></div>
-                        <div className="flex justify-between py-1.5"><span className="text-muted-foreground">No Show</span><span className="font-semibold text-destructive">Non-refundable</span></div>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground"><Info className="w-3 h-3 inline mr-1" />Cancellation charges are determined by the airline and may vary.</p>
+                      {cancellationPolicy?.ruleText ? (
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{cancellationPolicy.ruleText}</p>
+                      ) : (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between py-1.5 border-b border-border/50"><span className="text-muted-foreground">Before Departure</span><span className="font-semibold">{cancellationPolicy?.beforeDeparture != null ? `৳${Number(cancellationPolicy.beforeDeparture).toLocaleString()} fee` : refundable ? "Refundable (fees apply)" : "As per airline policy"}</span></div>
+                          <div className="flex justify-between py-1.5 border-b border-border/50"><span className="text-muted-foreground">After Departure</span><span className="font-semibold text-destructive">{cancellationPolicy?.afterDeparture || "Non-refundable"}</span></div>
+                          <div className="flex justify-between py-1.5"><span className="text-muted-foreground">No Show</span><span className="font-semibold text-destructive">{cancellationPolicy?.noShow || "Non-refundable"}</span></div>
+                        </div>
+                      )}
+                      <p className="text-[11px] text-muted-foreground"><Info className="w-3 h-3 inline mr-1" />Cancellation charges are determined by the airline and may vary. Contact support for exact amounts.</p>
                     </div>
                   )}
 
-                  {/* Date Change Tab */}
+                  {/* Date Change Tab — real API data */}
                   {activeDetailTab === "datechange" && (
                     <div className="max-w-md space-y-3">
-                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border"><Clock className="w-5 h-5 text-muted-foreground" /><div><p className="text-sm font-semibold">Date Change Policy</p><p className="text-xs text-muted-foreground">Subject to airline fare rules and availability</p></div></div>
+                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border"><Clock className="w-5 h-5 text-muted-foreground" /><div><p className="text-sm font-semibold">Date Change Policy</p><p className="text-xs text-muted-foreground">{dateChangePolicy?.ruleText || "Subject to airline fare rules and availability"}</p></div></div>
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1.5 border-b border-border/50"><span className="text-muted-foreground">Date Change</span><span className="font-semibold">Allowed (fees apply)</span></div>
+                        <div className="flex justify-between py-1.5 border-b border-border/50"><span className="text-muted-foreground">Date Change</span><span className="font-semibold">{dateChangePolicy?.changeAllowed !== false ? (dateChangePolicy?.changeFee != null ? `৳${Number(dateChangePolicy.changeFee).toLocaleString()} fee` : "Allowed (fees apply)") : "Not allowed"}</span></div>
                         <div className="flex justify-between py-1.5 border-b border-border/50"><span className="text-muted-foreground">Route Change</span><span className="font-semibold text-destructive">Not allowed</span></div>
                         <div className="flex justify-between py-1.5"><span className="text-muted-foreground">Fare Difference</span><span className="font-semibold">Applicable</span></div>
                       </div>

@@ -355,6 +355,12 @@ const SearchWidget = () => {
   const [accountNumber, setAccountNumber] = useState("");
   const [billAmount, setBillAmount] = useState("");
 
+  // Date validation error highlighting
+  const [dateErrors, setDateErrors] = useState<Set<string>>(new Set());
+  const addDateError = (...keys: string[]) => setDateErrors(new Set(keys));
+  const clearDateError = (key: string) => setDateErrors(prev => { const n = new Set(prev); n.delete(key); return n; });
+  const dateErrorClass = (key: string) => dateErrors.has(key) ? "ring-2 ring-destructive/60 rounded-lg animate-shake" : "";
+
   const totalPax = passengers.adults + passengers.children + passengers.infants;
   const totalHotelGuests = hotelGuests.adults + hotelGuests.children;
 
@@ -387,8 +393,8 @@ const SearchWidget = () => {
     if (fromAirport.code === toAirport.code) { toast.error("Departure and arrival airports cannot be the same"); return; }
     if (flightScope === "domestic" && (fromAirport.country !== "BD" || toAirport.country !== "BD")) { toast.error("Domestic flights must be within Bangladesh"); return; }
     if (flightScope === "international" && fromAirport.country === "BD" && toAirport.country === "BD") { toast.error("International flights need at least one airport outside Bangladesh"); return; }
-    if (!departDate) { toast.error("Please select a departure date"); return; }
-    if (tripType === 'roundtrip' && !returnDate) { toast.error("Please select a return date for round trip"); return; }
+    if (!departDate) { toast.error("Please select a departure date"); addDateError("depart"); return; }
+    if (tripType === 'roundtrip' && !returnDate) { toast.error("Please select a return date for round trip"); addDateError("return"); return; }
     const params = new URLSearchParams({
       from: fromAirport.code, to: toAirport.code, tripType,
       adults: String(passengers.adults), children: String(passengers.children), infants: String(passengers.infants),
@@ -401,8 +407,8 @@ const SearchWidget = () => {
   };
 
   const handleHotelSearch = () => {
-    if (!checkIn) { toast.error("Please select a check-in date"); return; }
-    if (!checkOut) { toast.error("Please select a check-out date"); return; }
+    if (!checkIn) { toast.error("Please select a check-in date"); addDateError("checkIn"); return; }
+    if (!checkOut) { toast.error("Please select a check-out date"); addDateError("checkOut"); return; }
     const params = new URLSearchParams({ destination: hotelCity });
     params.set('checkIn', format(checkIn, 'yyyy-MM-dd'));
     params.set('checkOut', format(checkOut, 'yyyy-MM-dd'));
@@ -413,8 +419,8 @@ const SearchWidget = () => {
   };
 
   const handleVisaSearch = () => {
-    if (!visaDate) { toast.error("Please select a travel date"); return; }
-    if (!visaReturnDate) { toast.error("Please select a return date"); return; }
+    if (!visaDate) { toast.error("Please select a travel date"); addDateError("visaDate"); return; }
+    if (!visaReturnDate) { toast.error("Please select a return date"); addDateError("visaReturnDate"); return; }
     const country = VISA_COUNTRIES.find(c => c.code === visaCountry);
     const params = new URLSearchParams({
       country: country?.name || visaCountry,
@@ -427,14 +433,14 @@ const SearchWidget = () => {
   };
 
   const handleHolidaySearch = () => {
-    if (!travelDate) { toast.error("Please select a travel date"); return; }
+    if (!travelDate) { toast.error("Please select a travel date"); addDateError("travelDate"); return; }
     const params = new URLSearchParams({ destination: holidayDest });
     params.set('date', format(travelDate, 'yyyy-MM-dd'));
     navigate(`/holidays?${params.toString()}`);
   };
 
   const handleMedicalSearch = () => {
-    if (!medicalDate) { toast.error("Please select a travel date for medical appointment"); return; }
+    if (!medicalDate) { toast.error("Please select a travel date for medical appointment"); addDateError("medicalDate"); return; }
     const params = new URLSearchParams();
     if (medicalCountry) params.set('country', medicalCountry);
     if (treatmentType) params.set('treatment', treatmentType);
@@ -444,8 +450,8 @@ const SearchWidget = () => {
   };
 
   const handleCarSearch = () => {
-    if (!pickupDate) { toast.error("Please select a pickup date"); return; }
-    if (!dropoffDate) { toast.error("Please select a drop-off date"); return; }
+    if (!pickupDate) { toast.error("Please select a pickup date"); addDateError("pickupDate"); return; }
+    if (!dropoffDate) { toast.error("Please select a drop-off date"); addDateError("dropoffDate"); return; }
     const params = new URLSearchParams({ pickup: pickupCity, dropoff: dropoffCity });
     params.set('pickupDate', format(pickupDate, 'yyyy-MM-dd'));
     params.set('dropoffDate', format(dropoffDate, 'yyyy-MM-dd'));
@@ -453,7 +459,7 @@ const SearchWidget = () => {
   };
 
   const handleEsimSearch = () => {
-    if (!esimDate) { toast.error("Please select an activation date"); return; }
+    if (!esimDate) { toast.error("Please select an activation date"); addDateError("esimDate"); return; }
     const params = new URLSearchParams({ country: esimCountry, plan: esimPlan });
     params.set('activation', format(esimDate, 'yyyy-MM-dd'));
     navigate(`/esim?${params.toString()}`);
@@ -675,27 +681,27 @@ const SearchWidget = () => {
               <AirportInput label="To" value={toAirport} onChange={setToAirport} placeholder="Where to?" airports={scopedToAirports} />
             </div>
 
-            <div className={`${tripType === "roundtrip" ? "col-span-1 sm:col-span-1" : ""} md:col-span-2 search-field border-b md:border-b-0 flex-col items-start`}>
+            <div className={`${tripType === "roundtrip" ? "col-span-1 sm:col-span-1" : ""} md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("depart")}`}>
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Departure</div>
               <Popover>
                 <PopoverTrigger className="w-full text-left">
                   <DateDisplay date={departDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={departDate} onSelect={setDepartDate} initialFocus disabled={(date) => date < new Date()} />
+                  <Calendar mode="single" selected={departDate} onSelect={(d) => { setDepartDate(d); clearDateError("depart"); }} initialFocus disabled={(date) => date < new Date()} />
                 </PopoverContent>
               </Popover>
             </div>
 
             {tripType === "roundtrip" && (
-              <div className="md:col-span-2 search-field border-b md:border-b-0 flex-col items-start">
+              <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("return")}`}>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Return</div>
                 <Popover>
                   <PopoverTrigger className="w-full text-left">
                     <DateDisplay date={returnDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={returnDate} onSelect={setReturnDate} initialFocus disabled={(date) => date < (departDate || new Date())} />
+                    <Calendar mode="single" selected={returnDate} onSelect={(d) => { setReturnDate(d); clearDateError("return"); }} initialFocus disabled={(date) => date < (departDate || new Date())} />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -741,25 +747,25 @@ const SearchWidget = () => {
           />
         </div>
         <div className="grid grid-cols-2 md:contents">
-          <div className="md:col-span-2 search-field border-b md:border-b-0 border-r md:border-r flex-col items-start">
+          <div className={`md:col-span-2 search-field border-b md:border-b-0 border-r md:border-r flex-col items-start ${dateErrorClass("checkIn")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Check-in</div>
             <Popover>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={checkIn} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={checkIn} onSelect={setCheckIn} initialFocus disabled={(date) => date < new Date()} />
+                <Calendar mode="single" selected={checkIn} onSelect={(d) => { setCheckIn(d); clearDateError("checkIn"); }} initialFocus disabled={(date) => date < new Date()} />
               </PopoverContent>
             </Popover>
           </div>
-          <div className="md:col-span-2 search-field border-b md:border-b-0 flex-col items-start">
+          <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("checkOut")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Check-out</div>
             <Popover>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={checkOut} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={checkOut} onSelect={setCheckOut} initialFocus disabled={(date) => date < (checkIn || new Date())} />
+                <Calendar mode="single" selected={checkOut} onSelect={(d) => { setCheckOut(d); clearDateError("checkOut"); }} initialFocus disabled={(date) => date < (checkIn || new Date())} />
               </PopoverContent>
             </Popover>
           </div>
@@ -849,25 +855,25 @@ const SearchWidget = () => {
             </div>
           </div>
         </div>
-        <div className="search-field border-b md:border-b-0 flex-col items-start md:col-span-2">
+        <div className={`search-field border-b md:border-b-0 flex-col items-start md:col-span-2 ${dateErrorClass("visaDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Travel Date</div>
           <Popover>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={visaDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={visaDate} onSelect={setVisaDate} initialFocus disabled={(date) => date < new Date()} />
+              <Calendar mode="single" selected={visaDate} onSelect={(d) => { setVisaDate(d); clearDateError("visaDate"); }} initialFocus disabled={(date) => date < new Date()} />
             </PopoverContent>
           </Popover>
         </div>
-        <div className="search-field border-b md:border-b-0 flex-col items-start md:col-span-2">
+        <div className={`search-field border-b md:border-b-0 flex-col items-start md:col-span-2 ${dateErrorClass("visaReturnDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Return Date</div>
           <Popover>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={visaReturnDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={visaReturnDate} onSelect={setVisaReturnDate} initialFocus disabled={(date) => date < (visaDate || new Date())} />
+              <Calendar mode="single" selected={visaReturnDate} onSelect={(d) => { setVisaReturnDate(d); clearDateError("visaReturnDate"); }} initialFocus disabled={(date) => date < (visaDate || new Date())} />
             </PopoverContent>
           </Popover>
         </div>
@@ -926,14 +932,14 @@ const SearchWidget = () => {
               </div>
             </div>
           </div>
-          <div className="md:col-span-4 search-field border-b md:border-b-0 flex-col items-start">
+          <div className={`md:col-span-4 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("travelDate")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Travel Date</div>
             <Popover>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={travelDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={travelDate} onSelect={setTravelDate} initialFocus disabled={(date) => date < new Date()} />
+                <Calendar mode="single" selected={travelDate} onSelect={(d) => { setTravelDate(d); clearDateError("travelDate"); }} initialFocus disabled={(date) => date < new Date()} />
               </PopoverContent>
             </Popover>
           </div>
@@ -981,14 +987,14 @@ const SearchWidget = () => {
             </SelectContent>
           </Select>
         </div>
-        <div className="md:col-span-2 search-field border-b md:border-b-0 flex-col items-start">
+        <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("medicalDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Travel Date</div>
           <Popover>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={medicalDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={medicalDate} onSelect={setMedicalDate} initialFocus disabled={(date) => date < new Date()} />
+              <Calendar mode="single" selected={medicalDate} onSelect={(d) => { setMedicalDate(d); clearDateError("medicalDate"); }} initialFocus disabled={(date) => date < new Date()} />
             </PopoverContent>
           </Popover>
         </div>
@@ -1050,25 +1056,25 @@ const SearchWidget = () => {
           />
         </div>
         <div className="grid grid-cols-2 md:contents">
-          <div className="md:col-span-2 search-field border-b md:border-b-0 border-r flex-col items-start">
+          <div className={`md:col-span-2 search-field border-b md:border-b-0 border-r flex-col items-start ${dateErrorClass("pickupDate")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Pickup Date</div>
             <Popover>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={pickupDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={pickupDate} onSelect={setPickupDate} initialFocus disabled={(date) => date < new Date()} />
+                <Calendar mode="single" selected={pickupDate} onSelect={(d) => { setPickupDate(d); clearDateError("pickupDate"); }} initialFocus disabled={(date) => date < new Date()} />
               </PopoverContent>
             </Popover>
           </div>
-          <div className="md:col-span-2 search-field border-b md:border-b-0 flex-col items-start">
+          <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("dropoffDate")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Drop-off Date</div>
             <Popover>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={dropoffDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={dropoffDate} onSelect={setDropoffDate} initialFocus disabled={(date) => date < (pickupDate || new Date())} />
+                <Calendar mode="single" selected={dropoffDate} onSelect={(d) => { setDropoffDate(d); clearDateError("dropoffDate"); }} initialFocus disabled={(date) => date < (pickupDate || new Date())} />
               </PopoverContent>
             </Popover>
           </div>
@@ -1123,14 +1129,14 @@ const SearchWidget = () => {
             </SelectContent>
           </Select>
         </div>
-        <div className="md:col-span-3 search-field border-b md:border-b-0 flex-col items-start">
+        <div className={`md:col-span-3 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("esimDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Activation Date</div>
           <Popover>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={esimDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={esimDate} onSelect={setEsimDate} initialFocus disabled={(date) => date < new Date()} />
+              <Calendar mode="single" selected={esimDate} onSelect={(d) => { setEsimDate(d); clearDateError("esimDate"); }} initialFocus disabled={(date) => date < new Date()} />
             </PopoverContent>
           </Popover>
         </div>

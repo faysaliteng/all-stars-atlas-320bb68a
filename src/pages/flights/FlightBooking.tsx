@@ -225,8 +225,7 @@ const FlightBooking = () => {
 
   const mealCost = mealOptions.find(m => m.id === selectedMeal)?.price || 0;
   const baggageCost = selectedBaggage.reduce((sum, id) => sum + (baggageOptions.find(b => b.id === id)?.price || 0), 0);
-  const seatCost = Object.values(seatPrices).reduce((a, b) => a + b, 0);
-  const addOnTotal = mealCost + baggageCost + seatCost;
+  const addOnTotal = mealCost + baggageCost;
   const outboundPrice = outboundFlight?.price || 0;
   const returnPrice = returnFlight?.price || 0;
   const baseFare = outboundPrice + returnPrice;
@@ -236,14 +235,22 @@ const FlightBooking = () => {
 
   const deadlineInfo = resolveDeadlineInfo(outboundFlight, domestic);
 
-  const handleSeatSelect = (paxIdx: number, seatId: string, price: number) => {
-    setSelectedSeats(prev => ({ ...prev, [paxIdx]: seatId }));
-    setSeatPrices(prev => ({ ...prev, [paxIdx]: price }));
-  };
-  const handleSeatDeselect = (paxIdx: number) => {
-    setSelectedSeats(prev => { const n = { ...prev }; delete n[paxIdx]; return n; });
-    setSeatPrices(prev => { const n = { ...prev }; delete n[paxIdx]; return n; });
-  };
+  // Dynamic steps: only show Extras if real API data is available
+  const STEPS = hasRealExtras
+    ? [
+        { label: "Flight Details", icon: Plane },
+        { label: "Passenger Info", icon: Users },
+        { label: "Extras", icon: Plus },
+        { label: "Review & Pay", icon: CreditCard },
+      ]
+    : [
+        { label: "Flight Details", icon: Plane },
+        { label: "Passenger Info", icon: Users },
+        { label: "Review & Pay", icon: CreditCard },
+      ];
+  const totalSteps = STEPS.length;
+  const reviewStep = totalSteps;
+  const extrasStep = hasRealExtras ? 3 : -1; // -1 means no extras step
 
   const validateStep = (currentStep: number): boolean => {
     const errors: Record<string, string> = {};

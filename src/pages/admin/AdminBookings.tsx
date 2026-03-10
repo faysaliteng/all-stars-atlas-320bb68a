@@ -114,23 +114,21 @@ const AdminBookings = () => {
     try {
       const result: any = await api.put(`/admin/bookings/${b.rawId || b.id}`, updates);
 
-      // Show GDS-specific feedback
-      if (result?.gdsAction) {
-        if (result.gdsAction.success) {
-          const tickets = result.gdsAction.ticketNumbers || [];
-          toast({
-            title: "✅ GDS Action Successful",
-            description: tickets.length > 0
-              ? `Booking ${b.id} updated. Ticket(s): ${tickets.join(", ")}`
-              : `Booking ${b.id} updated via GDS successfully.`,
-          });
-        } else if (result.warning) {
-          toast({
-            title: "⚠️ GDS Action Failed",
-            description: result.warning,
-            variant: "destructive",
-          });
-        }
+      // Always check warning first (DB updated but GDS failed)
+      if (result?.warning) {
+        toast({
+          title: "⚠️ Status Updated — GDS Failed",
+          description: result.warning,
+          variant: "destructive",
+        });
+      } else if (result?.gdsAction?.success) {
+        const tickets = result.gdsAction.ticketNumbers || [];
+        toast({
+          title: "✅ GDS Action Successful",
+          description: tickets.length > 0
+            ? `Booking ${b.id} updated. Ticket(s): ${tickets.join(", ")}`
+            : `Booking ${b.id} updated via GDS successfully.`,
+        });
       } else {
         toast({ title: "Updated", description: `Booking ${b.id} updated successfully` });
       }

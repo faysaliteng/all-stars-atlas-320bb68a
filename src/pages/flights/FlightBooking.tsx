@@ -317,21 +317,20 @@ const FlightBooking = () => {
 
   const handlePassportScan = (data: any) => {
     const updated = [...passengers];
+    const pi = activePaxIndex;
     if (data.title) {
-      // Normalize OCR title (e.g. "MR" -> "Mr", "MS" -> "Ms") to match Select values
       const titleMap: Record<string, string> = { MR: "Mr", MRS: "Mrs", MS: "Ms", MISS: "Miss", MASTER: "Master" };
-      updated[0].title = titleMap[data.title.toUpperCase()] || data.title;
+      updated[pi].title = titleMap[data.title.toUpperCase()] || data.title;
     }
-    if (data.firstName) updated[0].firstName = data.firstName;
-    if (data.lastName) updated[0].lastName = data.lastName;
-    if (data.gender) updated[0].gender = data.gender;
-    if (data.birthDate) updated[0].dob = data.birthDate;
-    if (data.passportNumber) updated[0].passport = data.passportNumber;
-    if (data.expiryDate) updated[0].passportExpiry = data.expiryDate;
+    if (data.firstName) updated[pi].firstName = data.firstName;
+    if (data.lastName) updated[pi].lastName = data.lastName;
+    if (data.gender) updated[pi].gender = data.gender;
+    if (data.birthDate) updated[pi].dob = data.birthDate;
+    if (data.passportNumber) updated[pi].passport = data.passportNumber;
+    if (data.expiryDate) updated[pi].passportExpiry = data.expiryDate;
     if (data.country) {
-      updated[0].documentCountry = data.country;
-      // Use country as nationality if not already set
-      if (!updated[0].nationality) updated[0].nationality = data.country;
+      updated[pi].documentCountry = data.country;
+      if (!updated[pi].nationality) updated[pi].nationality = data.country;
     }
     setPassengers(updated);
     setFieldErrors({});
@@ -339,16 +338,17 @@ const FlightBooking = () => {
 
   const handleSelectExistingPax = (t: any) => {
     const updated = [...passengers];
-    updated[0] = {
-      title: t.title || updated[0].title,
+    const pi = activePaxIndex;
+    updated[pi] = {
+      title: t.title || updated[pi].title,
       firstName: t.firstName || "",
       lastName: t.lastName || "",
       dob: t.dob || "",
       nationality: t.nationality || "",
       passport: t.passport || "",
       passportExpiry: t.passportExpiry || "",
-      email: t.email || "",
-      phone: t.phone || "",
+      email: t.email || updated[pi].email,
+      phone: t.phone || updated[pi].phone,
       gender: t.gender || "",
       documentCountry: t.documentCountry || "BD",
     };

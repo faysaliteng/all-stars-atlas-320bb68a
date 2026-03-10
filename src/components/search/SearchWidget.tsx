@@ -419,8 +419,8 @@ const SearchWidget = () => {
   };
 
   const handleVisaSearch = () => {
-    if (!visaDate) { toast.error("Please select a travel date"); return; }
-    if (!visaReturnDate) { toast.error("Please select a return date"); return; }
+    if (!visaDate) { toast.error("Please select a travel date"); addDateError("visaDate"); return; }
+    if (!visaReturnDate) { toast.error("Please select a return date"); addDateError("visaReturnDate"); return; }
     const country = VISA_COUNTRIES.find(c => c.code === visaCountry);
     const params = new URLSearchParams({
       country: country?.name || visaCountry,

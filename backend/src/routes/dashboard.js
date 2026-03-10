@@ -41,7 +41,7 @@ router.get('/stats', async (req, res) => {
     );
     if (nextTrip.length > 0) {
       const b = nextTrip[0];
-      const details = JSON.parse(b.details || '{}');
+      const details = safeJsonParse(b.details, {});
       upcomingTrip = {
         title: details.destination || details.route || `${b.booking_type} Booking`,
         date: new Date(b.booked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),

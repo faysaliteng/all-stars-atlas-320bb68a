@@ -615,7 +615,7 @@ async function createBooking({ flightData, passengers, contactInfo }) {
     }
   }
 
-  // Build FareInfo directly from pre-filtered raw data (filtered per-direction during normalization)
+  // Build FareInfo from complete, unmodified raw search data (TTI requires exact echo-back)
   const fareInfo = {};
   if (rawItinerary) {
     fareInfo.Itineraries = [rawItinerary];

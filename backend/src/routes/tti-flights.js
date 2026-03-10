@@ -471,6 +471,26 @@ function normalizeTTIResponse(response, originCode, destinationCode, isRoundTrip
     }
   }
 
+  // Diagnostic logging for seat/baggage extraction
+  if (flights.length > 0) {
+    const sample = flights[0];
+    console.log(`[TTI] Normalized ${flights.length} flights. Sample: ${sample.flightNumber} — seats: ${sample.availableSeats}, baggage: ${sample.baggage}, handBaggage: ${sample.handBaggage}, refundable: ${sample.refundable}`);
+  }
+
+  // If no seats/baggage found, log the raw structure for debugging
+  if (flights.length > 0 && flights[0].availableSeats === null && itineraries.length > 0) {
+    const sampleItin = itineraries[0];
+    const sampleOD = sampleItin.AirOriginDestinations?.[0];
+    const sampleCoupon = sampleOD?.AirCoupons?.[0];
+    const sampleFare = etTicketFares[0];
+    console.log('[TTI DEBUG] AirCoupon keys:', sampleCoupon ? Object.keys(sampleCoupon) : 'none');
+    console.log('[TTI DEBUG] AirCoupon sample:', JSON.stringify(sampleCoupon)?.slice(0, 500));
+    console.log('[TTI DEBUG] ETTicketFare keys:', sampleFare ? Object.keys(sampleFare) : 'none');
+    if (sampleFare?.OriginDestinationFares?.[0]?.ETCouponFares?.[0]) {
+      console.log('[TTI DEBUG] ETCouponFare keys:', Object.keys(sampleFare.OriginDestinationFares[0].ETCouponFares[0]));
+    }
+  }
+
   return flights;
 }
 

@@ -230,35 +230,38 @@ function normalizeTTIResponse(response, originCode, destinationCode, isRoundTrip
     if (taxesTotal === 0 && baseFareTotal < totalItinPrice) taxesTotal = totalItinPrice - baseFareTotal;
 
     // Extract baggage allowance from fare data
+    // TTI uses CouponFares[].BagAllowances[] with CarryOn flag
     let checkedBaggage = null;
     let handBaggage = null;
     for (const f of fares) {
       const odFares = f.OriginDestinationFares || [];
       for (const odf of odFares) {
-        // Check baggage at OD level
-        if (odf.FreeBaggageAllowance || odf.BaggageAllowance || odf.Baggage) {
-          const bag = odf.FreeBaggageAllowance || odf.BaggageAllowance || odf.Baggage;
-          if (bag.Weight || bag.Quantity || bag.Allowance) {
-            checkedBaggage = bag.Weight ? `${bag.Weight}${bag.WeightUnit || 'kg'}` : bag.Quantity ? `${bag.Quantity} piece${bag.Quantity > 1 ? 's' : ''}` : `${bag.Allowance}`;
-          } else if (typeof bag === 'string') {
-            checkedBaggage = bag;
-          } else if (typeof bag === 'number') {
-            checkedBaggage = `${bag}kg`;
-          }
-        }
-        if (odf.HandBaggage || odf.CabinBaggage) {
-          const hb = odf.HandBaggage || odf.CabinBaggage;
-          handBaggage = typeof hb === 'string' ? hb : hb.Weight ? `${hb.Weight}${hb.WeightUnit || 'kg'}` : null;
-        }
-        // Also check coupon-level baggage
-        const couponFares = odf.ETCouponFares || odf.CouponFares || [];
+        const couponFares = odf.CouponFares || odf.ETCouponFares || [];
         for (const cf of couponFares) {
+          // TTI actual field: BagAllowances array
+          const bagAllowances = cf.BagAllowances || cf.BaggageAllowances || [];
+          for (const bag of bagAllowances) {
+            if (bag.CarryOn === false || bag.CarryOn === undefined) {
+              // Checked baggage
+              if (!checkedBaggage && bag.Weight) {
+                checkedBaggage = `${bag.Weight}${bag.WeightMeasureQualifier || 'kg'}`;
+              } else if (!checkedBaggage && bag.Quantity) {
+                checkedBaggage = `${bag.Quantity} piece${bag.Quantity > 1 ? 's' : ''}`;
+              }
+            }
+            if (bag.CarryOn === true) {
+              // Hand/cabin baggage
+              if (!handBaggage && bag.Weight) {
+                handBaggage = `${bag.Weight}${bag.WeightMeasureQualifier || 'kg'}`;
+              }
+            }
+          }
+          // Fallback: older field names
           if (!checkedBaggage && (cf.FreeBaggageAllowance || cf.BaggageAllowance)) {
-            const bag = cf.FreeBaggageAllowance || cf.BaggageAllowance;
-            if (bag.Weight) checkedBaggage = `${bag.Weight}${bag.WeightUnit || 'kg'}`;
-            else if (bag.Quantity) checkedBaggage = `${bag.Quantity} piece${bag.Quantity > 1 ? 's' : ''}`;
-            else if (typeof bag === 'string') checkedBaggage = bag;
-            else if (typeof bag === 'number') checkedBaggage = `${bag}kg`;
+            const b = cf.FreeBaggageAllowance || cf.BaggageAllowance;
+            if (b.Weight) checkedBaggage = `${b.Weight}${b.WeightUnit || 'kg'}`;
+            else if (typeof b === 'string') checkedBaggage = b;
+            else if (typeof b === 'number') checkedBaggage = `${b}kg`;
           }
         }
       }

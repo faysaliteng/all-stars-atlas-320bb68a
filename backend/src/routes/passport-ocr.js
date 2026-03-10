@@ -1,5 +1,6 @@
 /**
- * Passport OCR — Uses Google Cloud Vision API to extract text from passport/NID images
+ * Document OCR — Uses Google Cloud Vision API to extract text from any ID document
+ * (Passport, NID, Driving License, etc.)
  * Stores API key in system_settings (key: 'api_google_vision')
  */
 const express = require('express');

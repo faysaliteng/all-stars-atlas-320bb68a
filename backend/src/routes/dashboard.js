@@ -72,7 +72,7 @@ router.get('/stats', async (req, res) => {
     }));
 
     // Recent bookings for the list
-    const [recentBookings] = await db.query('SELECT * FROM bookings WHERE user_id = ? ORDER BY booked_at DESC LIMIT 5', [userId]);
+    const [recentBookings] = await db.query('SELECT * FROM bookings WHERE user_id = ? AND (archived IS NULL OR archived = 0) ORDER BY booked_at DESC LIMIT 5', [userId]);
     const bookings = recentBookings.map(b => {
       const details = safeJsonParse(b.details, {});
       return {

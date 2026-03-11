@@ -301,7 +301,7 @@ function inferGenderFromName(firstName, lastName) {
 
 function parseDocument(text) {
   const empty = () => ({
-    title: '', firstName: '', lastName: '', country: '',
+    title: '', firstName: '', lastName: '', country: '', countryCode: '',
     passportNumber: '', birthDate: '', birthPlace: '',
     gender: '', issuanceDate: '', expiryDate: '',
   });

@@ -369,26 +369,33 @@ const FlightBooking = () => {
     if (data.birthDate) updated[pi].dob = data.birthDate;
     if (data.passportNumber) updated[pi].passport = data.passportNumber;
     if (data.expiryDate) updated[pi].passportExpiry = data.expiryDate;
+    // Nationality — directly from OCR (full demonym like "Bangladeshi")
+    if (data.nationality) updated[pi].nationality = data.nationality;
+    // Phone — from NID or passport personal data page
+    if (data.phone && pi === 0) updated[pi].phone = data.phone;
+    // Email — not extractable from documents, skip
     if (data.countryCode || data.country) {
-      // countryCode is 3-letter ISO (BGD), map to 2-letter for documentCountry dropdown
       const code3to2: Record<string, string> = {
         BGD:'BD',IND:'IN',USA:'US',GBR:'GB',PAK:'PK',NPL:'NP',LKA:'LK',MMR:'MM',
         MYS:'MY',SGP:'SG',ARE:'AE',SAU:'SA',KWT:'KW',QAT:'QA',BHR:'BH',OMN:'OM',
         CAN:'CA',AUS:'AU',JPN:'JP',KOR:'KR',CHN:'CN',THA:'TH',IDN:'ID',PHL:'PH',
         TUR:'TR',EGY:'EG',DEU:'DE',FRA:'FR',ITA:'IT',ESP:'ES',NLD:'NL',CHE:'CH',
       };
-      const code3toNationality: Record<string, string> = {
-        BGD:'Bangladeshi',IND:'Indian',USA:'American',GBR:'British',PAK:'Pakistani',
-        NPL:'Nepalese',LKA:'Sri Lankan',MMR:'Myanmar',MYS:'Malaysian',SGP:'Singaporean',
-        ARE:'Emirati',SAU:'Saudi',KWT:'Kuwaiti',QAT:'Qatari',BHR:'Bahraini',OMN:'Omani',
-        CAN:'Canadian',AUS:'Australian',JPN:'Japanese',KOR:'Korean',CHN:'Chinese',
-        THA:'Thai',IDN:'Indonesian',PHL:'Filipino',TUR:'Turkish',EGY:'Egyptian',
-        DEU:'German',FRA:'French',ITA:'Italian',ESP:'Spanish',NLD:'Dutch',CHE:'Swiss',
-      };
       const iso2 = data.countryCode ? (code3to2[data.countryCode] || data.countryCode.substring(0, 2)) : "BD";
       updated[pi].documentCountry = iso2;
-      if (!updated[pi].nationality) {
-        updated[pi].nationality = data.countryCode ? (code3toNationality[data.countryCode] || data.country || "") : "Bangladeshi";
+      // Fallback nationality from country if OCR didn't extract demonym
+      if (!updated[pi].nationality && data.nationality) {
+        updated[pi].nationality = data.nationality;
+      } else if (!updated[pi].nationality) {
+        const code3toNationality: Record<string, string> = {
+          BGD:'Bangladeshi',IND:'Indian',USA:'American',GBR:'British',PAK:'Pakistani',
+          NPL:'Nepalese',LKA:'Sri Lankan',MMR:'Myanmar',MYS:'Malaysian',SGP:'Singaporean',
+          ARE:'Emirati',SAU:'Saudi',KWT:'Kuwaiti',QAT:'Qatari',BHR:'Bahraini',OMN:'Omani',
+          CAN:'Canadian',AUS:'Australian',JPN:'Japanese',KOR:'Korean',CHN:'Chinese',
+          THA:'Thai',IDN:'Indonesian',PHL:'Filipino',TUR:'Turkish',EGY:'Egyptian',
+          DEU:'German',FRA:'French',ITA:'Italian',ESP:'Spanish',NLD:'Dutch',CHE:'Swiss',
+        };
+        updated[pi].nationality = data.countryCode ? (code3toNationality[data.countryCode] || "") : "Bangladeshi";
       }
     }
     setPassengers(updated);

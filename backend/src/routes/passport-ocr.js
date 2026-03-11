@@ -920,7 +920,7 @@ function parseMRZ(lines) {
   return { data: r, verified };
 }
 
-function parseTD3(mrzLines, r) {
+function parseTD3(mrzLines, r, verified) {
   const line1 = mrzLines[0];
   const line2 = mrzLines.length > 1 ? mrzLines[1] : '';
 
@@ -934,52 +934,105 @@ function parseTD3(mrzLines, r) {
   }
 
   if (line2.length >= 28) {
-    let ppNum = line2.substring(0, 9).replace(/</g, '');
+    // TD3 Line 2 layout (44 chars):
+    // [0-8] passport number, [9] check digit
+    // [10-12] nationality, [13-18] DOB, [19] check digit
+    // [20] sex, [21-26] expiry, [27] check digit
+    // [28-42] optional data, [43] composite check digit
+
+    const ppField = line2.substring(0, 9);
+    const ppCheck = line2.charAt(9);
+    let ppNum = ppField.replace(/</g, '');
     const corrected = [];
     for (let i = 0; i < ppNum.length; i++) {
       if (i < 2 && /[A-Z]/i.test(ppNum[i])) corrected.push(ppNum[i]);
       else corrected.push(correctMRZChar(ppNum[i], true));
     }
     r.passportNumber = corrected.join('');
+    verified.passportNumber = verifyMRZField(ppField, ppCheck);
 
-    const dobRaw = line2.substring(13, 19);
-    const dob = correctMRZDate(dobRaw);
-    if (dob) r.birthDate = mrzDateToISO(dob, true);
+    // ── Nationality (pos 10-12) — separate from issuing country ──
+    const natCode = line2.substring(10, 13).replace(/</g, '');
+    if (natCode && natCode.length >= 2) {
+      r.nationality = natCode; // Will be resolved to full name in post-processing
+      console.log('[OCR] MRZ nationality code:', natCode);
+    }
+
+    const dobField = line2.substring(13, 19);
+    const dobCheck = line2.charAt(19);
+    const dob = correctMRZDate(dobField);
+    if (dob) {
+      r.birthDate = mrzDateToISO(dob, true);
+      verified.birthDate = verifyMRZField(dobField, dobCheck);
+    }
 
     const sex = line2.charAt(20);
     if (sex === 'M') { r.gender = 'Male'; r.title = 'MR'; }
     else if (sex === 'F') { r.gender = 'Female'; r.title = 'MS'; }
 
-    const expRaw = line2.substring(21, 27);
-    const exp = correctMRZDate(expRaw);
-    if (exp) r.expiryDate = mrzDateToISO(exp, false);
+    const expField = line2.substring(21, 27);
+    const expCheck = line2.charAt(27);
+    const exp = correctMRZDate(expField);
+    if (exp) {
+      r.expiryDate = mrzDateToISO(exp, false);
+      verified.expiryDate = verifyMRZField(expField, expCheck);
+    }
+
+    // ── Composite check digit (pos 43) — validates entire line2 ──
+    if (line2.length >= 44) {
+      const compositeData = line2.substring(0, 10) + line2.substring(13, 20) + line2.substring(21, 43);
+      const compositeCheck = line2.charAt(43);
+      const compositeValid = verifyMRZField(compositeData, compositeCheck);
+      console.log('[OCR] MRZ composite check:', compositeValid ? '✓ ALL DATA VERIFIED' : '✗ possible OCR errors');
+      if (compositeValid) {
+        // If composite passes, mark all fields as verified
+        verified.passportNumber = true;
+        verified.birthDate = true;
+        verified.expiryDate = true;
+      }
+    }
   }
 
-  return r;
+  return { data: r, verified };
 }
 
-function parseTD1(mrzLines, r) {
+function parseTD1(mrzLines, r, verified) {
   const line1 = mrzLines[0];
   const line2 = mrzLines[1];
   const line3 = mrzLines[2];
 
-  if (line1.length >= 14) {
+  if (line1.length >= 15) {
     r.country = line1.substring(2, 5).replace(/</g, '');
-    r.passportNumber = line1.substring(5, 14).replace(/</g, '');
+    const ppField = line1.substring(5, 14);
+    const ppCheck = line1.charAt(14);
+    r.passportNumber = ppField.replace(/</g, '');
+    verified.passportNumber = verifyMRZField(ppField, ppCheck);
   }
 
   if (line2.length >= 18) {
-    const dobRaw = line2.substring(0, 6);
-    const dob = correctMRZDate(dobRaw);
-    if (dob) r.birthDate = mrzDateToISO(dob, true);
+    const dobField = line2.substring(0, 6);
+    const dobCheck = line2.charAt(6);
+    const dob = correctMRZDate(dobField);
+    if (dob) {
+      r.birthDate = mrzDateToISO(dob, true);
+      verified.birthDate = verifyMRZField(dobField, dobCheck);
+    }
     const sex = line2.charAt(7);
     if (sex === 'M') { r.gender = 'Male'; r.title = 'MR'; }
     else if (sex === 'F') { r.gender = 'Female'; r.title = 'MS'; }
-    const expRaw = line2.substring(8, 14);
-    const exp = correctMRZDate(expRaw);
-    if (exp) r.expiryDate = mrzDateToISO(exp, false);
+    const expField = line2.substring(8, 14);
+    const expCheck = line2.charAt(14);
+    const exp = correctMRZDate(expField);
+    if (exp) {
+      r.expiryDate = mrzDateToISO(exp, false);
+      verified.expiryDate = verifyMRZField(expField, expCheck);
+    }
+    // Nationality at pos 15-17
     const nat = line2.substring(15, 18).replace(/</g, '');
-    if (nat && !r.country) r.country = nat;
+    if (nat) {
+      r.nationality = nat;
+      if (!r.country) r.country = nat;
+    }
   }
 
   if (line3) {
@@ -988,10 +1041,10 @@ function parseTD1(mrzLines, r) {
     if (parts.length >= 2) r.firstName = parts.slice(1).join(' ').replace(/</g, ' ').trim();
   }
 
-  return r;
+  return { data: r, verified };
 }
 
-function parseTD2(mrzLines, r) {
+function parseTD2(mrzLines, r, verified) {
   const line1 = mrzLines[0];
   const line2 = mrzLines[1];
 
@@ -1004,19 +1057,35 @@ function parseTD2(mrzLines, r) {
   }
 
   if (line2 && line2.length >= 28) {
-    r.passportNumber = line2.substring(0, 9).replace(/</g, '');
-    const dobRaw = line2.substring(13, 19);
-    const dob = correctMRZDate(dobRaw);
-    if (dob) r.birthDate = mrzDateToISO(dob, true);
+    const ppField = line2.substring(0, 9);
+    const ppCheck = line2.charAt(9);
+    r.passportNumber = ppField.replace(/</g, '');
+    verified.passportNumber = verifyMRZField(ppField, ppCheck);
+
+    // Nationality at pos 10-12
+    const nat = line2.substring(10, 13).replace(/</g, '');
+    if (nat) r.nationality = nat;
+
+    const dobField = line2.substring(13, 19);
+    const dobCheck = line2.charAt(19);
+    const dob = correctMRZDate(dobField);
+    if (dob) {
+      r.birthDate = mrzDateToISO(dob, true);
+      verified.birthDate = verifyMRZField(dobField, dobCheck);
+    }
     const sex = line2.charAt(20);
     if (sex === 'M') { r.gender = 'Male'; r.title = 'MR'; }
     else if (sex === 'F') { r.gender = 'Female'; r.title = 'MS'; }
-    const expRaw = line2.substring(21, 27);
-    const exp = correctMRZDate(expRaw);
-    if (exp) r.expiryDate = mrzDateToISO(exp, false);
+    const expField = line2.substring(21, 27);
+    const expCheck = line2.charAt(27);
+    const exp = correctMRZDate(expField);
+    if (exp) {
+      r.expiryDate = mrzDateToISO(exp, false);
+      verified.expiryDate = verifyMRZField(expField, expCheck);
+    }
   }
 
-  return r;
+  return { data: r, verified };
 }
 
 function correctMRZDate(raw) {

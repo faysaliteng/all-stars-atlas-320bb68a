@@ -427,7 +427,34 @@ const FlightBooking = () => {
     setFieldErrors({});
   };
 
-  const createBooking = async (payLater: boolean) => {
+  // Handle travel document file selection
+  const handleTravelDocSelect = async (key: string, file: File) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+    const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (!allowed.includes(ext)) { toast({ title: "Invalid File", description: "Only JPG, PNG, WebP, and PDF files are accepted.", variant: "destructive" }); return; }
+    if (file.size > 10 * 1024 * 1024) { toast({ title: "File Too Large", description: "Maximum file size is 10MB.", variant: "destructive" }); return; }
+    setTravelDocs(prev => ({ ...prev, [key]: { file, uploading: true } }));
+    try {
+      const formData = new FormData();
+      formData.append(key, file);
+      const result = await api.upload<any>("/flights/upload-travel-docs", formData);
+      if (result.documents?.length > 0) {
+        const doc = result.documents[0];
+        setTravelDocsUploaded(prev => ({ ...prev, [key]: { url: doc.url, originalName: doc.originalName, fieldname: doc.fieldname } }));
+        setTravelDocs(prev => ({ ...prev, [key]: { file, url: doc.url, uploading: false } }));
+      }
+    } catch (err: any) {
+      toast({ title: "Upload Failed", description: err.message || "Could not upload document.", variant: "destructive" });
+      setTravelDocs(prev => { const n = { ...prev }; delete n[key]; return n; });
+    }
+  };
+
+  const removeTravelDoc = (key: string) => {
+    setTravelDocs(prev => { const n = { ...prev }; delete n[key]; return n; });
+    setTravelDocsUploaded(prev => { const n = { ...prev }; delete n[key]; return n; });
+  };
+
+
     setBookingLoading(true);
     try {
       const bookingData = {

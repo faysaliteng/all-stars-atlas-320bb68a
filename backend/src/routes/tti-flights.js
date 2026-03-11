@@ -345,10 +345,52 @@ function normalizeTTIResponse(response, originCode, destinationCode, isRoundTrip
     // Extract penalty/fare rules for cancellation & date change
     let cancellationPolicy = null;
     let dateChangePolicy = null;
+
+    // Use FareRules VoluntaryRefundCode/VoluntaryChangeCode from the itinerary's linked fare rule
+    for (const airOD of airODs) {
+      const ruleRef = airOD.RefFareRule;
+      if (ruleRef && fareRuleMap[ruleRef]) {
+        const rule = fareRuleMap[ruleRef];
+        if (rule.VoluntaryRefundCode) {
+          cancellationPolicy = cancellationPolicy || {};
+          cancellationPolicy.voluntaryRefundCode = rule.VoluntaryRefundCode;
+          if (rule.VoluntaryRefundCode === 'NotPermitted') {
+            cancellationPolicy.refundable = false;
+            cancellationPolicy.label = 'Non-Refundable';
+          } else if (rule.VoluntaryRefundCode === 'WithPenalties') {
+            cancellationPolicy.refundable = true;
+            cancellationPolicy.label = 'Refundable (with penalties)';
+          } else if (rule.VoluntaryRefundCode === 'Free') {
+            cancellationPolicy.refundable = true;
+            cancellationPolicy.label = 'Fully Refundable';
+          }
+        }
+        if (rule.VoluntaryChangeCode) {
+          dateChangePolicy = dateChangePolicy || {};
+          dateChangePolicy.voluntaryChangeCode = rule.VoluntaryChangeCode;
+          if (rule.VoluntaryChangeCode === 'NotPermitted') {
+            dateChangePolicy.changeAllowed = false;
+            dateChangePolicy.label = 'Date change not permitted';
+          } else if (rule.VoluntaryChangeCode === 'WithPenalties') {
+            dateChangePolicy.changeAllowed = true;
+            dateChangePolicy.label = 'Date change allowed (with penalties)';
+          } else if (rule.VoluntaryChangeCode === 'Free') {
+            dateChangePolicy.changeAllowed = true;
+            dateChangePolicy.label = 'Free date change';
+          }
+        }
+        if (rule.FareConditionText) {
+          cancellationPolicy = cancellationPolicy || {};
+          cancellationPolicy.ruleText = rule.FareConditionText;
+        }
+      }
+    }
+
+    // Fallback: check PenaltyDetails on fare objects
     for (const f of fares) {
       if (f.PenaltyDetails || f.Penalties) {
         const pd = f.PenaltyDetails || f.Penalties;
-        if (pd.CancellationCharge !== undefined || pd.RefundPenalty !== undefined) {
+        if (!cancellationPolicy && (pd.CancellationCharge !== undefined || pd.RefundPenalty !== undefined)) {
           cancellationPolicy = {
             beforeDeparture: pd.CancellationCharge ?? pd.RefundPenalty ?? null,
             afterDeparture: pd.PostDepartureCancellation ?? 'Non-refundable',
@@ -356,7 +398,7 @@ function normalizeTTIResponse(response, originCode, destinationCode, isRoundTrip
             currency: currency,
           };
         }
-        if (pd.DateChangeCharge !== undefined || pd.ReissuePenalty !== undefined || pd.ChangePenalty !== undefined) {
+        if (!dateChangePolicy && (pd.DateChangeCharge !== undefined || pd.ReissuePenalty !== undefined || pd.ChangePenalty !== undefined)) {
           dateChangePolicy = {
             changeAllowed: true,
             changeFee: pd.DateChangeCharge ?? pd.ReissuePenalty ?? pd.ChangePenalty ?? null,
@@ -370,11 +412,11 @@ function normalizeTTIResponse(response, originCode, destinationCode, isRoundTrip
           for (const rule of rules) {
             if (rule.Category === 'CANCELLATION' || rule.Type === 'cancellation') {
               cancellationPolicy = cancellationPolicy || {};
-              cancellationPolicy.ruleText = rule.Text || rule.Description || rule.RuleText || null;
+              cancellationPolicy.ruleText = cancellationPolicy.ruleText || rule.Text || rule.Description || rule.RuleText || null;
             }
             if (rule.Category === 'DATE_CHANGE' || rule.Category === 'REISSUE' || rule.Type === 'reissue') {
               dateChangePolicy = dateChangePolicy || {};
-              dateChangePolicy.ruleText = rule.Text || rule.Description || rule.RuleText || null;
+              dateChangePolicy.ruleText = dateChangePolicy.ruleText || rule.Text || rule.Description || rule.RuleText || null;
             }
           }
         }

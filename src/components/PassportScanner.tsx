@@ -257,10 +257,10 @@ const PassportScanner = ({ open, onOpenChange, onConfirm }: PassportScannerProps
   const VerifyBadge = ({ field }: { field: string }) => {
     const c = confidence[field];
     const v = mrzVerified[field];
-    if (v) return <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" title="MRZ check-digit verified" />;
-    if (c === 'verified' || c === 'verified-mrz-wins') return <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" title="Verified by MRZ code" />;
-    if (c === 'high') return <ShieldCheck className="w-3 h-3 text-blue-500 shrink-0" title="MRZ + visual match" />;
-    if (c === 'medium' || c === 'mrz-only' || c === 'visual-only') return <ShieldAlert className="w-3 h-3 text-amber-500 shrink-0" title="Single source — please verify" />;
+    if (v) return <span title="MRZ check-digit verified"><ShieldCheck className="w-3 h-3 text-accent shrink-0" /></span>;
+    if (c === 'verified' || c === 'verified-mrz-wins') return <span title="Verified by MRZ code"><ShieldCheck className="w-3 h-3 text-accent shrink-0" /></span>;
+    if (c === 'high') return <span title="MRZ + visual match"><ShieldCheck className="w-3 h-3 text-primary shrink-0" /></span>;
+    if (c === 'medium' || c === 'mrz-only' || c === 'visual-only') return <span title="Single source — please verify"><ShieldAlert className="w-3 h-3 text-muted-foreground shrink-0" /></span>;
     return null;
   };
 

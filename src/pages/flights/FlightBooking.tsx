@@ -556,14 +556,24 @@ const FlightBooking = () => {
                   </div>
                   <p className="text-xs text-muted-foreground">Enter details exactly as they appear on your passport/ID</p>
                 </CardHeader>
-                <CardContent className="p-3 sm:p-5">
-                  {passengers.map((pax, pi) => (
-                    <div key={pi} className="space-y-3 sm:space-y-4">
-                      {pi > 0 && <Separator className="my-5" />}
+                <CardContent className="p-3 sm:p-5 space-y-0">
+                  {passengers.map((pax, pi) => {
+                    const paxTypeColors: Record<string, { border: string; bg: string; badge: string; badgeText: string }> = {
+                      adult: { border: "border-accent/30", bg: "bg-accent/[0.03]", badge: "bg-accent/10 text-accent border-accent/20", badgeText: "text-accent" },
+                      child: { border: "border-blue-400/30", bg: "bg-blue-50/50 dark:bg-blue-950/20", badge: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800", badgeText: "text-blue-700 dark:text-blue-300" },
+                      infant: { border: "border-purple-400/30", bg: "bg-purple-50/50 dark:bg-purple-950/20", badge: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800", badgeText: "text-purple-700 dark:text-purple-300" },
+                    };
+                    const paxType = paxTypes[pi]?.type || "adult";
+                    const colors = paxTypeColors[paxType] || paxTypeColors.adult;
+
+                    return (
+                    <div key={pi} className={`space-y-3 sm:space-y-4 rounded-xl border-2 ${colors.border} ${colors.bg} p-3 sm:p-5 ${pi > 0 ? "mt-4" : ""}`}>
                       <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs mb-3">{paxTypes[pi]?.label || `Passenger ${pi + 1}`} Traveler</Badge>
-                        {pi > 0 && (
-                          <div className="flex gap-2 mb-3">
+                        <Badge variant="outline" className={`text-xs font-semibold ${colors.badge}`}>
+                          {paxTypes[pi]?.label || `Passenger ${pi + 1}`} Traveler
+                        </Badge>
+                        {pi > 0 ? (
+                          <div className="flex gap-2">
                             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setActivePaxIndex(pi); setPassportScanOpen(true); }}>
                               <ScanLine className="w-3 h-3 mr-1" /> Scan
                             </Button>
@@ -573,7 +583,7 @@ const FlightBooking = () => {
                               </Button>
                             )}
                           </div>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Row 1: Title + Gender + DOB + Nationality */}

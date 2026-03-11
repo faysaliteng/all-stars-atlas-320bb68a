@@ -619,6 +619,7 @@ function normalizeTTIResponse(response, originCode, destinationCode, isRoundTrip
         totalRoundTripPrice: isRoundTrip && odCount > 1 ? totalItinPrice : undefined,
         currency: currency,
         refundable: isRefundable,
+        fareType: voluntaryRefundCode === 'WithPenalties' ? 'Refundable' : voluntaryRefundCode === 'Free' ? 'Fully Refundable' : voluntaryRefundCode === 'NotPermitted' ? 'Non-Refundable' : (isRefundable ? 'Refundable' : 'Non-Refundable'),
         baggage: checkedBaggage || null,
         handBaggage: handBaggage || null,
         aircraft: firstLeg.aircraft,

@@ -315,7 +315,7 @@ router.get('/search', async (req, res) => {
     const airlines = [...new Set(flights.map(f => f.airline).filter(Boolean))];
     const cheapest = flights.length > 0 ? Math.min(...flights.map(f => f.price || Infinity)) : 0;
 
-    res.json({
+    const responseData = {
       data: flights,
       airlines,
       cheapest,
@@ -333,7 +333,12 @@ router.get('/search', async (req, res) => {
         ndc: ndcFlights.status === 'fulfilled' ? (ndcFlights.value || []).length : 0,
         lcc: lccFlights.status === 'fulfilled' ? (lccFlights.value || []).length : 0,
       },
-    });
+    };
+
+    // ── Cache the result ──
+    setCachedSearch(cacheKey, responseData);
+
+    res.json(responseData);
   } catch (err) {
     console.error('Flight search error:', err);
     res.status(500).json({ message: 'Something went wrong', status: 500 });

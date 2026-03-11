@@ -276,9 +276,6 @@ const FlightCard = ({
                       </button>
                     ))}
                   </div>
-                  <span className="ml-auto pr-4 text-xs sm:text-sm text-accent font-medium flex items-center gap-1 shrink-0 cursor-pointer hover:underline">
-                    <Info className="w-3.5 h-3.5" /> Fare terms &amp; policy
-                  </span>
                 </div>
 
                 <div className="p-4 sm:p-5">

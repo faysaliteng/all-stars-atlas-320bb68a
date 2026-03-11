@@ -383,7 +383,7 @@ const FlightCard = ({
                       <div className="flex justify-between py-1.5"><span className="text-muted-foreground">Taxes & Fees</span><span className="font-semibold">{taxes > 0 ? `৳${taxes.toLocaleString()}` : "Included"}</span></div>
                       <Separator />
                       <div className="flex justify-between py-1.5 text-base"><span className="font-bold">Total Fare</span><span className="font-black text-accent">৳{price.toLocaleString()}</span></div>
-                      <p className="text-[11px] text-muted-foreground mt-2"><Info className="w-3 h-3 inline mr-1" />{refundable ? "This fare is refundable. Cancellation charges may apply." : "This fare is partially refundable. Change and cancellation fees apply."}</p>
+                      <p className="text-[11px] text-muted-foreground mt-2"><Info className="w-3 h-3 inline mr-1" />{refundable ? "This fare is refundable. Cancellation charges may apply." : "This fare is non-refundable. Change and cancellation fees apply as per airline policy."}</p>
                     </div>
                   )}
 

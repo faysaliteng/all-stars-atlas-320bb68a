@@ -1,16 +1,21 @@
 /**
- * Enterprise Document OCR Engine v4
+ * Enterprise Document OCR Engine v6 — Cross-Validated Intelligence
  * Extracts structured data from ANY passport, National ID, or Driving License worldwide.
  * 
  * Architecture:
  *   1. Google Vision API → raw OCR text (images + PDF support)
  *   2. Multi-strategy parser:
- *      a) MRZ parsing with OCR error correction (ICAO 9303 TD1/TD2/TD3)
- *      b) NID/ID Card specific parsing (BD NID, smart card, any country ID)
- *      c) Universal labeled field extraction (supports 50+ label variations)
- *      d) Contextual heuristic extraction with date disambiguation
- *      e) Cross-validation & conflict resolution across strategies
- *   3. Post-processing: name cleanup, country normalization, date validation
+ *      a) MRZ parsing with OCR error correction + ICAO 9303 check digit validation (TD1/TD2/TD3)
+ *      b) MRZ nationality extraction (TD3 pos 10-12, TD1 pos 15-17)
+ *      c) NID/ID Card specific parsing (BD NID, smart card, any country ID)
+ *      d) Universal labeled field extraction (supports 50+ label variations)
+ *      e) Contextual heuristic extraction with date disambiguation
+ *   3. Cross-validation layer:
+ *      - MRZ ↔ Visual text field-by-field comparison
+ *      - Check digit integrity verification (passport number, DOB, expiry, composite)
+ *      - Confidence scoring per field (high/medium/low)
+ *      - Conflict resolution: verified MRZ > unverified MRZ > labels > heuristic
+ *   4. Post-processing: name cleanup, country normalization, date validation
  */
 const express = require('express');
 const router = express.Router();
@@ -126,7 +131,8 @@ router.post('/ocr', async (req, res) => {
 
     const extracted = parseDocument(fullText);
 
-    res.json({ success: true, extracted, rawText: fullText });
+    // Include confidence info in response
+    res.json({ success: true, extracted: extracted.result, confidence: extracted.confidence, crossValidation: extracted.crossValidation, rawText: fullText });
   } catch (err) {
     console.error('[OCR] Error:', err.message);
     res.status(500).json({ message: 'OCR processing failed', error: err.message });
@@ -299,6 +305,88 @@ function inferGenderFromName(firstName, lastName) {
 // ═══════════════════════════════════════════════════════════
 
 
+// ═══════════════════════════════════════════════════════════
+// ICAO 9303 CHECK DIGIT VALIDATION
+// ═══════════════════════════════════════════════════════════
+
+const MRZ_WEIGHTS = [7, 3, 1];
+
+function mrzCheckDigit(str) {
+  let total = 0;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charAt(i);
+    let val = 0;
+    if (ch === '<') val = 0;
+    else if (ch >= '0' && ch <= '9') val = parseInt(ch);
+    else if (ch >= 'A' && ch <= 'Z') val = ch.charCodeAt(0) - 55; // A=10, B=11, ...
+    total += val * MRZ_WEIGHTS[i % 3];
+  }
+  return (total % 10).toString();
+}
+
+/** Verify a field + its check digit from MRZ */
+function verifyMRZField(fieldStr, checkChar) {
+  if (!fieldStr || !checkChar) return false;
+  const correctedCheck = correctMRZChar(checkChar, true);
+  const expected = mrzCheckDigit(fieldStr);
+  const verified = expected === correctedCheck;
+  console.log(`[OCR] MRZ check digit: "${fieldStr}" → expected ${expected}, got ${correctedCheck} → ${verified ? '✓' : '✗'}`);
+  return verified;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CROSS-VALIDATION & CONFIDENCE ENGINE
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Cross-validate MRZ data against visually extracted data.
+ * Returns per-field confidence and conflict report.
+ */
+function crossValidate(mrz, labels, heuristic, mrzVerified) {
+  const confidence = {};
+  const conflicts = [];
+
+  const compareFields = ['firstName', 'lastName', 'passportNumber', 'birthDate', 'expiryDate', 'gender', 'country'];
+
+  for (const field of compareFields) {
+    const mv = (mrz[field] || '').trim().toUpperCase();
+    const lv = (labels[field] || '').trim().toUpperCase();
+    const hv = (heuristic[field] || '').trim().toUpperCase();
+
+    const mrzHasCheckDigit = mrzVerified[field];
+
+    if (mv && lv && mv === lv) {
+      // MRZ and labels agree — highest confidence
+      confidence[field] = mrzHasCheckDigit ? 'verified' : 'high';
+    } else if (mv && lv && mv !== lv) {
+      // Conflict between MRZ and labels
+      confidence[field] = mrzHasCheckDigit ? 'verified-mrz-wins' : 'medium';
+      conflicts.push({
+        field,
+        mrz: mv,
+        visual: lv,
+        resolution: mrzHasCheckDigit ? 'MRZ verified by check digit — using MRZ' : 'MRZ unverified — using MRZ (higher authority)',
+      });
+    } else if (mv && !lv) {
+      confidence[field] = mrzHasCheckDigit ? 'verified' : 'mrz-only';
+    } else if (!mv && lv) {
+      confidence[field] = 'visual-only';
+    } else if (!mv && !lv && hv) {
+      confidence[field] = 'heuristic-only';
+    } else {
+      confidence[field] = 'missing';
+    }
+  }
+
+  console.log('[OCR] Cross-validation confidence:', JSON.stringify(confidence));
+  if (conflicts.length > 0) {
+    console.log('[OCR] Conflicts detected:', JSON.stringify(conflicts));
+  }
+
+  return { confidence, conflicts };
+}
+
+
 function parseDocument(text) {
   const empty = () => ({
     title: '', firstName: '', lastName: '', country: '', countryCode: '',
@@ -307,7 +395,7 @@ function parseDocument(text) {
     gender: '', issuanceDate: '', expiryDate: '',
   });
 
-  if (!text || text.trim().length < 5) return empty();
+  if (!text || text.trim().length < 5) return { result: empty(), confidence: {}, crossValidation: {} };
 
   // Convert Bangla numerals to Arabic throughout
   const normalizedText = convertBanglaNumbers(text);
@@ -320,15 +408,21 @@ function parseDocument(text) {
   console.log('[OCR] Document type:', isNID ? 'NID/ID Card' : 'Passport/Travel Doc');
 
   // Run all strategies
-  const mrz = parseMRZ(lines);
+  const mrzResult = parseMRZ(lines);
+  const mrz = mrzResult.data;
+  const mrzVerified = mrzResult.verified || {};
   const nid = isNID ? parseNID(lines, normalizedText) : emptyResult();
   const labels = parseLabeledFields(lines);
   const heuristic = parseHeuristic(lines, upper, normalizedText);
 
   console.log('[OCR] MRZ result:', JSON.stringify(mrz));
+  console.log('[OCR] MRZ verified fields:', JSON.stringify(mrzVerified));
   console.log('[OCR] NID result:', JSON.stringify(nid));
   console.log('[OCR] Label result:', JSON.stringify(labels));
   console.log('[OCR] Heuristic result:', JSON.stringify(heuristic));
+
+  // Cross-validate MRZ vs visual data
+  const cv = isNID ? { confidence: {}, conflicts: [] } : crossValidate(mrz, labels, heuristic, mrzVerified);
 
   // Merge with priority (NID strategy gets high priority for ID cards)
   const result = empty();
@@ -338,7 +432,12 @@ function parseDocument(text) {
     if (isNID) {
       result[f] = mergePickNID(f, nid[f], labels[f], heuristic[f], mrz[f]);
     } else {
-      result[f] = mergePick(f, mrz[f], labels[f], heuristic[f]);
+      // For passports: verified MRZ fields get absolute priority
+      if (mrzVerified[f] && mrz[f]) {
+        result[f] = mrz[f];
+      } else {
+        result[f] = mergePick(f, mrz[f], labels[f], heuristic[f]);
+      }
     }
   }
 
@@ -349,18 +448,13 @@ function parseDocument(text) {
   result.birthPlace = cleanPlace(result.birthPlace);
 
   // ─── ADVANCED NAME INTELLIGENCE ───
-  // MRZ swap fix: In Bangladesh passports, MRZ line 1 has SURNAME<<GIVEN_NAMES
-  // Surname = family name (e.g., UDDIN, ISLAM, HOSSAIN, MEEM)
-  // Given names = first/middle names (e.g., MOHAMMED NAZIM, MOHAMMAD SAZZADUL KABIR)
-  // MRZ is authoritative — if MRZ extracted names, reject label/heuristic noise
   if (mrz.firstName && mrz.lastName && !isNID) {
-    // MRZ is authoritative for passport — override any noisy label extraction
     result.firstName = cleanName(mrz.firstName);
     result.lastName = cleanName(mrz.lastName);
     console.log('[OCR] MRZ names enforced (passport priority):', result.firstName, '/', result.lastName);
   }
 
-  // Name noise rejection: reject names containing address/NID noise words
+  // Name noise rejection
   const NAME_NOISE = ['ADDRESS', 'HAJEE', 'PARA', 'WARD', 'ROAD', 'FLAT', 'HOUSE', 'BLOCK',
     'NENT', 'PERMANENT', 'EMERGENCY', 'FATHER', 'MOTHER', 'SPOUSE', 'TELEPHONE',
     'RELATIONSHIP', 'CONTACT', 'SHUKCHAR', 'DARBAR', 'SHARIF', 'LOHAGARA', 'DAKSHI',
@@ -374,12 +468,33 @@ function parseDocument(text) {
     result.firstName = mrz.firstName ? cleanName(mrz.firstName) : '';
   }
 
-  // Normalize country: resolve to full name + 3-letter ISO code
+  // Normalize country
   const countryResolved = resolveCountryFull(result.country);
-  result.country = countryResolved.name;       // "Bangladesh"
-  result.countryCode = countryResolved.code3;   // "BGD"
+  result.country = countryResolved.name;
+  result.countryCode = countryResolved.code3;
 
-  // ─── NATIONALITY from country ───
+  // ─── NATIONALITY: prefer MRZ nationality if available ───
+  if (mrz.nationality) {
+    const natResolved = resolveCountryFull(mrz.nationality);
+    if (natResolved.code3) {
+      const CODE3_TO_NATIONALITY = {
+        BGD:'Bangladeshi',IND:'Indian',USA:'American',GBR:'British',PAK:'Pakistani',
+        NPL:'Nepalese',LKA:'Sri Lankan',MMR:'Myanmar',MYS:'Malaysian',SGP:'Singaporean',
+        ARE:'Emirati',SAU:'Saudi',KWT:'Kuwaiti',QAT:'Qatari',BHR:'Bahraini',OMN:'Omani',
+        CAN:'Canadian',AUS:'Australian',JPN:'Japanese',KOR:'Korean',CHN:'Chinese',
+        THA:'Thai',IDN:'Indonesian',PHL:'Filipino',TUR:'Turkish',EGY:'Egyptian',
+        DEU:'German',FRA:'French',ITA:'Italian',ESP:'Spanish',NLD:'Dutch',CHE:'Swiss',
+        SWE:'Swedish',NOR:'Norwegian',DNK:'Danish',FIN:'Finnish',IRL:'Irish',
+        PRT:'Portuguese',GRC:'Greek',POL:'Polish',ROU:'Romanian',RUS:'Russian',
+        BRA:'Brazilian',MEX:'Mexican',ARG:'Argentine',COL:'Colombian',
+        ZAF:'South African',NGA:'Nigerian',KEN:'Kenyan',ETH:'Ethiopian',GHA:'Ghanaian',
+        AFG:'Afghan',IRQ:'Iraqi',IRN:'Iranian',JOR:'Jordanian',LBN:'Lebanese',
+        VNM:'Vietnamese',KHM:'Cambodian',BTN:'Bhutanese',MDV:'Maldivian',
+      };
+      result.nationality = CODE3_TO_NATIONALITY[natResolved.code3] || '';
+      console.log('[OCR] Nationality from MRZ:', mrz.nationality, '→', result.nationality);
+    }
+  }
   if (!result.nationality && countryResolved.code3) {
     const CODE3_TO_NATIONALITY = {
       BGD:'Bangladeshi',IND:'Indian',USA:'American',GBR:'British',PAK:'Pakistani',
@@ -398,13 +513,11 @@ function parseDocument(text) {
     result.nationality = CODE3_TO_NATIONALITY[countryResolved.code3] || '';
   }
 
-  // ─── PHONE extraction from NID or text ───
+  // ─── PHONE extraction ───
   if (!result.phone) {
-    // Look for Bangladesh phone numbers in text
     const phoneRegex = /(?:\+?880|0)?\s*1[3-9]\d[\s\-]?\d{2}[\s\-]?\d{2}[\s\-]?\d{2,3}/g;
     const phones = normalizedText.match(phoneRegex);
     if (phones && phones.length > 0) {
-      // Clean up the phone number
       let phone = phones[0].replace(/[\s\-]/g, '');
       if (phone.startsWith('+880')) phone = '0' + phone.substring(4);
       else if (phone.startsWith('880')) phone = '0' + phone.substring(3);
@@ -416,7 +529,7 @@ function parseDocument(text) {
     }
   }
 
-  // Infer gender from name if not detected (critical for NID cards without gender field)
+  // Infer gender from name if not detected
   if (!result.gender) {
     result.gender = inferGenderFromName(result.firstName, result.lastName);
   }
@@ -430,13 +543,14 @@ function parseDocument(text) {
   result.issuanceDate = validateDate(result.issuanceDate);
   result.expiryDate = validateDate(result.expiryDate);
 
-  // Sanity: DOB must be before issue date, issue before expiry
+  // Sanity: DOB must be before expiry
   if (result.birthDate && result.expiryDate && result.birthDate > result.expiryDate) {
     [result.birthDate, result.expiryDate] = [result.expiryDate, result.birthDate];
   }
 
   console.log('[OCR] FINAL:', JSON.stringify(result, null, 2));
-  return result;
+  console.log('[OCR] Confidence:', JSON.stringify(cv.confidence));
+  return { result, confidence: cv.confidence, crossValidation: { conflicts: cv.conflicts, mrzVerified } };
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -732,6 +846,7 @@ function cleanMRZLine(raw) {
 
 function parseMRZ(lines) {
   const r = emptyResult();
+  const verified = {}; // tracks which fields have check-digit verification
 
   const candidates = [];
   for (let i = 0; i < lines.length; i++) {
@@ -741,7 +856,7 @@ function parseMRZ(lines) {
     }
   }
 
-  if (candidates.length < 1) return r;
+  if (candidates.length < 1) return { data: r, verified };
 
   let format = null;
   let mrzLines = [];
@@ -793,19 +908,19 @@ function parseMRZ(lines) {
     mrzLines = [candidates[0].line, candidates[1].line];
   }
 
-  if (mrzLines.length < 2) return r;
+  if (mrzLines.length < 2) return { data: r, verified };
 
   console.log(`[OCR] MRZ format: ${format}, lines: ${mrzLines.length}`);
   mrzLines.forEach((l, i) => console.log(`[OCR] MRZ[${i}]: ${l}`));
 
-  if (format === 'TD3') return parseTD3(mrzLines, r);
-  if (format === 'TD1') return parseTD1(mrzLines, r);
-  if (format === 'TD2') return parseTD2(mrzLines, r);
+  if (format === 'TD3') return parseTD3(mrzLines, r, verified);
+  if (format === 'TD1') return parseTD1(mrzLines, r, verified);
+  if (format === 'TD2') return parseTD2(mrzLines, r, verified);
 
-  return r;
+  return { data: r, verified };
 }
 
-function parseTD3(mrzLines, r) {
+function parseTD3(mrzLines, r, verified) {
   const line1 = mrzLines[0];
   const line2 = mrzLines.length > 1 ? mrzLines[1] : '';
 
@@ -819,52 +934,105 @@ function parseTD3(mrzLines, r) {
   }
 
   if (line2.length >= 28) {
-    let ppNum = line2.substring(0, 9).replace(/</g, '');
+    // TD3 Line 2 layout (44 chars):
+    // [0-8] passport number, [9] check digit
+    // [10-12] nationality, [13-18] DOB, [19] check digit
+    // [20] sex, [21-26] expiry, [27] check digit
+    // [28-42] optional data, [43] composite check digit
+
+    const ppField = line2.substring(0, 9);
+    const ppCheck = line2.charAt(9);
+    let ppNum = ppField.replace(/</g, '');
     const corrected = [];
     for (let i = 0; i < ppNum.length; i++) {
       if (i < 2 && /[A-Z]/i.test(ppNum[i])) corrected.push(ppNum[i]);
       else corrected.push(correctMRZChar(ppNum[i], true));
     }
     r.passportNumber = corrected.join('');
+    verified.passportNumber = verifyMRZField(ppField, ppCheck);
 
-    const dobRaw = line2.substring(13, 19);
-    const dob = correctMRZDate(dobRaw);
-    if (dob) r.birthDate = mrzDateToISO(dob, true);
+    // ── Nationality (pos 10-12) — separate from issuing country ──
+    const natCode = line2.substring(10, 13).replace(/</g, '');
+    if (natCode && natCode.length >= 2) {
+      r.nationality = natCode; // Will be resolved to full name in post-processing
+      console.log('[OCR] MRZ nationality code:', natCode);
+    }
+
+    const dobField = line2.substring(13, 19);
+    const dobCheck = line2.charAt(19);
+    const dob = correctMRZDate(dobField);
+    if (dob) {
+      r.birthDate = mrzDateToISO(dob, true);
+      verified.birthDate = verifyMRZField(dobField, dobCheck);
+    }
 
     const sex = line2.charAt(20);
     if (sex === 'M') { r.gender = 'Male'; r.title = 'MR'; }
     else if (sex === 'F') { r.gender = 'Female'; r.title = 'MS'; }
 
-    const expRaw = line2.substring(21, 27);
-    const exp = correctMRZDate(expRaw);
-    if (exp) r.expiryDate = mrzDateToISO(exp, false);
+    const expField = line2.substring(21, 27);
+    const expCheck = line2.charAt(27);
+    const exp = correctMRZDate(expField);
+    if (exp) {
+      r.expiryDate = mrzDateToISO(exp, false);
+      verified.expiryDate = verifyMRZField(expField, expCheck);
+    }
+
+    // ── Composite check digit (pos 43) — validates entire line2 ──
+    if (line2.length >= 44) {
+      const compositeData = line2.substring(0, 10) + line2.substring(13, 20) + line2.substring(21, 43);
+      const compositeCheck = line2.charAt(43);
+      const compositeValid = verifyMRZField(compositeData, compositeCheck);
+      console.log('[OCR] MRZ composite check:', compositeValid ? '✓ ALL DATA VERIFIED' : '✗ possible OCR errors');
+      if (compositeValid) {
+        // If composite passes, mark all fields as verified
+        verified.passportNumber = true;
+        verified.birthDate = true;
+        verified.expiryDate = true;
+      }
+    }
   }
 
-  return r;
+  return { data: r, verified };
 }
 
-function parseTD1(mrzLines, r) {
+function parseTD1(mrzLines, r, verified) {
   const line1 = mrzLines[0];
   const line2 = mrzLines[1];
   const line3 = mrzLines[2];
 
-  if (line1.length >= 14) {
+  if (line1.length >= 15) {
     r.country = line1.substring(2, 5).replace(/</g, '');
-    r.passportNumber = line1.substring(5, 14).replace(/</g, '');
+    const ppField = line1.substring(5, 14);
+    const ppCheck = line1.charAt(14);
+    r.passportNumber = ppField.replace(/</g, '');
+    verified.passportNumber = verifyMRZField(ppField, ppCheck);
   }
 
   if (line2.length >= 18) {
-    const dobRaw = line2.substring(0, 6);
-    const dob = correctMRZDate(dobRaw);
-    if (dob) r.birthDate = mrzDateToISO(dob, true);
+    const dobField = line2.substring(0, 6);
+    const dobCheck = line2.charAt(6);
+    const dob = correctMRZDate(dobField);
+    if (dob) {
+      r.birthDate = mrzDateToISO(dob, true);
+      verified.birthDate = verifyMRZField(dobField, dobCheck);
+    }
     const sex = line2.charAt(7);
     if (sex === 'M') { r.gender = 'Male'; r.title = 'MR'; }
     else if (sex === 'F') { r.gender = 'Female'; r.title = 'MS'; }
-    const expRaw = line2.substring(8, 14);
-    const exp = correctMRZDate(expRaw);
-    if (exp) r.expiryDate = mrzDateToISO(exp, false);
+    const expField = line2.substring(8, 14);
+    const expCheck = line2.charAt(14);
+    const exp = correctMRZDate(expField);
+    if (exp) {
+      r.expiryDate = mrzDateToISO(exp, false);
+      verified.expiryDate = verifyMRZField(expField, expCheck);
+    }
+    // Nationality at pos 15-17
     const nat = line2.substring(15, 18).replace(/</g, '');
-    if (nat && !r.country) r.country = nat;
+    if (nat) {
+      r.nationality = nat;
+      if (!r.country) r.country = nat;
+    }
   }
 
   if (line3) {
@@ -873,10 +1041,10 @@ function parseTD1(mrzLines, r) {
     if (parts.length >= 2) r.firstName = parts.slice(1).join(' ').replace(/</g, ' ').trim();
   }
 
-  return r;
+  return { data: r, verified };
 }
 
-function parseTD2(mrzLines, r) {
+function parseTD2(mrzLines, r, verified) {
   const line1 = mrzLines[0];
   const line2 = mrzLines[1];
 
@@ -889,19 +1057,35 @@ function parseTD2(mrzLines, r) {
   }
 
   if (line2 && line2.length >= 28) {
-    r.passportNumber = line2.substring(0, 9).replace(/</g, '');
-    const dobRaw = line2.substring(13, 19);
-    const dob = correctMRZDate(dobRaw);
-    if (dob) r.birthDate = mrzDateToISO(dob, true);
+    const ppField = line2.substring(0, 9);
+    const ppCheck = line2.charAt(9);
+    r.passportNumber = ppField.replace(/</g, '');
+    verified.passportNumber = verifyMRZField(ppField, ppCheck);
+
+    // Nationality at pos 10-12
+    const nat = line2.substring(10, 13).replace(/</g, '');
+    if (nat) r.nationality = nat;
+
+    const dobField = line2.substring(13, 19);
+    const dobCheck = line2.charAt(19);
+    const dob = correctMRZDate(dobField);
+    if (dob) {
+      r.birthDate = mrzDateToISO(dob, true);
+      verified.birthDate = verifyMRZField(dobField, dobCheck);
+    }
     const sex = line2.charAt(20);
     if (sex === 'M') { r.gender = 'Male'; r.title = 'MR'; }
     else if (sex === 'F') { r.gender = 'Female'; r.title = 'MS'; }
-    const expRaw = line2.substring(21, 27);
-    const exp = correctMRZDate(expRaw);
-    if (exp) r.expiryDate = mrzDateToISO(exp, false);
+    const expField = line2.substring(21, 27);
+    const expCheck = line2.charAt(27);
+    const exp = correctMRZDate(expField);
+    if (exp) {
+      r.expiryDate = mrzDateToISO(exp, false);
+      verified.expiryDate = verifyMRZField(expField, expCheck);
+    }
   }
 
-  return r;
+  return { data: r, verified };
 }
 
 function correctMRZDate(raw) {

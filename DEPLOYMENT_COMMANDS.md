@@ -108,3 +108,4 @@ cd ~/projects/all-stars-atlas && rm -rf node_modules && npm install && npm run b
 | 2026-03-11 | Document Scanner: country field now shows full name (Bangladesh not BD), added countryCode field (BGD), labels updated to Given/First Name and Surname/Last Name, 70+ country mappings | Full Stack |
 | 2026-03-11 | Nationality dropdown: free-text replaced with 70+ nationality Select dropdown, default Bangladeshi | Frontend Only |
 | 2026-03-11 | OCR Engine v5: MRZ name priority enforced (rejects NID address noise), nationality auto-derived from country code, phone extraction from NID, all booking form fields auto-populated from scan | Full Stack |
+| 2026-03-11 | OCR Engine v6: ICAO 9303 check digit validation (passport number, DOB, expiry, composite), MRZ nationality extraction (TD3 pos 10-12), cross-validation engine (MRZ vs visual text with confidence scoring), verified fields shown with shield badges in scanner UI | Full Stack |

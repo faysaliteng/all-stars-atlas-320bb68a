@@ -740,6 +740,99 @@ const FlightResults = () => {
               </div>
 
               {/* Results */}
+              {isMultiCity ? (
+                /* ── MULTI-CITY RESULTS ── */
+                multiCityLoading ? (
+                  <div className="space-y-4">{[1,2,3].map(i => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+                ) : multiCityError ? (
+                  <Card><CardContent className="py-12 text-center text-destructive"><p className="font-semibold">{multiCityError}</p><Button variant="outline" size="sm" className="mt-3" onClick={() => window.location.reload()}>Retry</Button></CardContent></Card>
+                ) : (
+                  <div className="space-y-6">
+                    {multiCitySegments.map((seg, segIdx) => {
+                      const segFlights = sortFlights(applyFilters(multiCityResults[segIdx] || []), sortBy);
+                      const segColors = ["bg-accent/10 text-accent", "bg-blue-500/10 text-blue-600", "bg-purple-500/10 text-purple-600", "bg-amber-500/10 text-amber-600", "bg-rose-500/10 text-rose-600"];
+                      const selectedFlight = selectedMultiCityFlights[segIdx];
+
+                      return (
+                        <div key={segIdx}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${segColors[segIdx % segColors.length]}`}>
+                              <Plane className="w-4 h-4" /><span className="text-sm font-bold">Flight {segIdx + 1}</span>
+                            </div>
+                            <span className="text-sm font-medium">{seg.from} → {seg.to}</span>
+                            <span className="text-xs text-muted-foreground">{seg.date} · {segFlights.length} flights</span>
+                            {selectedFlight && (
+                              <Badge className="bg-accent/10 text-accent border-0 text-xs ml-auto">
+                                <Check className="w-3 h-3 mr-1" /> {formatTime(selectedFlight.departureTime)} – {formatTime(selectedFlight.arrivalTime)} · ৳{selectedFlight.price?.toLocaleString()}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            {segFlights.length === 0 ? (
+                              <Card><CardContent className="py-8 text-center text-muted-foreground"><p>No flights found for {seg.from} → {seg.to} on {seg.date}</p></CardContent></Card>
+                            ) : segFlights.map((flight: any) => (
+                              <FlightCard key={flight.id} flight={flight} cheapest={cheapest}
+                                isExpanded={expandedFlight === flight.id} onToggleExpand={() => setExpandedFlight(expandedFlight === flight.id ? null : flight.id)}
+                                selectionMode isSelected={selectedFlight?.id === flight.id}
+                                onSelect={() => setSelectedMultiCityFlights(prev => ({
+                                  ...prev,
+                                  [segIdx]: prev[segIdx]?.id === flight.id ? undefined : flight,
+                                }))} />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Sticky multi-city booking bar */}
+                    <AnimatePresence>
+                      {Object.keys(selectedMultiCityFlights).some(k => selectedMultiCityFlights[parseInt(k)]) && (
+                        <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
+                          className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t-2 border-accent shadow-2xl">
+                          <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4 overflow-x-auto">
+                              {multiCitySegments.map((seg, i) => {
+                                const sf = selectedMultiCityFlights[i];
+                                return sf ? (
+                                  <div key={i} className="flex items-center gap-2 shrink-0">
+                                    <Plane className="w-4 h-4 text-accent" />
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Flight {i + 1}</p>
+                                      <p className="text-xs font-bold">{seg.from} → {seg.to} · ৳{sf.price?.toLocaleString()}</p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div key={i} className="flex items-center gap-2 shrink-0 opacity-40">
+                                    <Plane className="w-4 h-4" />
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Flight {i + 1}</p>
+                                      <p className="text-xs font-medium">{seg.from} → {seg.to}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex items-center gap-4 shrink-0">
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground">Total ({Object.values(selectedMultiCityFlights).filter(Boolean).length}/{multiCitySegments.length} selected)</p>
+                                <p className="text-xl font-black text-accent">৳{multiCityTotal.toLocaleString()}</p>
+                              </div>
+                              <Button size="lg" className="font-bold shadow-lg px-6 bg-accent text-accent-foreground hover:bg-accent/90"
+                                disabled={Object.values(selectedMultiCityFlights).filter(Boolean).length !== multiCitySegments.length}
+                                onClick={handleBookMultiCity}>
+                                {Object.values(selectedMultiCityFlights).filter(Boolean).length !== multiCitySegments.length
+                                  ? `Select All ${multiCitySegments.length} Flights`
+                                  : "Book Multi-City"}
+                                <ArrowRight className="w-4 h-4 ml-2" />
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )
+              ) : (
               <DataLoader isLoading={isLoading} error={error} skeleton="cards" retry={refetch}>
                 {isRoundTrip && hasDirections ? (
                   <div className="space-y-6">

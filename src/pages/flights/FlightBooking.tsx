@@ -823,21 +823,35 @@ const FlightBooking = () => {
                     <div className="space-y-3">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Flight Itinerary</h4>
                       <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                          <Badge className="bg-accent/10 text-accent border-0 text-[10px]">Outbound</Badge>
-                          <span className="text-sm font-semibold">{outboundFlight?.origin} → {outboundFlight?.destination}</span>
-                          <span className="text-xs text-muted-foreground">{fmtDate(outboundFlight?.departureTime)}</span>
-                          <span className="text-xs">{fmtTime(outboundFlight?.departureTime)} – {fmtTime(outboundFlight?.arrivalTime)}</span>
-                          <span className="text-xs text-muted-foreground sm:ml-auto">{outboundFlight?.airline} {outboundFlight?.flightNumber}</span>
-                        </div>
-                        {isRoundTrip && returnFlight && (
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <Badge className="bg-warning/10 text-warning border-0 text-[10px]">Return</Badge>
-                            <span className="text-sm font-semibold">{returnFlight.origin} → {returnFlight.destination}</span>
-                            <span className="text-xs text-muted-foreground">{fmtDate(returnFlight.departureTime)}</span>
-                            <span className="text-xs">{fmtTime(returnFlight.departureTime)} – {fmtTime(returnFlight.arrivalTime)}</span>
-                            <span className="text-xs text-muted-foreground sm:ml-auto">{returnFlight.airline} {returnFlight.flightNumber}</span>
-                          </div>
+                        {isMultiCity ? (
+                          multiCityFlights.map((mcf: any, idx: number) => (
+                            <div key={idx} className="flex flex-wrap items-center gap-2 sm:gap-3">
+                              <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[10px]">Flight {idx + 1}</Badge>
+                              <span className="text-sm font-semibold">{mcf?.origin} → {mcf?.destination}</span>
+                              <span className="text-xs text-muted-foreground">{fmtDate(mcf?.departureTime)}</span>
+                              <span className="text-xs">{fmtTime(mcf?.departureTime)} – {fmtTime(mcf?.arrivalTime)}</span>
+                              <span className="text-xs text-muted-foreground sm:ml-auto">{mcf?.airline} {mcf?.flightNumber}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <>
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                              <Badge className="bg-accent/10 text-accent border-0 text-[10px]">Outbound</Badge>
+                              <span className="text-sm font-semibold">{outboundFlight?.origin} → {outboundFlight?.destination}</span>
+                              <span className="text-xs text-muted-foreground">{fmtDate(outboundFlight?.departureTime)}</span>
+                              <span className="text-xs">{fmtTime(outboundFlight?.departureTime)} – {fmtTime(outboundFlight?.arrivalTime)}</span>
+                              <span className="text-xs text-muted-foreground sm:ml-auto">{outboundFlight?.airline} {outboundFlight?.flightNumber}</span>
+                            </div>
+                            {isRoundTrip && returnFlight && (
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                <Badge className="bg-warning/10 text-warning border-0 text-[10px]">Return</Badge>
+                                <span className="text-sm font-semibold">{returnFlight.origin} → {returnFlight.destination}</span>
+                                <span className="text-xs text-muted-foreground">{fmtDate(returnFlight.departureTime)}</span>
+                                <span className="text-xs">{fmtTime(returnFlight.departureTime)} – {fmtTime(returnFlight.arrivalTime)}</span>
+                                <span className="text-xs text-muted-foreground sm:ml-auto">{returnFlight.airline} {returnFlight.flightNumber}</span>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

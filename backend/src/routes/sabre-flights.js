@@ -1248,31 +1248,32 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       },
     };
 
-    // Inject SSR into request if any exist
-    if (ssrList.length > 0) {
+    // Inject SSR and DOCS/DOCA into SpecialReqDetails
+    if (ssrList.length > 0 || advancePassenger.length > 0) {
+      const specialServiceInfo = {};
+
+      if (ssrList.length > 0) {
+        specialServiceInfo.Service = ssrList.map(ssr => ({
+          SSRCode: ssr.SSRCode,
+          ...(ssr.AirlineCode ? { Airline: { Code: ssr.AirlineCode } } : {}),
+          Text: ssr.Text,
+          PersonName: ssr.PersonName,
+          SegmentNumber: ssr.SegmentNumber,
+        }));
+        console.log(`[Sabre] Adding ${ssrList.length} SSR(s): ${ssrList.map(s => s.SSRCode).join(', ')}`);
+      }
+
       body.CreatePassengerNameRecordRQ.SpecialReqDetails = {
         SpecialService: {
-          SpecialServiceInfo: {
-            Service: ssrList.map(ssr => ({
-              SSRCode: ssr.SSRCode,
-              ...(ssr.AirlineCode ? { Airline: { Code: ssr.AirlineCode } } : {}),
-              Text: ssr.Text,
-              PersonName: ssr.PersonName,
-              SegmentNumber: ssr.SegmentNumber,
-            })),
-          },
+          SpecialServiceInfo: specialServiceInfo,
         },
       };
-      console.log(`[Sabre] Adding ${ssrList.length} SSR(s): ${ssrList.map(s => s.SSRCode).join(', ')}`);
-    }
 
-    // Inject DOCS/DOCA into request
-    if (advancePassenger.length > 0) {
-      if (!body.CreatePassengerNameRecordRQ.SpecialReqDetails) {
-        body.CreatePassengerNameRecordRQ.SpecialReqDetails = {};
+      // DOCS/DOCA go under SpecialService.SpecialServiceInfo.AdvancePassenger
+      if (advancePassenger.length > 0) {
+        specialServiceInfo.AdvancePassenger = advancePassenger;
+        console.log(`[Sabre] Adding ${advancePassenger.length} DOCS/DOCA entries`);
       }
-      body.CreatePassengerNameRecordRQ.SpecialReqDetails.AdvancePassenger = advancePassenger;
-      console.log(`[Sabre] Adding ${advancePassenger.length} DOCS/DOCA entries`);
     }
 
     const response = await sabreRequest(config, '/v2.4.0/passenger/records?mode=create', body);

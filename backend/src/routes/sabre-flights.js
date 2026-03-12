@@ -590,7 +590,7 @@ function normalizeGroupedResponse(response, params) {
               const ref = allowance.ref ?? allowance.Ref;
               const resolved = (ref !== undefined && baggageLookup[ref]) ? baggageLookup[ref] : allowance;
               const w = resolved.weight ?? resolved.Weight;
-              const u = resolved.unit ?? resolved.Unit || 'KG';
+              const u = (resolved.unit ?? resolved.Unit) || 'KG';
               const pc = resolved.pieceCount ?? resolved.PieceCount ?? resolved.Pieces ?? resolved.pieces;
               const pt = bi.provisionType || '';
               let bStr = null;

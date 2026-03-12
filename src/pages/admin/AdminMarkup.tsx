@@ -62,7 +62,12 @@ const AdminMarkup = () => {
         const data = await api.get<any>("/admin/settings");
         const saved = data?.settings?.markup_config;
         if (saved && typeof saved === "object") {
-          setMarkups(saved);
+          // Merge saved config with defaults so new fields get proper defaults
+          const merged: Record<string, MarkupConfig> = {};
+          SEGMENTS.forEach(s => {
+            merged[s.key] = { ...defaultMarkup, ...(saved[s.key] || {}) };
+          });
+          setMarkups(merged);
         } else {
           const init: Record<string, MarkupConfig> = {};
           SEGMENTS.forEach(s => { init[s.key] = { ...defaultMarkup }; });

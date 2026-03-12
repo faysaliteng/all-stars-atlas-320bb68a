@@ -723,6 +723,7 @@ const RoundTripFlightCard = ({
   const cardNavigate = useNavigate();
   const [cardSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("itinerary");
+  const [showFareOptions, setShowFareOptions] = useState(false);
   const logo = getAirlineLogo(outbound.airlineCode);
   const totalPrice = (outbound.price || 0) + (returnFlight.price || 0);
   const refundable = outbound.refundable ?? false;

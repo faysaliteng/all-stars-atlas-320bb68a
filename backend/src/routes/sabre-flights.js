@@ -252,12 +252,11 @@ async function searchFlights(params) {
         },
         CabinPref: [{ Cabin: sabreCabin, PreferLevel: 'Preferred' }],
       },
-      TPA_Extensions: {
-        IntelliSellTransaction: {
-          RequestType: { Name: '200ITINS' },
-          CompressResponse: { Value: true },
+        TPA_Extensions: {
+          IntelliSellTransaction: {
+            RequestType: { Name: '200ITINS' },
+          },
         },
-      },
       TravelerInfoSummary: {
         AirTravelerAvail: [{
           PassengerTypeQuantity: passengers,

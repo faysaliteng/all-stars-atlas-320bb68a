@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [3.7.6] — 2026-03-12 — Multi-City Detail Parity & Airline Filter Bar
+
+### Fixed
+- **Multi-city airline filter bar**: Was hidden for multi-city results (`!isMultiCity` condition) — removed exclusion so airline carousel now appears for all trip types
+- **Multi-city Flight Details panel**: Replaced minimal detail view with full system matching one-way/round-trip cards:
+  - **Flight Details tab**: Full airport names, arc timeline visualization, "Change of planes" layover badges, seats left, aircraft type, cabin class display
+  - **Fare Summary tab**: Full table with Pax Type, Base Fare, Tax, Other, Discount, AIT VAT, Pax Count, Amount columns + Total Payable
+  - **Baggage tab**: Sector/Checkin/Cabin table per segment
+  - **Cancellation tab**: Sector-based tables with timeframe and fee info + important disclaimer
+  - **Date Change tab**: Added (was missing), sector-based tables matching other trip types
+
+---
+
 ## [3.7.5] — 2026-03-12 — Multi-City Combined Search & UI Fixes
 
 ### Fixed

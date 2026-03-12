@@ -1118,8 +1118,46 @@ const FlightResults = () => {
 
   const toggleAirline = useCallback((a: string) => setSelectedAirlines(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]), []);
 
+  // Airline stats for the top bar — from real API data
+  const airlineStats = useMemo(() => {
+    const relevantFlights = isRoundTrip && hasDirections ? outboundFlights : (isMultiCity ? allMultiCityFlights : flights);
+    const map: Record<string, { code: string; name: string; cheapest: number; count: number }> = {};
+    for (const f of relevantFlights) {
+      const code = f.airlineCode || '';
+      const name = f.airline || code;
+      if (!code) continue;
+      if (!map[code]) map[code] = { code, name, cheapest: f.price || Infinity, count: 0 };
+      map[code].count++;
+      if ((f.price || Infinity) < map[code].cheapest) map[code].cheapest = f.price;
+    }
+    return Object.values(map).sort((a, b) => a.cheapest - b.cheapest);
+  }, [flights, outboundFlights, isRoundTrip, hasDirections, isMultiCity, allMultiCityFlights]);
+
+  // Quick sort summaries — Cheapest, Fastest, Best from real data
+  const quickSortSummary = useMemo(() => {
+    const relevantFlights = isRoundTrip && hasDirections
+      ? outboundFlights.map((f: any) => ({ ...f, price: f.price || 0 }))
+      : (isMultiCity ? allMultiCityFlights : flights);
+    if (relevantFlights.length === 0) return { cheapest: null, fastest: null, best: null };
+    const sorted = [...relevantFlights];
+    const cheapestFlight = sorted.sort((a, b) => (a.price || 0) - (b.price || 0))[0];
+    const fastestFlight = [...relevantFlights].sort((a, b) => (a.durationMinutes || Infinity) - (b.durationMinutes || Infinity))[0];
+    const bestFlight = [...relevantFlights].sort((a, b) => {
+      const sa = (a.price || 0) * 0.5 + (a.durationMinutes || 0) * 30 + (a.stops || 0) * 3000;
+      const sb = (b.price || 0) * 0.5 + (b.durationMinutes || 0) * 30 + (b.stops || 0) * 3000;
+      return sa - sb;
+    })[0];
+    return {
+      cheapest: cheapestFlight ? { price: cheapestFlight.price, duration: cheapestFlight.duration || '' } : null,
+      fastest: fastestFlight ? { price: fastestFlight.price, duration: fastestFlight.duration || '' } : null,
+      best: bestFlight ? { price: bestFlight.price, duration: bestFlight.duration || '' } : null,
+    };
+  }, [flights, outboundFlights, isRoundTrip, hasDirections, isMultiCity, allMultiCityFlights]);
+
   const applyFilters = useCallback((list: any[]) => {
     return list.filter((f: any) => {
+      // Airline filter from top bar
+      if (airlineFilter && f.airlineCode !== airlineFilter) return false;
       if (selectedAirlines.length > 0 && !selectedAirlines.includes(f.airline)) return false;
       if (f.price < priceRange[0] || f.price > priceRange[1]) return false;
       if (stopsFilter !== "all") {
@@ -1134,7 +1172,7 @@ const FlightResults = () => {
       }
       return true;
     });
-  }, [selectedAirlines, priceRange, stopsFilter, departTimeRange]);
+  }, [airlineFilter, selectedAirlines, priceRange, stopsFilter, departTimeRange]);
 
   const filteredOutbound = useMemo(() => sortFlights(applyFilters(outboundFlights), sortBy), [outboundFlights, sortBy, applyFilters]);
   const filteredReturn = useMemo(() => sortFlights(applyFilters(returnFlights), sortBy), [returnFlights, sortBy, applyFilters]);

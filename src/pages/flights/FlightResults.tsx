@@ -2267,6 +2267,7 @@ const FlightResults = () => {
                 selectedLayoverAirports={selectedLayoverAirports} toggleLayoverAirport={toggleLayoverAirport}
                 layoverDurationRange={layoverDurationRange} setLayoverDurationRange={setLayoverDurationRange}
                 isRoundTrip={isRoundTrip} originCode={fromCode} destCode={toCode}
+                selectedBaggage={selectedBaggage} toggleBaggage={toggleBaggage}
                 onReset={resetFilters}
               />
               <Button className="w-full mt-6 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setShowFilters(false)}>Apply Filters</Button>

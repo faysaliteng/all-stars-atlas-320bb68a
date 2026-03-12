@@ -2332,8 +2332,8 @@ const FlightResults = () => {
               </Popover>
             )}
             {isMultiCity && (
-              <div className="bg-foreground/80 border border-muted-foreground/30 rounded-lg px-3 py-2 flex items-center gap-1.5 shrink-0">
-                <span className="text-xs sm:text-sm font-medium text-background">
+              <div className="bg-muted border border-border rounded-lg px-4 py-2.5 flex items-center gap-2 shrink-0">
+                <span className="text-sm font-medium text-foreground">
                   {multiCitySegments.map(s => s.from).join(" → ")} → {multiCitySegments[multiCitySegments.length - 1]?.to || "—"}
                 </span>
               </div>

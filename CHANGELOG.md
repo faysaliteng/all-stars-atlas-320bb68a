@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [3.7.8] — 2026-03-12 — Round-Trip Deduplication Fix
+
+### Fixed
+- **Round-trip combinations collapsed to 1 result**: Backend deduplication key only used first-leg flight number + departure time, causing all round-trip combos sharing the same outbound to be treated as duplicates. Now includes ALL leg flight numbers, arrival time, direction, and per-leg departure times — preserving every unique outbound+return combination (matching BDFare's 731 results vs our previous 1)
+
+---
+
 ## [3.7.7] — 2026-03-12 — BDFare Normalizer Rewrite & Carrier Filter Fix
 
 ### Fixed

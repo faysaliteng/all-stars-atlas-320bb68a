@@ -1,7 +1,7 @@
 # Seven Trip — Working Deployment Commands
 
 > **Auto-updated** with every change. Copy-paste ready commands for your VPS.
-> Last updated: 2026-03-12 (v3.7.7 — BDFare normalizer rewrite, carrier filter fix, cabin class accuracy)
+> Last updated: 2026-03-12 (v3.7.8 — Round-trip dedup fix: all combos now preserved)
 
 ---
 
@@ -112,6 +112,7 @@ pm2 logs seventrip-api --lines 30
 
 | Date | Change | Deploy Command |
 |------|--------|----------------|
+| 2026-03-12 | Round-trip dedup fix: key now includes all leg flight numbers/times/direction — preserves all outbound+return combinations | Backend Only |
 | 2026-03-12 | BDFare normalizer rewrite: match actual API v2 structure, carrier filter fix, cabin class accuracy from all providers | Standard Deployment |
 | 2026-03-12 | Multi-city detail parity: full airport names, fare table (Discount/AIT VAT), baggage table, cancellation/date change tabs — matches one-way/round-trip | Frontend Only |
 | 2026-03-12 | Airline filter bar enabled for multi-city (removed `!isMultiCity` exclusion) | Frontend Only |

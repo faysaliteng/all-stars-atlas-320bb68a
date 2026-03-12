@@ -87,6 +87,15 @@ pm2 restart seventrip-api && pm2 logs seventrip-api --lines 50
 cd ~/projects/all-stars-atlas && rm -rf node_modules && npm install && npm run build
 ```
 
+### MySQL ERROR 3780 on reward points migration
+Cause: `users.id` is UUID (`CHAR(36)`) but migration used `INT` user_id.
+
+```bash
+cd ~/projects/all-stars-atlas
+git pull origin main
+mysql seventrip < backend/database/reward-points-migration.sql
+```
+
 ---
 
 ## 📝 Change Log

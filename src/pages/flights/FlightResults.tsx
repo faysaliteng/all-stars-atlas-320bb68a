@@ -967,16 +967,16 @@ const FlightCard = ({
             </div>
           </div>
 
-          {/* Flight times section */}
-          <div className="flex-1 flex items-center p-3 sm:p-5">
-            <div className="flex-1 flex items-center gap-2 sm:gap-5">
+          {/* Flight times + baggage info */}
+          <div className="flex-1 p-3 sm:p-5">
+            <div className="flex items-center gap-2 sm:gap-5">
               {/* Departure */}
               <div className="text-center shrink-0">
                 <p className="text-lg sm:text-2xl font-black tracking-tight">{departTime}</p>
                 <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium mt-0.5">{departDateStr}</p>
               </div>
 
-              {/* Duration bar with plane icon */}
+              {/* Duration bar */}
               <div className="flex-1 flex flex-col items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[100px]">
                 <div className="w-full relative">
                   <div className="w-full flex items-center">
@@ -1008,28 +1008,27 @@ const FlightCard = ({
                 <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium mt-0.5">{arriveDateStr}</p>
               </div>
             </div>
-          </div>
 
-          {/* Baggage + Seats + Class info row */}
-          <div className="flex items-center flex-wrap gap-3 px-3 sm:px-5 py-1.5 border-t sm:border-t-0">
-            {handBaggage && (
-              <span className="flex items-center gap-1 text-[10px] text-accent font-medium">
-                <Package className="w-3 h-3" /> {handBaggage}
-              </span>
-            )}
-            {baggage && (
-              <span className="flex items-center gap-1 text-[10px] text-accent font-medium">
-                <Luggage className="w-3 h-3" /> {baggage}
-              </span>
-            )}
-            {availableSeats !== null && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
-                <Users className="w-3 h-3" /> {availableSeats} Seat{availableSeats !== 1 ? "s" : ""}
-              </span>
-            )}
-            <span className="text-[10px] text-muted-foreground font-medium">Class: {bookingClass || cabin.charAt(0)}</span>
+            {/* Baggage + Seats + Class info row */}
+            <div className="flex items-center flex-wrap gap-3 mt-2">
+              {handBaggage && (
+                <span className="flex items-center gap-1 text-[10px] text-accent font-medium">
+                  <Package className="w-3 h-3" /> {handBaggage}
+                </span>
+              )}
+              {baggage && (
+                <span className="flex items-center gap-1 text-[10px] text-accent font-medium">
+                  <Luggage className="w-3 h-3" /> {baggage}
+                </span>
+              )}
+              {availableSeats !== null && (
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                  <Users className="w-3 h-3" /> {availableSeats} Seat{availableSeats !== 1 ? "s" : ""}
+                </span>
+              )}
+              <span className="text-[10px] text-muted-foreground font-medium">Class: {bookingClass || cabin.charAt(0)}</span>
+            </div>
           </div>
-        </div>
 
           {/* Price section */}
           <div className="flex flex-col items-end gap-1 p-4 sm:p-5 sm:w-56 shrink-0 border-t sm:border-t-0 sm:border-l border-border/50 bg-muted/20">

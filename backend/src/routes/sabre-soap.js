@@ -233,15 +233,15 @@ async function getAncillaryOffers(params) {
   const cabinCode = cabinCodeMap[params.cabinClass] || 'Y';
   const bookingCode = cabinCode;
 
-  // Build passenger types
+  // Build passenger types (with namespace prefix)
   const paxTypes = [];
   const adtCount = params.adults || 1;
   for (let i = 0; i < adtCount; i++) {
-    paxTypes.push(`<PassengerInfo><Type>ADT</Type><NameNumber>${i + 1}.1</NameNumber></PassengerInfo>`);
+    paxTypes.push(`<ns13:PassengerInfo><ns13:Type>ADT</ns13:Type><ns13:NameNumber>${i + 1}.1</ns13:NameNumber></ns13:PassengerInfo>`);
   }
   if (params.children) {
     for (let i = 0; i < params.children; i++) {
-      paxTypes.push(`<PassengerInfo><Type>CNN</Type><NameNumber>${adtCount + i + 1}.1</NameNumber></PassengerInfo>`);
+      paxTypes.push(`<ns13:PassengerInfo><ns13:Type>CNN</ns13:Type><ns13:NameNumber>${adtCount + i + 1}.1</ns13:NameNumber></ns13:PassengerInfo>`);
     }
   }
 
@@ -264,29 +264,29 @@ async function getAncillaryOffers(params) {
     </wsse:Security>
   </SOAP-ENV:Header>
   <SOAP-ENV:Body>
-    <GetAncillaryOffersRQ xmlns="http://services.sabre.com/merch/ancillary/offer/v03"
-      xmlns:itin="http://services.sabre.com/merch/itinerary/v03"
-      xmlns:pax="http://services.sabre.com/merch/passenger/v03"
-      xmlns:flt="http://services.sabre.com/merch/flight/v03"
+    <ns9:GetAncillaryOffersRQ
+      xmlns:ns9="http://services.sabre.com/merch/ancillary/offer/v03"
+      xmlns:ns10="http://services.sabre.com/merch/ancillary/v03"
+      xmlns:ns11="http://services.sabre.com/merch/common/v03"
+      xmlns:ns13="http://services.sabre.com/merch/passenger/v03"
+      xmlns:ns14="http://services.sabre.com/merch/itinerary/v03"
+      xmlns:ns16="http://services.sabre.com/merch/flight/v03"
       version="3.0.0">
-      <RequestType>payload</RequestType>
-      <RequestMode>booking</RequestMode>
-      <SummaryOnly>false</SummaryOnly>
-      <QueryByItinerary>
-        <itin:Itinerary>
-          <itin:FlightSegment origin="${params.origin}" destination="${params.destination}" departureDate="${params.departureDate}"${params.departureTime ? ` departureTime="${params.departureTime}"` : ''} sequence="1">
-            <flt:Marketing carrier="${params.marketingCarrier}">${params.flightNumber}</flt:Marketing>
-            <flt:Operating carrier="${params.operatingCarrier || params.marketingCarrier}">${params.flightNumber}</flt:Operating>
-            <itin:BookingCode>${bookingCode}</itin:BookingCode>
-            <itin:CabinCode>${cabinCode}</itin:CabinCode>
-          </itin:FlightSegment>
-        </itin:Itinerary>
+      <ns9:RequestType>payload</ns9:RequestType>
+      <ns9:RequestMode>booking</ns9:RequestMode>
+      <ns9:SummaryOnly>false</ns9:SummaryOnly>
+      <ns9:QueryByItinerary>
+        <ns14:Itinerary>
+          <ns14:FlightSegment origin="${params.origin}" destination="${params.destination}" departureDate="${params.departureDate}"${params.departureTime ? ` departureTime="${params.departureTime}"` : ''} sequence="1">
+            <ns16:Marketing carrier="${params.marketingCarrier}">${params.flightNumber}</ns16:Marketing>
+            <ns16:Operating carrier="${params.operatingCarrier || params.marketingCarrier}">${params.flightNumber}</ns16:Operating>
+            <ns14:BookingCode>${bookingCode}</ns14:BookingCode>
+            <ns14:CabinCode>${cabinCode}</ns14:CabinCode>
+          </ns14:FlightSegment>
+        </ns14:Itinerary>
         ${paxTypes.join('\n        ')}
-        <POS>
-          <PCC>${config.pcc}</PCC>
-        </POS>
-      </QueryByItinerary>
-    </GetAncillaryOffersRQ>
+      </ns9:QueryByItinerary>
+    </ns9:GetAncillaryOffersRQ>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>`;
 

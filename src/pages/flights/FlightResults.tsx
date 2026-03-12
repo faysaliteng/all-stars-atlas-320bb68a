@@ -511,6 +511,157 @@ const StopDotsWithTooltip = ({ flight, stops }: { flight: any; stops: number }) 
   );
 };
 
+/* ─── Fare Options Panel — BDFare-inspired but unique design ─── */
+const FareOptionsPanel = ({ flights, onBook }: { flights: any[]; onBook: (flight: any) => void }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Build fare options from the flight's fareDetails or generate from the flight itself
+  const fareOptions = useMemo(() => {
+    if (flights.length === 0) return [];
+    const primary = flights[0];
+    const fd = primary.fareDetails || [];
+    
+    // If API returns multiple fare options, use them
+    if (fd.length > 1) {
+      return fd.map((f: any, i: number) => ({
+        id: `option-${i}`,
+        label: `Fare Option ${i + 1}`,
+        handBaggage: f.handBaggage || primary.handBaggage || null,
+        checkedBaggage: f.baggage || f.checkedBaggage || primary.baggage || null,
+        meal: f.meal || f.mealIncluded ? "Included" : null,
+        seatSelection: f.seatSelection ?? false,
+        rebooking: f.rebookingAllowed !== false,
+        cancellation: f.cancellationAllowed !== false,
+        miles: f.milesAccrual ?? false,
+        bookingClass: f.bookingClass || f.cabinClass || primary.bookingClass || "",
+        grossFare: f.amount || f.total || primary.price || 0,
+        refundable: f.refundable ?? primary.refundable ?? false,
+        flight: primary,
+      }));
+    }
+    
+    // Generate a single option from the flight data
+    return [{
+      id: "option-0",
+      label: "Available Fare",
+      handBaggage: primary.handBaggage || null,
+      checkedBaggage: primary.baggage || null,
+      meal: primary.mealIncluded ? "Included" : null,
+      seatSelection: false,
+      rebooking: true,
+      cancellation: primary.refundable ?? false,
+      miles: false,
+      bookingClass: primary.bookingClass || primary.cabinClass?.charAt(0) || "",
+      grossFare: primary.price || 0,
+      refundable: primary.refundable ?? false,
+      flight: primary,
+    }];
+  }, [flights]);
+
+  const fareTypeLabels = [
+    { key: "handBaggage", label: "Hand Baggage", icon: Package },
+    { key: "checkedBaggage", label: "Checked Baggage", icon: Luggage },
+    { key: "meal", label: "Meal", icon: () => <span className="text-base">🍽</span> },
+    { key: "seatSelection", label: "Seat Selection", icon: () => <span className="text-base">💺</span> },
+    { key: "rebooking", label: "Rebooking", icon: FileText },
+    { key: "cancellation", label: "Cancellation", icon: Shield },
+    { key: "miles", label: "Miles", icon: Star },
+    { key: "bookingClass", label: "Booking Class", icon: () => <span className="text-base">🎫</span> },
+  ];
+
+  return (
+    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
+      className="overflow-hidden border-t border-border">
+      <div className="p-4 sm:p-5 bg-muted/10">
+        <div className="flex gap-0">
+          {/* Left: Fare Type Labels */}
+          <div className="w-40 shrink-0 pt-12">
+            {fareTypeLabels.map((ft) => {
+              const Icon = ft.icon;
+              return (
+                <div key={ft.key} className="h-11 flex items-center gap-2 px-3">
+                  <span className="text-muted-foreground"><Icon className="w-4 h-4" /></span>
+                  <span className="text-xs font-medium text-muted-foreground">{ft.label}</span>
+                </div>
+              );
+            })}
+            <div className="h-16" />
+          </div>
+
+          {/* Right: Scrollable fare options */}
+          <div className="flex-1 relative min-w-0">
+            {fareOptions.length > 2 && (
+              <>
+                <button className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-muted transition-colors"
+                  onClick={() => scrollRef.current?.scrollBy({ left: -220, behavior: 'smooth' })}>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-muted transition-colors"
+                  onClick={() => scrollRef.current?.scrollBy({ left: 220, behavior: 'smooth' })}>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-none px-1">
+              {fareOptions.map((opt, idx) => (
+                <div key={opt.id}
+                  className={`shrink-0 w-48 rounded-xl border transition-all hover:shadow-md ${
+                    idx === 0 ? "border-accent/40 bg-accent/[0.03] shadow-sm" : "border-border bg-card"
+                  }`}>
+                  {/* Header */}
+                  <div className={`px-4 py-3 rounded-t-xl text-center ${
+                    idx === 0 ? "bg-accent/10" : "bg-muted/40"
+                  }`}>
+                    <p className={`text-sm font-bold ${idx === 0 ? "text-accent" : "text-foreground"}`}>{opt.label}</p>
+                    {idx === 0 && <p className="text-[10px] text-accent/70 font-medium mt-0.5">Best Value</p>}
+                  </div>
+
+                  {/* Values */}
+                  <div>
+                    {fareTypeLabels.map((ft) => {
+                      const val = opt[ft.key as keyof typeof opt];
+                      let display: React.ReactNode;
+
+                      if (ft.key === "handBaggage" || ft.key === "checkedBaggage" || ft.key === "meal") {
+                        display = val ? <span className="text-xs font-medium text-foreground">{String(val)}</span> : <span className="text-xs text-muted-foreground">Not included</span>;
+                      } else if (ft.key === "bookingClass") {
+                        display = <span className="text-xs font-semibold text-foreground">{String(val || "—")}</span>;
+                      } else if (typeof val === "boolean") {
+                        display = val
+                          ? <span className="text-xs font-medium text-accent">Available</span>
+                          : <X className="w-4 h-4 text-destructive/60 mx-auto" />;
+                      } else if (typeof val === "string" && val) {
+                        display = <span className="text-xs font-medium text-warning">{val}</span>;
+                      } else {
+                        display = <X className="w-4 h-4 text-destructive/60 mx-auto" />;
+                      }
+
+                      return (
+                        <div key={ft.key} className="h-11 flex items-center justify-center px-3 border-t border-border/30">
+                          {display}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer: Gross Fare + Book */}
+                  <div className="px-4 py-3 border-t border-border/50 text-center space-y-2">
+                    <p className="text-[10px] text-muted-foreground">Gross Fare</p>
+                    <p className="text-base font-black text-foreground">BDT {opt.grossFare.toLocaleString()}</p>
+                    <Button size="sm" className="w-full font-bold rounded-lg bg-accent hover:bg-accent/90 text-accent-foreground h-9"
+                      onClick={() => onBook(opt.flight)}>
+                      Book Now
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── Leg Mini — compact leg display for grouped cards ─── */
 const LegMini = ({ flight, label, labelColor }: { flight: any; label: string; labelColor: string }) => {
   const logo = getAirlineLogo(flight.airlineCode);

@@ -33,6 +33,27 @@ function getAirportName(code: string): string {
   return AIRPORT_NAME_MAP.get(code) || `${code} Airport`;
 }
 
+/* ─── Airline Alliance Mapping — real IATA memberships ─── */
+const AIRLINE_ALLIANCES: Record<string, string> = {
+  TK:'Star Alliance',SQ:'Star Alliance',AI:'Star Alliance',TG:'Star Alliance',NH:'Star Alliance',
+  UA:'Star Alliance',LH:'Star Alliance',AC:'Star Alliance',ET:'Star Alliance',MS:'Star Alliance',
+  TP:'Star Alliance',SK:'Star Alliance',CA:'Star Alliance',NZ:'Star Alliance',OZ:'Star Alliance',
+  SA:'Star Alliance',AV:'Star Alliance',CM:'Star Alliance',OU:'Star Alliance',LO:'Star Alliance',
+  SN:'Star Alliance',OS:'Star Alliance',A3:'Star Alliance',ZH:'Star Alliance',
+  MU:'SkyTeam',CZ:'SkyTeam',KE:'SkyTeam',GA:'SkyTeam',VN:'SkyTeam',SV:'SkyTeam',
+  AF:'SkyTeam',KL:'SkyTeam',DL:'SkyTeam',AZ:'SkyTeam',AR:'SkyTeam',AM:'SkyTeam',
+  CI:'SkyTeam',RO:'SkyTeam',ME:'SkyTeam',SU:'SkyTeam',
+  QR:'oneworld',BA:'oneworld',CX:'oneworld',MH:'oneworld',JL:'oneworld',AA:'oneworld',
+  IB:'oneworld',AY:'oneworld',QF:'oneworld',RJ:'oneworld',UL:'oneworld',S7:'oneworld',
+  LA:'oneworld',FJ:'oneworld',AT:'oneworld',
+};
+
+function fmtDurationMins(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h ${m}m`;
+}
+
 function formatTime(datetime?: string): string {
   if (!datetime) return "--:--";
   try { const d = new Date(datetime); return isNaN(d.getTime()) ? datetime : d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); } catch { return datetime; }

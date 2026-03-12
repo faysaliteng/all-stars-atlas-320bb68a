@@ -65,6 +65,22 @@ function fmtDurationMins(mins: number): string {
   return `${h}h ${m}m`;
 }
 
+/* ─── Per-airline fare calculation helper ─── */
+function getAirlineFareParams(
+  airlineCode: string,
+  markupSettings: { discount: number; aitVat: number; airlineMarkups?: Record<string, any> }
+): { discountPct: number; aitVatPct: number } {
+  const airlineMarkups = markupSettings.airlineMarkups || {};
+  const entry = airlineMarkups[airlineCode];
+  if (entry && !entry.useGlobal) {
+    return {
+      discountPct: entry.discount ?? markupSettings.discount,
+      aitVatPct: markupSettings.aitVat, // AIT VAT is always global
+    };
+  }
+  return { discountPct: markupSettings.discount, aitVatPct: markupSettings.aitVat };
+}
+
 function formatTime(datetime?: string): string {
   if (!datetime) return "--:--";
   try { const d = new Date(datetime); return isNaN(d.getTime()) ? datetime : d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); } catch { return datetime; }

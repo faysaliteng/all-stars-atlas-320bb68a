@@ -676,8 +676,9 @@ function getAirlineName(code) {
 
 /**
  * Create a PNR in Sabre using CreatePassengerNameRecordRQ
+ * Supports SSR: meals, wheelchair, medical, pets, UMNR, FF#, DOCS/DOCA
  */
-async function createBooking({ flightData, passengers, contactInfo }) {
+async function createBooking({ flightData, passengers, contactInfo, specialServices }) {
   const config = await getSabreConfig();
   if (!config) throw new Error('Sabre API not configured');
 
@@ -710,6 +711,165 @@ async function createBooking({ flightData, passengers, contactInfo }) {
       },
     }));
 
+    // ── Build SSR (Special Service Requests) ──
+    const ssrList = [];
+    const advancePassenger = [];
+    const ss = specialServices || {};
+
+    passengers.forEach((pax, i) => {
+      const nameNumber = `${i + 1}.1`;
+      const paxSS = ss.perPassenger?.[i] || {};
+      const airlineCode = flightData?.airlineCode || segs[0]?.airlineCode || '';
+
+      // Meal SSR (VGML, MOML, AVML, KSML, DBML, CHML, SFML, FPML, BBML, GFML, LCML, NLML, RVML, SPML)
+      if (paxSS.meal && paxSS.meal !== 'none' && paxSS.meal !== 'standard') {
+        ssrList.push({
+          SSRCode: paxSS.meal,
+          AirlineCode: airlineCode,
+          Text: `${paxSS.meal}-${(pax.firstName || '').toUpperCase()}/${(pax.lastName || '').toUpperCase()}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A', // All segments
+        });
+      }
+
+      // Wheelchair SSR (WCHR, WCHS, WCHC)
+      if (paxSS.wheelchair && paxSS.wheelchair !== 'none') {
+        ssrList.push({
+          SSRCode: paxSS.wheelchair,
+          AirlineCode: airlineCode,
+          Text: `${(pax.firstName || '').toUpperCase()}/${(pax.lastName || '').toUpperCase()}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Medical SSR (MEDA)
+      if (paxSS.medical) {
+        ssrList.push({
+          SSRCode: 'MEDA',
+          AirlineCode: airlineCode,
+          Text: paxSS.medicalDetails || `MEDICAL ASSISTANCE REQUIRED-${(pax.lastName || '').toUpperCase()}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Blind passenger (BLND)
+      if (paxSS.blind) {
+        ssrList.push({
+          SSRCode: 'BLND',
+          AirlineCode: airlineCode,
+          Text: `BLIND PASSENGER-${(pax.lastName || '').toUpperCase()}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Deaf passenger (DEAF)
+      if (paxSS.deaf) {
+        ssrList.push({
+          SSRCode: 'DEAF',
+          AirlineCode: airlineCode,
+          Text: `DEAF PASSENGER-${(pax.lastName || '').toUpperCase()}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Unaccompanied Minor (UMNR)
+      if (paxSS.unaccompaniedMinor) {
+        ssrList.push({
+          SSRCode: 'UMNR',
+          AirlineCode: airlineCode,
+          Text: paxSS.umnrDetails || `UM${paxSS.umnrAge || '10'}-${(pax.lastName || '').toUpperCase()}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Pet in Cabin (PETC) or Pet in Hold (AVIH)
+      if (paxSS.pet && paxSS.pet !== 'none') {
+        ssrList.push({
+          SSRCode: paxSS.pet, // PETC or AVIH
+          AirlineCode: airlineCode,
+          Text: paxSS.petDetails || `PET-${paxSS.pet === 'PETC' ? 'CABIN' : 'CARGO'}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Extra Baggage SSR (XBAG) — for non-ancillary based extra bags
+      if (paxSS.extraBaggage) {
+        ssrList.push({
+          SSRCode: 'XBAG',
+          AirlineCode: airlineCode,
+          Text: `${paxSS.extraBaggage}KG EXTRA BAGGAGE`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Frequent Flyer (FQTV)
+      if (paxSS.frequentFlyer?.number) {
+        ssrList.push({
+          SSRCode: 'FQTV',
+          AirlineCode: paxSS.frequentFlyer.airline || airlineCode,
+          Text: `${paxSS.frequentFlyer.airline || airlineCode}${paxSS.frequentFlyer.number}`,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // Free-text special request (OSI)
+      if (paxSS.specialRequest?.trim()) {
+        ssrList.push({
+          SSRCode: 'OTHS',
+          AirlineCode: airlineCode,
+          Text: paxSS.specialRequest.trim().substring(0, 70).toUpperCase(),
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // DOCS — Passport/Travel Document (IATA standard, always recommended for international)
+      if (pax.passport && pax.dob) {
+        const gender = (pax.gender || '').toUpperCase().startsWith('F') ? 'F' : 'M';
+        const dobFormatted = (pax.dob || '').replace(/-/g, '');
+        const expiryFormatted = (pax.passportExpiry || '').replace(/-/g, '');
+        const docCountry = pax.documentCountry || 'BD';
+        const nationality = docCountry; // ISO 2-letter
+
+        advancePassenger.push({
+          Document: {
+            Type: 'P', // Passport
+            Number: pax.passport,
+            IssueCountry: docCountry,
+            NationalityCountry: nationality,
+            ExpirationDate: expiryFormatted,
+            DateOfBirth: dobFormatted,
+            Gender: gender,
+            LastName: (pax.lastName || '').toUpperCase(),
+            FirstName: (pax.firstName || '').toUpperCase(),
+          },
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+          VendorPrefs: { Airline: { Hosted: true } },
+        });
+      }
+
+      // DOCA — Destination Address (if provided)
+      if (paxSS.destinationAddress?.trim()) {
+        advancePassenger.push({
+          Document: {
+            Type: 'A', // Address
+            Text: paxSS.destinationAddress.trim().substring(0, 99).toUpperCase(),
+          },
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+    });
+
     const body = {
       CreatePassengerNameRecordRQ: {
         targetCity: config.pcc,
@@ -737,6 +897,33 @@ async function createBooking({ flightData, passengers, contactInfo }) {
         },
       },
     };
+
+    // Inject SSR into request if any exist
+    if (ssrList.length > 0) {
+      body.CreatePassengerNameRecordRQ.SpecialReqDetails = {
+        SpecialService: {
+          SpecialServiceInfo: {
+            Service: ssrList.map(ssr => ({
+              SSRCode: ssr.SSRCode,
+              ...(ssr.AirlineCode ? { Airline: { Code: ssr.AirlineCode } } : {}),
+              Text: ssr.Text,
+              PersonName: ssr.PersonName,
+              SegmentNumber: ssr.SegmentNumber,
+            })),
+          },
+        },
+      };
+      console.log(`[Sabre] Adding ${ssrList.length} SSR(s): ${ssrList.map(s => s.SSRCode).join(', ')}`);
+    }
+
+    // Inject DOCS/DOCA into request
+    if (advancePassenger.length > 0) {
+      if (!body.CreatePassengerNameRecordRQ.SpecialReqDetails) {
+        body.CreatePassengerNameRecordRQ.SpecialReqDetails = {};
+      }
+      body.CreatePassengerNameRecordRQ.SpecialReqDetails.AdvancePassenger = advancePassenger;
+      console.log(`[Sabre] Adding ${advancePassenger.length} DOCS/DOCA entries`);
+    }
 
     const response = await sabreRequest(config, '/v2.4.0/passenger/records?mode=create', body);
 

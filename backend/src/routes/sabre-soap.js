@@ -283,8 +283,7 @@ async function getAncillaryOffers(params) {
     if (xml.includes('faultstring') || xml.includes('ErrorRS')) {
       const errMatch = xml.match(/faultstring>([^<]+)/) || xml.match(/Message[^>]*>([^<]+)/);
       console.log(`[Sabre SOAP] Ancillary error: ${errMatch ? errMatch[1] : 'Unknown error'}`);
-      console.log(`[Sabre SOAP] Ancillary error XML: ${xml.substring(0, 3000)}`);
-      return null;
+      return { _error: true, message: errMatch ? errMatch[1] : 'Unknown', rawXml: xml.substring(0, 3000) };
     }
 
     return parseAncillaryXml(xml);

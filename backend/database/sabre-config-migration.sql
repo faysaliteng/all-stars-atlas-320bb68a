@@ -1,0 +1,36 @@
+-- =============================================
+-- Seven Trip - Sabre GDS Configuration Seed
+-- Run: mysql -u seventrip_user -p'YourStrongPassword123!' seventrip < database/sabre-config-migration.sql
+-- =============================================
+
+INSERT INTO system_settings (id, setting_key, setting_value, updated_at)
+VALUES (UUID(), 'api_sabre', JSON_OBJECT(
+  'enabled', 'true',
+  'environment', 'cert',
+  'pcc', 'J4YL',
+  'epr', '631470',
+  'clientId', '5B0K-JvBdOta',
+  'clientSecret', 'Pl67azTy',
+  'agencyPassword', '01uepwzc',
+  'prodPassword', 'j3ms2a1p',
+  'ptr', 'A9618A',
+  'tamPool', 'ABBDJ4YL',
+  'scCode', 'J4YL'
+), CURRENT_TIMESTAMP)
+ON DUPLICATE KEY UPDATE
+  setting_value = JSON_OBJECT(
+    'enabled', 'true',
+    'environment', 'cert',
+    'pcc', 'J4YL',
+    'epr', '631470',
+    'clientId', '5B0K-JvBdOta',
+    'clientSecret', 'Pl67azTy',
+    'agencyPassword', '01uepwzc',
+    'prodPassword', 'j3ms2a1p',
+    'ptr', 'A9618A',
+    'tamPool', 'ABBDJ4YL',
+    'scCode', 'J4YL'
+  ),
+  updated_at = CURRENT_TIMESTAMP;
+
+SELECT '✅ Sabre GDS config inserted/updated' AS status;

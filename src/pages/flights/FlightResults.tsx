@@ -1164,7 +1164,112 @@ const RoundTripFlightCard = ({
   );
 };
 
-/* ─── Flight Card — exact reference design ─── */
+/* ─── Multi-City Flight Card — combined itinerary with all segments ─── */
+const MultiCityFlightCard = ({
+  flight, cheapest, isExpanded, onToggleExpand,
+}: {
+  flight: any; cheapest: number; isExpanded: boolean; onToggleExpand: () => void;
+}) => {
+  const cardNavigate = useNavigate();
+  const [cardSearchParams] = useSearchParams();
+  const segments = flight.segments || [];
+  const price = flight.price ?? 0;
+  const refundable = flight.refundable ?? false;
+  const fareType = flight.fareType || (refundable ? "Refundable" : "Non-Refundable");
+
+  return (
+    <Card className={`overflow-hidden transition-all border ${isExpanded ? "border-accent/30 shadow-md" : "border-border hover:shadow-md"}`}>
+      <CardContent className="p-0">
+        <div className="flex flex-col">
+          {/* All segment legs */}
+          <div className="flex-1 flex flex-col">
+            {segments.map((seg: any, i: number) => {
+              const logo = getAirlineLogo(seg.airlineCode);
+              const segLegs = seg.legs || [];
+              return (
+                <div key={i} className={`flex items-center gap-3 sm:gap-5 p-3 sm:p-4 ${i > 0 ? "border-t border-border/50" : ""}`}>
+                  {/* Airline */}
+                  <div className="flex flex-col items-center gap-1 w-20 sm:w-24 shrink-0">
+                    {logo ? <img src={logo} alt={seg.airline} className="w-8 h-8 object-contain" /> : <Plane className="w-6 h-6 text-muted-foreground" />}
+                    <p className="text-[10px] text-muted-foreground font-medium truncate max-w-full">{seg.airline}</p>
+                    <p className="text-[9px] text-muted-foreground">{seg.flightNumber}</p>
+                  </div>
+                  {/* Times */}
+                  <div className="flex-1 flex items-center gap-2 sm:gap-4 min-w-0">
+                    <div className="text-center shrink-0">
+                      <p className="text-lg sm:text-xl font-black leading-tight">{formatTime(seg.departureTime)}</p>
+                      <p className="text-[10px] text-muted-foreground">{formatShortDate(seg.departureTime)}</p>
+                      <p className="text-[10px] font-bold text-muted-foreground">{seg.origin}</p>
+                    </div>
+                    <div className="flex-1 flex flex-col items-center gap-0.5 min-w-[80px]">
+                      <p className="text-[10px] text-muted-foreground">{seg.duration}</p>
+                      <div className="w-full flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-accent" />
+                        <div className="flex-1 h-px bg-border relative">
+                          {seg.stops > 0 && <Plane className="w-3 h-3 text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90" />}
+                        </div>
+                        <div className="w-2 h-2 rounded-full bg-accent" />
+                      </div>
+                      <p className={`text-[10px] font-bold ${seg.stops === 0 ? "text-accent" : "text-destructive"}`}>
+                        {seg.stops === 0 ? "Non-Stop" : `${seg.stops} Stop${seg.stops > 1 ? "s" : ""}`}
+                      </p>
+                    </div>
+                    <div className="text-center shrink-0">
+                      <p className="text-lg sm:text-xl font-black leading-tight">{formatTime(seg.arrivalTime)}</p>
+                      <p className="text-[10px] text-muted-foreground">{formatShortDate(seg.arrivalTime)}</p>
+                      <p className="text-[10px] font-bold text-muted-foreground">{seg.destination}</p>
+                    </div>
+                  </div>
+                  {/* Baggage + class (only on first row) or segment label */}
+                  <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0 w-24">
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      {seg.handBaggage && <span className="flex items-center gap-0.5 text-accent"><Briefcase className="w-3 h-3" /> {seg.handBaggage}</span>}
+                      {seg.baggage && <span className="flex items-center gap-0.5 text-accent"><Luggage className="w-3 h-3" /> {seg.baggage}</span>}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">Class: {flight.bookingClass || "E"}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Price section */}
+          <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 border-t border-border/50 bg-muted/20">
+            <div className="flex items-center gap-3">
+              {price === cheapest && price > 0 && <Badge className="bg-accent/10 text-accent border-0 text-[9px] font-bold">Cheapest</Badge>}
+              {price > 0 && (
+                <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-0 text-[9px] font-bold flex items-center gap-1">
+                  <span className="text-sm">🪙</span> +{calcRewardPoints(price).toLocaleString()}
+                </Badge>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-xl sm:text-2xl font-black text-accent">BDT {price.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground">Price for {parseInt(cardSearchParams.get("adults") || "1")} traveller{parseInt(cardSearchParams.get("adults") || "1") > 1 ? "s" : ""}</p>
+            </div>
+          </div>
+        </div>
+        {/* Info bar */}
+        <div className="flex items-center px-3 sm:px-5 py-2.5 bg-muted/30 border-t border-border/50">
+          <button className="flex items-center gap-1 text-accent font-bold text-xs sm:text-sm hover:underline shrink-0" onClick={onToggleExpand}>
+            Flight Details {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          <div className="flex-1 flex items-center justify-center gap-3 sm:gap-5">
+            <span className={`font-bold text-xs sm:text-sm ${refundable ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>{fareType}</span>
+            {flight.airlineCode?.toUpperCase() !== "BG" && (
+              <span className="text-emerald-800 dark:text-emerald-300 font-bold text-xs sm:text-sm">Book &amp; Hold</span>
+            )}
+          </div>
+          <Button size="sm" className="font-bold h-9 px-5 rounded-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            onClick={() => cardNavigate(`/flights/book?multiCity=true&adults=${cardSearchParams.get("adults") || "1"}&children=${cardSearchParams.get("children") || "0"}&infants=${cardSearchParams.get("infants") || "0"}&cabin=${cardSearchParams.get("cabin") || "economy"}`, { state: { outboundFlight: flight, multiCityFlights: [flight] } })}>
+            Book Now <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+
 const FlightCard = ({
   flight, cheapest, isExpanded, onToggleExpand,
   selectionMode = false, isSelected = false, onSelect,

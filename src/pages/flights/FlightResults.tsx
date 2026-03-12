@@ -755,6 +755,55 @@ const FlightResults = () => {
   const outboundFlights = useMemo(() => flights.filter((f: any) => f.direction !== "return"), [flights]);
   const returnFlights = useMemo(() => flights.filter((f: any) => f.direction === "return"), [flights]);
 
+  // Round-trip: group outbound+return into pairs by airline
+  const roundTripPairs = useMemo(() => {
+    if (!isRoundTrip || !hasDirections) return [];
+    const pairs: { outbound: any; returnFlight: any; totalPrice: number }[] = [];
+    const usedReturnIds = new Set<string>();
+
+    // For each outbound, find the cheapest same-airline return
+    const sortedOutbound = [...outboundFlights].sort((a, b) => (a.price || 0) - (b.price || 0));
+    
+    for (const ob of sortedOutbound) {
+      // Find cheapest return from same airline
+      let bestReturn = returnFlights
+        .filter((r: any) => r.airlineCode === ob.airlineCode)
+        .sort((a: any, b: any) => (a.price || 0) - (b.price || 0))[0];
+      
+      // If no same-airline return, find cheapest overall return
+      if (!bestReturn) {
+        bestReturn = [...returnFlights].sort((a: any, b: any) => (a.price || 0) - (b.price || 0))[0];
+      }
+      
+      if (bestReturn) {
+        pairs.push({
+          outbound: ob,
+          returnFlight: bestReturn,
+          totalPrice: (ob.price || 0) + (bestReturn.price || 0),
+        });
+      }
+    }
+
+    // Also add unique return flights paired with cheapest outbound (for airlines that only have return)
+    const outboundAirlines = new Set(outboundFlights.map((f: any) => f.airlineCode));
+    const returnOnlyAirlines = returnFlights.filter((r: any) => !outboundAirlines.has(r.airlineCode));
+    
+    if (returnOnlyAirlines.length > 0) {
+      const cheapestOutbound = [...outboundFlights].sort((a: any, b: any) => (a.price || 0) - (b.price || 0))[0];
+      if (cheapestOutbound) {
+        for (const ret of returnOnlyAirlines) {
+          pairs.push({
+            outbound: cheapestOutbound,
+            returnFlight: ret,
+            totalPrice: (cheapestOutbound.price || 0) + (ret.price || 0),
+          });
+        }
+      }
+    }
+
+    return pairs;
+  }, [isRoundTrip, hasDirections, outboundFlights, returnFlights]);
+
   // Combine all multi-city flights for filter computation
   const allMultiCityFlights = useMemo(() => {
     if (!isMultiCity) return [];

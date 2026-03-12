@@ -547,39 +547,17 @@ const BD_AIRPORTS = ['DAC', 'CXB', 'CGP', 'ZYL', 'JSR', 'RJH', 'SPD', 'BZL', 'IR
 
 /**
  * Determine payment deadline.
- * Priority: 1) Airline-provided time limit  2) Fallback calculation
- * The airline's GDS response includes a LastTicketingDate / TimeLimit that
- * specifies exactly when the PNR will be auto-cancelled. We use that first.
+ * API-ONLY: Uses airline-provided timeLimit / LastTicketingDate from GDS.
+ * No hardcoded fallbacks — if GDS provides no deadline, returns null.
  */
-function resolvePaymentDeadline(airlineTimeLimit, departureTime, isDomestic) {
-  // 1) Use airline-provided time limit if available and valid
+function resolvePaymentDeadline(airlineTimeLimit) {
   if (airlineTimeLimit) {
     const tl = new Date(airlineTimeLimit);
     if (!isNaN(tl.getTime()) && tl > new Date()) {
       return tl;
     }
   }
-
-  // 2) Fallback: calculate based on route type (for DB-sourced flights with no GDS TL)
-  const now = new Date();
-  const departure = new Date(departureTime);
-  const hoursUntilFlight = (departure.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-  if (isDomestic) {
-    if (hoursUntilFlight <= 48) {
-      return new Date(departure.getTime() - 3 * 60 * 60 * 1000);
-    } else {
-      const deadline48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-      const deadline24hBefore = new Date(departure.getTime() - 24 * 60 * 60 * 1000);
-      return deadline48h < deadline24hBefore ? deadline48h : deadline24hBefore;
-    }
-  } else {
-    if (hoursUntilFlight <= 7 * 24) {
-      return new Date(departure.getTime() - 24 * 60 * 60 * 1000);
-    } else {
-      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-  }
+  return null; // No deadline from API — booking stays open until airline auto-cancels
 }
 
 // POST /flights/book
@@ -596,11 +574,11 @@ router.post('/book', authenticate, async (req, res) => {
     // Determine domestic/international
     const domestic = isDomestic !== undefined ? isDomestic : (BD_AIRPORTS.includes(origin.toUpperCase()) && BD_AIRPORTS.includes(destination.toUpperCase()));
 
-    // Resolve payment deadline: use airline-provided timeLimit first, fallback to calculation
+    // Resolve payment deadline: API-only, from airline GDS timeLimit
     const airlineTimeLimit = flightData?.timeLimit || null;
     let paymentDeadline = null;
     if (payLater) {
-      paymentDeadline = resolvePaymentDeadline(airlineTimeLimit, departureTime, domestic);
+      paymentDeadline = resolvePaymentDeadline(airlineTimeLimit);
     }
 
     const status = payLater ? 'on_hold' : 'confirmed';

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import {
   Plane, Building2, Search, Eye, Download, MoreHorizontal, RotateCcw, XCircle,
   FileText, Globe, Palmtree, CreditCard, Timer, Clock, Luggage, Shield,
-  ArrowRight, Users, AlertTriangle, Copy, Upload,
+  ArrowRight, Users, AlertTriangle, Copy, Upload, Package,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { generateTicketPDF } from "@/lib/pdf-generator";
@@ -421,6 +422,7 @@ const BookingDetailDialog = ({ booking, onClose, onPayNow }: { booking: any; onC
 
 const DashboardBookings = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("All");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -577,9 +579,15 @@ const DashboardBookings = () => {
                               });
                               toast({ title: "Downloaded", description: `E-Ticket PDF saved` });
                             }}><FileText className="w-4 h-4 mr-2" /> Download E-Ticket</DropdownMenuItem>
-                            {(booking.status === "Confirmed" || booking.status === "confirmed") && (<>
+                            {(booking.status === "Confirmed" || booking.status === "confirmed" || booking.status === "Ticketed" || booking.status === "ticketed") && (<>
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toast({ title: "Request Submitted", description: "Reissue request submitted." }); }}><RotateCcw className="w-4 h-4 mr-2" /> Request Reissue</DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); toast({ title: "Request Submitted", description: "Refund request submitted." }); }}><XCircle className="w-4 h-4 mr-2" /> Request Refund</DropdownMenuItem>
+                              {booking.pnr && booking.pnr !== "—" && booking.type === "flight" && (
+                                <DropdownMenuItem onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  navigate(`/dashboard/bookings/${booking.rawId}/extras`);
+                                }}><Package className="w-4 h-4 mr-2" /> Buy Extras (Meals/Baggage)</DropdownMenuItem>
+                              )}
                             </>)}
                             {(booking.status === "On Hold" || booking.status === "on_hold") && (
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handlePayNow(booking); }}>

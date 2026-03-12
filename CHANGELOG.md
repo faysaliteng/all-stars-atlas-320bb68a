@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented in this file.
 
+## [3.9.0] — 2026-03-12 — Auto-Ticketing, API-Only Deadlines & Post-Booking Ancillaries
+
+### Changed
+- **Pay Later deadlines**: Removed all hardcoded fallback calculations (48h domestic / 7d international). Payment deadlines now come exclusively from the airline's GDS `timeLimit` / `LastTicketingDate`. If no deadline is provided by the API, the booking stays open until the airline auto-cancels the PNR
+- **Frontend `resolveDeadlineInfo`**: Simplified to only use `flight.timeLimit` — no departure-based fallback logic
+- **Backend `resolvePaymentDeadline`**: Now takes only `airlineTimeLimit` parameter, returns `null` if no GDS deadline
+
+### Added
+- **Auto-ticketing on payment**: Created `backend/src/services/auto-ticket.js` — when payment is confirmed via SSLCommerz, bKash, or Nagad, the system automatically:
+  - Issues real GDS tickets via Sabre `issueTicket` or BDFare `issueTicket` APIs
+  - For TTI/Air Astra: creates a `pending_issue` ticket record (manual ticketing by admin)
+  - For international flights: checks passport/visa uploads before issuing tickets; defers ticketing if docs missing
+  - Updates booking status to `ticketed` (if GDS succeeded) or `confirmed` (if manual needed)
+- **SSLCommerz IPN auto-ticket**: Replaced manual ticket generation with `autoTicketAfterPayment()` call
+- **bKash callback auto-ticket**: Replaced simple status update with `autoTicketAfterPayment()` call
+- **Nagad callback auto-ticket**: Replaced simple status update with `autoTicketAfterPayment()` call
+- **Post-booking ancillaries page**: New `PostBookingExtras` dashboard page at `/dashboard/bookings/:id/extras` — fetches real Sabre GAO (GetAncillaryOffersRQ) meal and baggage offers using the booking's PNR
+- **Dashboard "Buy Extras" action**: Confirmed/Ticketed flight bookings with a PNR now show a "Buy Extras (Meals/Baggage)" dropdown action
+- **Backend ancillary endpoint**: `GET /dashboard/bookings/:id/ancillaries` — loads PNR from booking, calls Sabre SOAP GAO in stateful mode, returns purchasable meals and baggage
+
+### Security
+- International flight auto-ticketing is gated behind document verification — tickets are NOT issued until passport uploads are confirmed
+
 ---
 
 ## [3.8.0] — 2026-03-12 — Animated Flight Timeline

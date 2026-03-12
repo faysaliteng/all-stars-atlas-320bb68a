@@ -4,6 +4,23 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [3.5.1] — 2026-03-12 — Flight Search Route Validation Hardening
+
+### Fixed — International Scope Allowing Domestic Routes After Swap
+- **Bug**: Selecting International scope, then swapping airports (e.g., DAC→BOM becomes BOM→DAC, then changing FROM back to CXB) allowed domestic BD→BD routes to persist under International scope
+- **Root cause**: Swap function blindly swapped without re-validating against scope rules; FROM change didn't re-validate existing TO selection
+- **Fix**: Introduced centralized `isScopeInvalidRoute()` and `getScopedDestinationAirports()` validators used across all paths:
+  - Swap button now blocks invalid swaps with toast error
+  - FROM/TO useEffect auto-clears TO when route becomes invalid
+  - Multi-city segment updates auto-clear TO on invalid FROM change
+  - Search submit validates all segments (single + multi-city) before navigation
+
+### Changed — Multi-City Segment Validation
+- `updateSegment()` now checks destination validity when FROM changes mid-segment
+- Multi-city search submit validates every segment against scope rules before navigating
+
+---
+
 ## [3.5.0] — 2026-03-12 — Sabre SOAP Integration & Enterprise Booking Flow
 
 ### Added — Sabre SOAP Session Manager (`backend/src/routes/sabre-soap.js`)

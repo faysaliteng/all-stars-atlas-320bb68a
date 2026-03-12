@@ -408,6 +408,25 @@ Each tab navigates to its respective page with query params:
 navigate(`/flights?from=${from}&to=${to}&date=${date}`);
 ```
 
+### Flight Scope & Route Validation
+
+The flight tab includes a **Domestic / International** scope toggle that enforces strict routing rules:
+
+- **Domestic**: Both FROM and TO must be Bangladesh (BD) airports. Only BD airports appear in dropdowns.
+- **International**: At least one airport must be outside Bangladesh. If FROM is BD, the TO dropdown only shows non-BD airports. If FROM is non-BD, all airports are available as TO.
+
+**Centralized validation** is handled by two shared functions:
+- `getScopedDestinationAirports(from)` — Returns the filtered airport list based on scope and origin country.
+- `isScopeInvalidRoute(from, to)` — Returns `true` if the route violates scope rules (same airport, both BD on international, non-BD on domestic).
+
+These functions are used consistently across:
+- **Dropdown filtering** — `scopedToAirports`, `getMultiCityToAirports`
+- **Swap button** — Blocks swap if swapped route would be invalid, shows toast error
+- **Live FROM/TO change** — Auto-clears TO if it becomes invalid after FROM change
+- **Scope switch** — Resets airports that don't match the new scope (single + multi-city)
+- **Search submit** — Final validation before navigation for both single and multi-city
+- **Multi-city segment updates** — Auto-clears TO if changing FROM makes the route invalid
+
 ---
 
 ## 12. Adding a New Page <a name="adding-a-new-page"></a>

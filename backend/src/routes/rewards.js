@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const crypto = require('crypto');
 
 // ── Helper: ensure user_points row exists ──

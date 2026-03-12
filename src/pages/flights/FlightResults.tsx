@@ -1883,8 +1883,20 @@ const FlightResults = () => {
 
   const airlines = useMemo(() => apiData.airlines || [...new Set(allFlightsForFilters.map((f: any) => f.airline).filter(Boolean))], [apiData.airlines, allFlightsForFilters]);
   const cheapest = useMemo(() => apiData.cheapest || (allFlightsForFilters.length > 0 ? Math.min(...allFlightsForFilters.map((f: any) => f.price || Infinity)) : 0), [apiData.cheapest, allFlightsForFilters]);
-  const maxPrice = useMemo(() => allFlightsForFilters.length > 0 ? Math.max(...allFlightsForFilters.map((f: any) => f.price || 0)) : 200000, [allFlightsForFilters]);
-  const minPrice = useMemo(() => allFlightsForFilters.length > 0 ? Math.min(...allFlightsForFilters.map((f: any) => f.price || 0)) : 0, [allFlightsForFilters]);
+
+  // For round-trip mode, compute price bounds from pair totalPrices; for one-way from individual prices
+  const maxPrice = useMemo(() => {
+    if (isRoundTrip && hasDirections && roundTripPairs.length > 0) {
+      return Math.max(...roundTripPairs.map(p => p.totalPrice || 0));
+    }
+    return allFlightsForFilters.length > 0 ? Math.max(...allFlightsForFilters.map((f: any) => f.price || 0)) : 200000;
+  }, [allFlightsForFilters, isRoundTrip, hasDirections, roundTripPairs]);
+  const minPrice = useMemo(() => {
+    if (isRoundTrip && hasDirections && roundTripPairs.length > 0) {
+      return Math.min(...roundTripPairs.map(p => p.totalPrice || 0));
+    }
+    return allFlightsForFilters.length > 0 ? Math.min(...allFlightsForFilters.map((f: any) => f.price || 0)) : 0;
+  }, [allFlightsForFilters, isRoundTrip, hasDirections, roundTripPairs]);
 
   // Duration bounds for slider init
   const maxDuration = useMemo(() => {
@@ -1912,12 +1924,12 @@ const FlightResults = () => {
   }, [allFlightsForFilters]);
 
   useEffect(() => {
-    if (allFlightsForFilters.length > 0) {
+    if (allFlightsForFilters.length > 0 || (isRoundTrip && roundTripPairs.length > 0)) {
       setPriceRange([Math.max(0, minPrice - 100), maxPrice]);
       setDurationRange([minDuration, maxDuration]);
       if (maxLayoverDuration > 0) setLayoverDurationRange([0, maxLayoverDuration]);
     }
-  }, [minPrice, maxPrice, allFlightsForFilters.length, minDuration, maxDuration, maxLayoverDuration]);
+  }, [minPrice, maxPrice, allFlightsForFilters.length, minDuration, maxDuration, maxLayoverDuration, isRoundTrip, roundTripPairs.length]);
 
   const toggleAirline = useCallback((a: string) => setSelectedAirlines(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]), []);
   const toggleAlliance = useCallback((a: string) => setSelectedAlliances(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]), []);
@@ -1954,12 +1966,26 @@ const FlightResults = () => {
 
   // Quick sort summaries — Cheapest, Fastest, Best from real data
   const quickSortSummary = useMemo(() => {
-    const relevantFlights = isRoundTrip && hasDirections
-      ? outboundFlights.map((f: any) => ({ ...f, price: f.price || 0 }))
-      : (isMultiCity ? allMultiCityFlights : flights);
+    if (isRoundTrip && hasDirections && roundTripPairs.length > 0) {
+      const cheapestPair = [...roundTripPairs].sort((a, b) => a.totalPrice - b.totalPrice)[0];
+      const fastestPair = [...roundTripPairs].sort((a, b) => 
+        ((a.outbound.durationMinutes || 0) + (a.returnFlight.durationMinutes || 0)) - 
+        ((b.outbound.durationMinutes || 0) + (b.returnFlight.durationMinutes || 0))
+      )[0];
+      const bestPair = [...roundTripPairs].sort((a, b) => {
+        const sa = a.totalPrice * 0.5 + ((a.outbound.durationMinutes || 0) + (a.returnFlight.durationMinutes || 0)) * 30;
+        const sb = b.totalPrice * 0.5 + ((b.outbound.durationMinutes || 0) + (b.returnFlight.durationMinutes || 0)) * 30;
+        return sa - sb;
+      })[0];
+      return {
+        cheapest: cheapestPair ? { price: cheapestPair.totalPrice, duration: cheapestPair.outbound.duration || '' } : null,
+        fastest: fastestPair ? { price: fastestPair.totalPrice, duration: fastestPair.outbound.duration || '' } : null,
+        best: bestPair ? { price: bestPair.totalPrice, duration: bestPair.outbound.duration || '' } : null,
+      };
+    }
+    const relevantFlights = isMultiCity ? allMultiCityFlights : flights;
     if (relevantFlights.length === 0) return { cheapest: null, fastest: null, best: null };
-    const sorted = [...relevantFlights];
-    const cheapestFlight = sorted.sort((a, b) => (a.price || 0) - (b.price || 0))[0];
+    const cheapestFlight = [...relevantFlights].sort((a, b) => (a.price || 0) - (b.price || 0))[0];
     const fastestFlight = [...relevantFlights].sort((a, b) => (a.durationMinutes || Infinity) - (b.durationMinutes || Infinity))[0];
     const bestFlight = [...relevantFlights].sort((a, b) => {
       const sa = (a.price || 0) * 0.5 + (a.durationMinutes || 0) * 30 + (a.stops || 0) * 3000;
@@ -1971,7 +1997,7 @@ const FlightResults = () => {
       fastest: fastestFlight ? { price: fastestFlight.price, duration: fastestFlight.duration || '' } : null,
       best: bestFlight ? { price: bestFlight.price, duration: bestFlight.duration || '' } : null,
     };
-  }, [flights, outboundFlights, isRoundTrip, hasDirections, isMultiCity, allMultiCityFlights]);
+  }, [flights, roundTripPairs, isRoundTrip, hasDirections, isMultiCity, allMultiCityFlights]);
 
   const applyFilters = useCallback((list: any[]) => {
     return list.filter((f: any) => {

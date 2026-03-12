@@ -1432,6 +1432,10 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
     console.log(`[Sabre] PNR created (${successfulVariant || 'unknown_variant'}):`, finalPnr);
 
     return { success: true, pnr: finalPnr, rawResponse: finalResponse };
+  } catch (err) {
+    console.error('[Sabre] CreateBooking failed:', err.message);
+    return { success: false, error: err.message, pnr: null };
+  }
 }
 
 /**

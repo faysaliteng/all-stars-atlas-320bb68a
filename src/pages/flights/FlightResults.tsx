@@ -2257,13 +2257,13 @@ const FlightResults = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* ─── BDFare-style Interactive Search Modification Bar ─── */}
-      <div className="bg-foreground pt-20 sm:pt-28 lg:pt-36 pb-0">
+      <div className="bg-card border-b border-border pt-20 sm:pt-28 lg:pt-36 pb-0">
         <div className="container mx-auto px-3 sm:px-4">
-          <div className="flex flex-wrap items-center gap-2 py-3">
+          <div className="flex flex-wrap items-center gap-2.5 py-4">
             {/* Trip Type */}
-            <div className="bg-foreground/80 border border-muted-foreground/30 rounded-lg px-3 py-2 flex items-center gap-1.5 shrink-0">
-              <Plane className="w-3.5 h-3.5 text-background/70" />
-              <span className="text-xs sm:text-sm font-medium text-background">
+            <div className="bg-muted border border-border rounded-lg px-4 py-2.5 flex items-center gap-2 shrink-0">
+              <Plane className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">
                 {isMultiCity ? "Multi-City" : isRoundTrip ? "Return" : "One Way"}
               </span>
             </div>
@@ -2272,11 +2272,11 @@ const FlightResults = () => {
             {!isMultiCity && (
               <Popover open={showRouteEdit} onOpenChange={setShowRouteEdit}>
                 <PopoverTrigger asChild>
-                  <button className="bg-foreground/80 border border-muted-foreground/30 hover:border-accent/50 rounded-lg px-3 py-2 flex items-center gap-1.5 shrink-0 transition-colors">
-                    <span className="text-xs sm:text-sm font-bold text-background">{fromCode || "—"}</span>
-                    <ArrowLeftRight className="w-3.5 h-3.5 text-background/50" />
-                    <span className="text-xs sm:text-sm font-bold text-background">{toCode || "—"}</span>
-                    <ChevronDown className="w-3 h-3 text-background/50 ml-0.5" />
+                  <button className="bg-muted border border-border hover:border-primary/50 rounded-lg px-4 py-2.5 flex items-center gap-2 shrink-0 transition-colors">
+                    <span className="text-sm font-bold text-foreground">{fromCode || "—"}</span>
+                    <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-bold text-foreground">{toCode || "—"}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground ml-0.5" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-3" align="start">
@@ -2332,8 +2332,8 @@ const FlightResults = () => {
               </Popover>
             )}
             {isMultiCity && (
-              <div className="bg-foreground/80 border border-muted-foreground/30 rounded-lg px-3 py-2 flex items-center gap-1.5 shrink-0">
-                <span className="text-xs sm:text-sm font-medium text-background">
+              <div className="bg-muted border border-border rounded-lg px-4 py-2.5 flex items-center gap-2 shrink-0">
+                <span className="text-sm font-medium text-foreground">
                   {multiCitySegments.map(s => s.from).join(" → ")} → {multiCitySegments[multiCitySegments.length - 1]?.to || "—"}
                 </span>
               </div>
@@ -2342,7 +2342,7 @@ const FlightResults = () => {
             {/* Prev Day button */}
             {!isMultiCity && (
               <button onClick={() => shiftDate(-1)}
-                className="bg-foreground/80 border border-muted-foreground/30 hover:border-accent/50 rounded-lg p-2 text-background/70 hover:text-accent transition-colors shrink-0"
+                className="bg-muted border border-border hover:border-primary/50 rounded-lg p-2.5 text-muted-foreground hover:text-primary transition-colors shrink-0"
                 title="Previous Day">
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -2351,9 +2351,9 @@ const FlightResults = () => {
             {/* Dates — clickable with calendar picker */}
             <Popover open={showDateEdit} onOpenChange={setShowDateEdit}>
               <PopoverTrigger asChild>
-                <button className="bg-foreground/80 border border-muted-foreground/30 hover:border-accent/50 rounded-lg px-3 py-2 flex items-center gap-1.5 shrink-0 transition-colors">
-                  <CalendarDays className="w-3.5 h-3.5 text-background/70" />
-                  <span className="text-xs sm:text-sm font-medium text-background">
+                <button className="bg-muted border border-border hover:border-primary/50 rounded-lg px-4 py-2.5 flex items-center gap-2 shrink-0 transition-colors">
+                  <CalendarDays className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">
                     {isMultiCity
                       ? multiCitySegments.map(s => s.date).filter(Boolean).join(", ")
                       : departDate
@@ -2362,7 +2362,7 @@ const FlightResults = () => {
                     }
                     {isRoundTrip && returnDate && (() => { try { return ` — ${format(new Date(returnDate), "dd MMM, EEE")}`; } catch { return ""; } })()}
                   </span>
-                  <ChevronDown className="w-3 h-3 text-background/50" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-3" align="start">
@@ -2387,7 +2387,7 @@ const FlightResults = () => {
             {/* Next Day button */}
             {!isMultiCity && (
               <button onClick={() => shiftDate(1)}
-                className="bg-foreground/80 border border-muted-foreground/30 hover:border-accent/50 rounded-lg p-2 text-background/70 hover:text-accent transition-colors shrink-0"
+                className="bg-muted border border-border hover:border-primary/50 rounded-lg p-2.5 text-muted-foreground hover:text-primary transition-colors shrink-0"
                 title="Next Day">
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -2396,12 +2396,12 @@ const FlightResults = () => {
             {/* Passengers & Cabin — clickable with counter */}
             <Popover open={showPaxEdit} onOpenChange={setShowPaxEdit}>
               <PopoverTrigger asChild>
-                <button className="bg-foreground/80 border border-muted-foreground/30 hover:border-accent/50 rounded-lg px-3 py-2 flex items-center gap-1.5 shrink-0 transition-colors">
-                  <Users className="w-3.5 h-3.5 text-background/70" />
-                  <span className="text-xs sm:text-sm font-medium text-background">
+                <button className="bg-muted border border-border hover:border-primary/50 rounded-lg px-4 py-2.5 flex items-center gap-2 shrink-0 transition-colors">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">
                     {totalPax} Pax{cabinClass ? `, ${cabinClass.charAt(0).toUpperCase() + cabinClass.slice(1)}` : ""}
                   </span>
-                  <ChevronDown className="w-3 h-3 text-background/50" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-64 p-3" align="start">
@@ -2443,8 +2443,8 @@ const FlightResults = () => {
             {/* Session Timer */}
             <div className="ml-auto flex items-center gap-2 shrink-0">
               <SessionTimer startTime={searchStartTime} />
-              <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-lg px-5 h-9" onClick={applySearchEdit}>
-                <Search className="w-3.5 h-3.5 mr-1.5" /> Modify
+              <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-lg px-6 h-10" onClick={applySearchEdit}>
+                <Search className="w-4 h-4 mr-1.5" /> Modify
               </Button>
             </div>
           </div>

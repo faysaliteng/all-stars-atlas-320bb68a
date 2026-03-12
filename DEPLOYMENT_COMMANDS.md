@@ -1,7 +1,7 @@
 # Seven Trip — Working Deployment Commands
 
 > **Auto-updated** with every change. Copy-paste ready commands for your VPS.
-> Last updated: 2026-03-12 (v3.7.2 — Rewards route auth middleware hotfix for 502 crash)
+> Last updated: 2026-03-12 (v3.7.3 — White search bar redesign, bigger search modification chips)
 
 ---
 
@@ -112,6 +112,7 @@ pm2 logs seventrip-api --lines 30
 
 | Date | Change | Deploy Command |
 |------|--------|----------------|
+| 2026-03-12 | Search bar redesign: dark `bg-foreground` → white `bg-card` with `bg-muted` chips, larger text/padding | Frontend Only |
 | 2026-03-12 | Rewards route crash hotfix: replace undefined `authenticateToken` middleware with `authenticate` | Backend Only |
 | 2026-03-12 | Flight card responsiveness: reduced fixed-width columns, added `min-w-0` overflow prevention, scaled fonts for sidebar+content layout | Frontend Only |
 | 2026-03-12 | Reward points migration hotfix: FK type compatibility (`CHAR(36)` user_id/booking_id) | DB Migration |

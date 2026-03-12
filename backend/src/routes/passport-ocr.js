@@ -1119,7 +1119,9 @@ function parseTD3(mrzLines, r, verified) {
   const line2 = mrzLines.length > 1 ? mrzLines[1] : '';
 
   if (line1.startsWith('P')) {
-    const issuing = line1.substring(2, 5).replace(/</g, '');
+    let issuing = line1.substring(2, 5).replace(/</g, '');
+    // Apply OCR error correction to country code
+    issuing = correctMRZCountryCode(issuing);
     r.country = issuing;
     const nameSection = line1.substring(5);
     const parts = nameSection.split(/<<+/).filter(Boolean);
@@ -1146,7 +1148,7 @@ function parseTD3(mrzLines, r, verified) {
     verified.passportNumber = verifyMRZField(ppField, ppCheck);
 
     // ── Nationality (pos 10-12) — separate from issuing country ──
-    const natCode = line2.substring(10, 13).replace(/</g, '');
+    const natCode = correctMRZCountryCode(line2.substring(10, 13).replace(/</g, ''));
     if (natCode && natCode.length >= 2) {
       r.nationality = natCode; // Will be resolved to full name in post-processing
       console.log('[OCR] MRZ nationality code:', natCode);
@@ -1243,7 +1245,7 @@ function parseTD2(mrzLines, r, verified) {
   const line2 = mrzLines[1];
 
   if (line1.length >= 5) {
-    r.country = line1.substring(2, 5).replace(/</g, '');
+    r.country = correctMRZCountryCode(line1.substring(2, 5).replace(/</g, ''));
     const nameSection = line1.substring(5);
     const parts = nameSection.split(/<<+/).filter(Boolean);
     if (parts.length >= 1) r.lastName = parts[0].replace(/</g, ' ').trim();
@@ -1257,7 +1259,7 @@ function parseTD2(mrzLines, r, verified) {
     verified.passportNumber = verifyMRZField(ppField, ppCheck);
 
     // Nationality at pos 10-12
-    const nat = line2.substring(10, 13).replace(/</g, '');
+    const nat = correctMRZCountryCode(line2.substring(10, 13).replace(/</g, ''));
     if (nat) r.nationality = nat;
 
     const dobField = line2.substring(13, 19);
@@ -1849,6 +1851,100 @@ function cleanPlace(place) {
   if (place.length <= 1) return '';
   if (place.length > 30) place = place.substring(0, 30).trim();
   return titleCase(place);
+}
+
+/**
+ * Correct OCR-corrupted MRZ country codes using character similarity mapping.
+ * Common OCR confusions: B↔8↔R, G↔6↔C, D↔0↔O, I↔1↔L, S↔5, Z↔2
+ */
+function correctMRZCountryCode(code) {
+  if (!code || code.length < 2) return code;
+  code = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  
+  // Direct lookup first
+  const resolved = resolveCountryFull(code);
+  if (resolved.name && resolved.name !== code) return code; // Valid code
+  
+  // OCR character correction map (what OCR reads → what it likely should be)
+  const OCR_CORRECTIONS = {
+    '0': 'O', 'O': 'O',
+    '1': 'I', 'I': 'I', 'L': 'L',
+    '2': 'Z', 'Z': 'Z',
+    '5': 'S', 'S': 'S',
+    '6': 'G', 'G': 'G',
+    '8': 'B', 'B': 'B',
+  };
+  
+  // All valid 3-letter country codes
+  const VALID_CODES = [
+    'AFG','ALB','DZA','AND','AGO','ATG','ARG','ARM','AUS','AUT','AZE','BHS','BHR','BGD','BRB',
+    'BLR','BEL','BLZ','BEN','BTN','BOL','BIH','BWA','BRA','BRN','BGR','BFA','BDI','KHM','CMR',
+    'CAN','CPV','CAF','TCD','CHL','CHN','COL','COM','COG','CRI','HRV','CUB','CYP','CZE','COD',
+    'DNK','DJI','DMA','DOM','ECU','EGY','SLV','GNQ','ERI','EST','ETH','FJI','FIN','FRA','GAB',
+    'GMB','GEO','DEU','GHA','GRC','GRD','GTM','GIN','GNB','GUY','HTI','HND','HKG','HUN','ISL',
+    'IND','IDN','IRN','IRQ','IRL','ISR','ITA','JAM','JPN','JOR','KAZ','KEN','KIR','KWT','KGZ',
+    'LAO','LVA','LBN','LSO','LBR','LBY','LIE','LTU','LUX','MAC','MDG','MWI','MYS','MDV','MLI',
+    'MLT','MHL','MRT','MUS','MEX','FSM','MDA','MCO','MNG','MNE','MAR','MOZ','MMR','NAM','NRU',
+    'NPL','NLD','NZL','NIC','NER','NGA','PRK','MKD','NOR','OMN','PAK','PLW','PAN','PNG','PRY',
+    'PER','PHL','POL','PRT','QAT','ROU','RUS','RWA','KNA','LCA','VCT','WSM','SMR','STP','SAU',
+    'SEN','SRB','SYC','SLE','SGP','SVK','SVN','SLB','SOM','ZAF','KOR','SSD','ESP','LKA','SDN',
+    'SUR','SWZ','SWE','CHE','SYR','TWN','TJK','TZA','THA','TLS','TGO','TON','TTO','TUN','TUR',
+    'TKM','TUV','UGA','UKR','ARE','GBR','USA','URY','UZB','VUT','VEN','VNM','YEM','ZMB','ZWE',
+  ];
+  
+  // Try all single-character corrections
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i];
+    // Try common OCR alternatives for this character
+    const alternatives = getOCRAlternatives(ch);
+    for (const alt of alternatives) {
+      const corrected = code.substring(0, i) + alt + code.substring(i + 1);
+      if (VALID_CODES.includes(corrected)) {
+        console.log(`[OCR] Country code corrected: ${code} → ${corrected}`);
+        return corrected;
+      }
+    }
+  }
+  
+  // Try Levenshtein distance 1 match
+  for (const valid of VALID_CODES) {
+    if (levenshtein1(code, valid)) {
+      console.log(`[OCR] Country code fuzzy matched: ${code} → ${valid}`);
+      return valid;
+    }
+  }
+  
+  return code;
+}
+
+function getOCRAlternatives(ch) {
+  const map = {
+    '0': ['O', 'D', 'Q'], 'O': ['0', 'D', 'Q'],
+    '1': ['I', 'L', 'T'], 'I': ['1', 'L', 'T'], 'L': ['1', 'I'],
+    '2': ['Z'], 'Z': ['2'],
+    '5': ['S'], 'S': ['5'],
+    '6': ['G', 'C'], 'G': ['6', 'C'], 'C': ['6', 'G'],
+    '8': ['B', 'R'], 'B': ['8', 'R'], 'R': ['8', 'B'],
+    'D': ['0', 'O'], 'Q': ['0', 'O'],
+    'M': ['N', 'W'], 'N': ['M', 'H'],
+    'U': ['V'], 'V': ['U', 'Y'],
+    'E': ['F'], 'F': ['E', 'P'], 'P': ['F'],
+    'H': ['N', 'K'], 'K': ['H', 'X'],
+    'W': ['M'],
+    'A': ['4'], '4': ['A'],
+    'T': ['1', 'I', 'Y'], 'Y': ['T', 'V'],
+  };
+  return map[ch] || [];
+}
+
+function levenshtein1(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) diff++;
+    if (diff > 1) return false;
+  }
+  return diff === 1;
 }
 
 /**

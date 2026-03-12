@@ -1264,6 +1264,11 @@ const MultiCityFlightCard = ({
             Book Now <ArrowRight className="w-3.5 h-3.5 ml-1" />
           </Button>
         </div>
+
+        {/* Expanded Details Panel */}
+        {isExpanded && (
+          <MultiCityExpandedDetails flight={flight} segments={segments} />
+        )}
       </CardContent>
     </Card>
   );

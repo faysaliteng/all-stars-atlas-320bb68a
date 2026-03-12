@@ -1200,8 +1200,8 @@ const FlightBooking = () => {
                         <div className="flex items-center gap-2 p-3 bg-accent/5 rounded-lg border border-accent/10">
                           <Briefcase className="w-4 h-4 text-accent shrink-0" />
                           <div>
-                            <p className="text-sm font-medium">Included: {outboundFlight?.baggage || "As per airline policy"}</p>
-                            <p className="text-xs text-muted-foreground">Your fare includes standard baggage allowance. Add extra below.</p>
+                            <p className="text-sm font-medium">Included: {outboundFlight?.baggage || "Check airline website for baggage details"}</p>
+                            <p className="text-xs text-muted-foreground">{outboundFlight?.baggage ? "Your fare includes this baggage allowance. Add extra below if available." : "Baggage information was not provided by the airline's booking system."}</p>
                           </div>
                         </div>
                         {baggageOptions.length > 0 ? (

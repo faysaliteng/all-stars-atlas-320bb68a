@@ -967,8 +967,176 @@ const FlightBooking = () => {
                   })}
                 </CardContent>
               </Card>
-            )}
+             )}
 
+            {/* ── SPECIAL SERVICES (SSR) — Always shown in Step 2 for all airlines ── */}
+            {step === 2 && (
+              <Card>
+                <CardHeader className="bg-accent/5 border-b border-border">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                    <Star className="w-5 h-5 text-accent" /> Special Services
+                    <Badge className="bg-accent/10 text-accent border-0 text-[9px] ml-2">All Airlines</Badge>
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Request meals, wheelchair, medical assistance, frequent flyer, pets, and more — sent directly to the airline.</p>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-5 space-y-3">
+                  {paxTypes.map((paxType, pi) => {
+                    const ss = paxSpecialServices[pi] || emptySSR();
+                    const isExpanded = ssrExpanded === pi;
+                    const paxHasSSR = ss.meal !== "none" || ss.wheelchair !== "none" || ss.medical || ss.blind || ss.deaf || ss.unaccompaniedMinor || ss.pet !== "none" || ss.frequentFlyer.number || ss.specialRequest.trim();
+                    return (
+                      <div key={pi} className="border border-border rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => setSsrExpanded(isExpanded ? null : pi)}
+                          className="w-full flex items-center justify-between p-3 sm:p-4 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-accent" />
+                            <span className="text-sm font-semibold">{passengers[pi]?.firstName || paxType.label}</span>
+                            <Badge variant="outline" className="text-[10px]">{paxType.label}</Badge>
+                            {paxHasSSR && <Badge className="bg-accent/10 text-accent border-0 text-[9px]">SSR Added</Badge>}
+                          </div>
+                          <ArrowRight className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                        </button>
+
+                        {isExpanded && (
+                          <div className="p-3 sm:p-4 space-y-4 border-t border-border">
+                            {/* Meal Preference */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                                <UtensilsCrossed className="w-3.5 h-3.5 text-accent" /> Meal Preference
+                              </Label>
+                              <Select value={ss.meal} onValueChange={(v) => updatePaxSSR(pi, "meal", v)}>
+                                <SelectTrigger className="h-10 sm:h-11"><SelectValue placeholder="Select meal" /></SelectTrigger>
+                                <SelectContent className="max-h-60">
+                                  {MEAL_CODES.map(m => (
+                                    <SelectItem key={m.code} value={m.code}>{m.icon} {m.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Wheelchair / Mobility Assistance */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                                <Accessibility className="w-3.5 h-3.5 text-accent" /> Wheelchair / Mobility Assistance
+                              </Label>
+                              <Select value={ss.wheelchair} onValueChange={(v) => updatePaxSSR(pi, "wheelchair", v)}>
+                                <SelectTrigger className="h-10 sm:h-11"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {WHEELCHAIR_OPTIONS.map(w => (
+                                    <SelectItem key={w.code} value={w.code}>{w.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Medical, Blind, Deaf toggles */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              <label className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${ss.medical ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"}`}>
+                                <Checkbox checked={ss.medical} onCheckedChange={(v) => updatePaxSSR(pi, "medical", !!v)} />
+                                <div>
+                                  <p className="text-xs font-medium flex items-center gap-1"><Heart className="w-3 h-3 text-destructive" /> Medical</p>
+                                  <p className="text-[10px] text-muted-foreground">MEDA assistance</p>
+                                </div>
+                              </label>
+                              <label className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${ss.blind ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"}`}>
+                                <Checkbox checked={ss.blind} onCheckedChange={(v) => updatePaxSSR(pi, "blind", !!v)} />
+                                <div>
+                                  <p className="text-xs font-medium flex items-center gap-1"><Eye className="w-3 h-3" /> Blind</p>
+                                  <p className="text-[10px] text-muted-foreground">BLND — visual impairment</p>
+                                </div>
+                              </label>
+                              <label className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${ss.deaf ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"}`}>
+                                <Checkbox checked={ss.deaf} onCheckedChange={(v) => updatePaxSSR(pi, "deaf", !!v)} />
+                                <div>
+                                  <p className="text-xs font-medium flex items-center gap-1">👂 Deaf</p>
+                                  <p className="text-[10px] text-muted-foreground">DEAF — hearing impairment</p>
+                                </div>
+                              </label>
+                            </div>
+
+                            {/* Medical Details */}
+                            {ss.medical && (
+                              <div className="space-y-1.5">
+                                <Label className="text-xs">Medical Details (optional)</Label>
+                                <Input value={ss.medicalDetails} onChange={(e) => updatePaxSSR(pi, "medicalDetails", e.target.value)} placeholder="e.g. Requires oxygen, stretcher, medical clearance" className="h-10" />
+                              </div>
+                            )}
+
+                            {/* Unaccompanied Minor */}
+                            {paxType.type === "child" && (
+                              <label className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${ss.unaccompaniedMinor ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"}`}>
+                                <Checkbox checked={ss.unaccompaniedMinor} onCheckedChange={(v) => updatePaxSSR(pi, "unaccompaniedMinor", !!v)} />
+                                <div className="flex-1">
+                                  <p className="text-xs font-medium flex items-center gap-1"><Baby className="w-3 h-3 text-accent" /> Unaccompanied Minor (UMNR)</p>
+                                  <p className="text-[10px] text-muted-foreground">Child travelling alone — airline will escort</p>
+                                </div>
+                              </label>
+                            )}
+
+                            {/* Pet */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                                <Dog className="w-3.5 h-3.5 text-accent" /> Travelling with Pet
+                              </Label>
+                              <Select value={ss.pet} onValueChange={(v) => updatePaxSSR(pi, "pet", v)}>
+                                <SelectTrigger className="h-10 sm:h-11"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No pet</SelectItem>
+                                  <SelectItem value="PETC">🐕 Pet in Cabin (PETC)</SelectItem>
+                                  <SelectItem value="AVIH">📦 Pet in Cargo Hold (AVIH)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {ss.pet !== "none" && (
+                                <Input value={ss.petDetails} onChange={(e) => updatePaxSSR(pi, "petDetails", e.target.value)} placeholder="e.g. Small dog, 5kg, carrier dimensions 40x30x20cm" className="h-10 mt-1.5" />
+                              )}
+                            </div>
+
+                            {/* Frequent Flyer */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                                <Star className="w-3.5 h-3.5 text-accent" /> Frequent Flyer Number
+                              </Label>
+                              <div className="grid grid-cols-3 gap-2">
+                                <Input value={ss.frequentFlyer.airline} onChange={(e) => updatePaxSSR(pi, "frequentFlyer.airline", e.target.value.toUpperCase().slice(0, 2))} placeholder="Airline (EK)" maxLength={2} className="h-10 uppercase" />
+                                <div className="col-span-2">
+                                  <Input value={ss.frequentFlyer.number} onChange={(e) => updatePaxSSR(pi, "frequentFlyer.number", e.target.value)} placeholder="FF Number" className="h-10" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Destination Address (DOCA) — international */}
+                            {!domestic && (
+                              <div className="space-y-1.5">
+                                <Label className="text-xs sm:text-sm">Destination Address (for immigration)</Label>
+                                <Input value={ss.destinationAddress} onChange={(e) => updatePaxSSR(pi, "destinationAddress", e.target.value)} placeholder="e.g. Hilton Dubai Creek, Baniyas Rd, Dubai" className="h-10" />
+                              </div>
+                            )}
+
+                            {/* Free-text Special Request */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                                <MessageSquare className="w-3.5 h-3.5 text-accent" /> Special Request (free text)
+                              </Label>
+                              <Input value={ss.specialRequest} onChange={(e) => updatePaxSSR(pi, "specialRequest", e.target.value)} placeholder="e.g. Bassinet needed, adjacent seats, extra pillow" maxLength={70} className="h-10" />
+                              <p className="text-[10px] text-muted-foreground">{ss.specialRequest.length}/70 characters — sent as OSI to the airline</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {hasAnySSR && (
+                    <div className="flex items-center gap-2 p-3 bg-accent/5 rounded-lg border border-accent/10">
+                      <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
+                      <p className="text-xs text-muted-foreground">Your special service requests will be submitted to the airline upon booking confirmation.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
             {/* STEP 3: Extras — ONLY when real airline API data is available */}
             {step === extrasStep && hasRealExtras && (
               <Card>

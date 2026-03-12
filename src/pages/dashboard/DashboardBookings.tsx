@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import {
   Plane, Building2, Search, Eye, Download, MoreHorizontal, RotateCcw, XCircle,
   FileText, Globe, Palmtree, CreditCard, Timer, Clock, Luggage, Shield,
-  ArrowRight, Users, AlertTriangle, Copy,
+  ArrowRight, Users, AlertTriangle, Copy, Upload,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { generateTicketPDF } from "@/lib/pdf-generator";
@@ -20,6 +20,7 @@ import { useDashboardBookings } from "@/hooks/useApiData";
 import DataLoader from "@/components/DataLoader";
 import { useToast } from "@/hooks/use-toast";
 import PaymentReminderBanner from "@/components/PaymentReminder";
+import TravelDocVerificationModal from "@/components/TravelDocVerificationModal";
 
 const statusTabs = ["All", "Reserved", "Pending", "In Progress", "Confirmed", "Completed", "Void", "Refund", "Exchange", "Expired", "Cancelled", "Un-Confirmed"];
 

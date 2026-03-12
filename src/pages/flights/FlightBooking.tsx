@@ -552,6 +552,23 @@ const FlightBooking = () => {
         },
         contactInfo: { email: passengers[0]?.email, phone: passengers[0]?.phone },
         travelDocuments: Object.entries(travelDocsUploaded).map(([key, doc]) => ({ ...doc, passengerIndex: parseInt(key.split('_')[1] || '0'), docType: key.split('_')[0] })),
+        specialServices: {
+          perPassenger: paxSpecialServices.map(ss => ({
+            meal: ss.meal !== "none" ? ss.meal : undefined,
+            wheelchair: ss.wheelchair !== "none" ? ss.wheelchair : undefined,
+            medical: ss.medical || undefined,
+            medicalDetails: ss.medicalDetails || undefined,
+            blind: ss.blind || undefined,
+            deaf: ss.deaf || undefined,
+            unaccompaniedMinor: ss.unaccompaniedMinor || undefined,
+            umnrAge: ss.umnrAge || undefined,
+            pet: ss.pet !== "none" ? ss.pet : undefined,
+            petDetails: ss.petDetails || undefined,
+            frequentFlyer: ss.frequentFlyer.number ? ss.frequentFlyer : undefined,
+            specialRequest: ss.specialRequest.trim() || undefined,
+            destinationAddress: ss.destinationAddress.trim() || undefined,
+          })),
+        },
       };
       const result = await api.post<any>("/flights/book", bookingData);
       setBookingResult(result);

@@ -76,6 +76,7 @@ const DashboardETransactions = lazy(() => import("@/pages/dashboard/DashboardETr
 const DashboardPayLater = lazy(() => import("@/pages/dashboard/DashboardPayLater"));
 const DashboardInvoices = lazy(() => import("@/pages/dashboard/DashboardInvoices"));
 const DashboardRewards = lazy(() => import("@/pages/dashboard/DashboardRewards"));
+const PostBookingExtras = lazy(() => import("@/pages/dashboard/PostBookingExtras"));
 
 // Admin
 const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));

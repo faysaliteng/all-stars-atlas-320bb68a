@@ -1421,6 +1421,20 @@ function sortFlights(flights: any[], sortBy: string) {
   }
 }
 
+/* ─── Similar Flights Grouping — group by airline+stops, expandable ─── */
+function groupSimilarFlights(flights: any[]): { primary: any; similar: any[]; totalOptions: number }[] {
+  const groups: Record<string, any[]> = {};
+  for (const f of flights) {
+    const key = `${f.airlineCode || ''}_${f.stops ?? 0}_${f.origin || ''}_${f.destination || ''}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(f);
+  }
+  return Object.values(groups).map(g => {
+    const sorted = g.sort((a, b) => (a.price || 0) - (b.price || 0));
+    return { primary: sorted[0], similar: sorted.slice(1), totalOptions: sorted.length };
+  });
+}
+
 /* ─── Main page ─── */
 const FlightResults = () => {
   const { data: page } = useCmsPageContent("/flights");
@@ -1445,6 +1459,22 @@ const FlightResults = () => {
   const [selectedOutbound, setSelectedOutbound] = useState<any>(null);
   const [selectedReturn, setSelectedReturn] = useState<any>(null);
   const [searchStartTime] = useState(Date.now());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Inline editing state
+  const [editFrom, setEditFrom] = useState("");
+  const [editTo, setEditTo] = useState("");
+  const [editDepart, setEditDepart] = useState<Date | undefined>();
+  const [editReturn, setEditReturn] = useState<Date | undefined>();
+  const [editAdults, setEditAdults] = useState(1);
+  const [editChildren, setEditChildren] = useState(0);
+  const [editInfants, setEditInfants] = useState(0);
+  const [editCabin, setEditCabin] = useState("");
+  const [showRouteEdit, setShowRouteEdit] = useState(false);
+  const [showDateEdit, setShowDateEdit] = useState(false);
+  const [showPaxEdit, setShowPaxEdit] = useState(false);
+  const [airportSearch, setAirportSearch] = useState("");
+  const [editingField, setEditingField] = useState<"from" | "to" | null>(null);
 
   // Multi-city state
   const tripType = searchParams.get("tripType") || "";

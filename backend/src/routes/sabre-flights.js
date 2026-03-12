@@ -11,6 +11,7 @@
  */
 
 const db = require('../config/db');
+const zlib = require('zlib');
 
 // ── Config cache (5 min TTL) ──
 let _configCache = null;

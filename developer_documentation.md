@@ -856,9 +856,11 @@ Interactive seat selection with:
 1. User adds 2–5 segments in `SearchWidget.tsx`, each with origin/destination/date.
 2. Date validation enforces chronological order — segment N+1 date cannot be before segment N.
 3. Search navigates to `/flights?tripType=multicity&segments=[JSON]`.
-4. `FlightResults.tsx` detects `tripType=multicity`, parses segments, and fires **parallel API calls** per segment via `Promise.all`.
-5. Results are grouped by segment with color-coded headers and independent selection.
-6. A sticky booking bar tracks selections and enables booking only when all segments are selected.
+4. `FlightResults.tsx` detects `tripType=multicity`, parses segments, and sends a **single API call** to `/flights/search?tripType=multicity&segments=[JSON]`.
+5. Backend sends all segments as multiple `OriginDestinationInformation` entries in a **single Sabre BFM request** — returns combined itineraries priced as one unit (matching BDFare behavior).
+6. Results display as combined itinerary cards (`MultiCityFlightCard`) showing all segments in one card with a single total price and "Book Now" button.
+7. Each card has an expandable "Flight Details" panel (`MultiCityExpandedDetails`) with 4 tabs: Flight Details, Fare Summary, Baggage, and Cancellation.
+8. Only Sabre provider is used for multi-city searches; other providers (DB, TTI, BDF, FlyHub, Galileo, NDC, LCC) are skipped.
 
 ### Cabin Class Handling
 
@@ -871,7 +873,7 @@ Interactive seat selection with:
 - Bangladesh phone regex: `/^01[3-9]\d{8}$/`
 - Passport expiry must be 6+ months from departure for international flights.
 - Max 9 total passengers; infants cannot exceed adults.
-- Multi-city booking passes all selected segments to the API.
+- Multi-city booking passes the combined flight object to the API.
 
 ### GDS Providers
 

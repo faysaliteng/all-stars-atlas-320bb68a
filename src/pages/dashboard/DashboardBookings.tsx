@@ -48,6 +48,12 @@ const statusColors: Record<string, string> = {
   "Un-Confirmed": "bg-destructive/10 text-destructive border-destructive/20", "un_confirmed": "bg-destructive/10 text-destructive border-destructive/20",
 };
 
+const BD_AIRPORTS = ["DAC", "CXB", "CGP", "ZYL", "JSR", "RJH", "SPD", "BZL", "IRD", "TKR"];
+function isDomesticRoute(origin?: string, destination?: string): boolean {
+  if (!origin || !destination) return true;
+  return BD_AIRPORTS.includes(origin.toUpperCase()) && BD_AIRPORTS.includes(destination.toUpperCase());
+}
+
 const typeIcons: Record<string, typeof Plane> = { flight: Plane, hotel: Building2, visa: Globe, holiday: Palmtree };
 
 function mapBooking(b: any) {

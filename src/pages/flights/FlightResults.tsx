@@ -1685,31 +1685,51 @@ const FlightResults = () => {
         ) : (
           <div className="flex gap-6">
             {/* Sidebar filters */}
-            <aside className="hidden lg:block w-64 shrink-0">
-              <Card className="sticky top-28 shadow-[0_4px_20px_-4px_hsl(var(--foreground)/0.08),0_1px_3px_hsl(var(--foreground)/0.06)] border-border/60">
+            <aside className="hidden lg:block w-72 shrink-0">
+              <Card className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto shadow-[0_4px_20px_-4px_hsl(var(--foreground)/0.08),0_1px_3px_hsl(var(--foreground)/0.06)] border-border/60">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold flex items-center gap-2"><SlidersHorizontal className="w-4 h-4" /> Filters</h3>
                     <Button variant="ghost" size="sm" className="text-xs text-accent h-7" onClick={resetFilters}>Reset</Button>
                   </div>
-                  <FilterPanel priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice}
-                    airlines={airlines} selectedAirlines={selectedAirlines} toggleAirline={toggleAirline}
+                  <FilterPanel
+                    flights={allFlightsForFilters}
+                    priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice}
+                    selectedAirlines={selectedAirlines} toggleAirline={toggleAirline}
                     stopsFilter={stopsFilter} setStopsFilter={setStopsFilter}
-                    departTimeRange={departTimeRange} setDepartTimeRange={setDepartTimeRange} onReset={resetFilters} />
+                    departTimeRange={departTimeRange} setDepartTimeRange={setDepartTimeRange}
+                    arrivalTimeRange={arrivalTimeRange} setArrivalTimeRange={setArrivalTimeRange}
+                    durationRange={durationRange} setDurationRange={setDurationRange}
+                    selectedAlliances={selectedAlliances} toggleAlliance={toggleAlliance}
+                    refundableOnly={refundableOnly} setRefundableOnly={setRefundableOnly}
+                    selectedLayoverAirports={selectedLayoverAirports} toggleLayoverAirport={toggleLayoverAirport}
+                    layoverDurationRange={layoverDurationRange} setLayoverDurationRange={setLayoverDurationRange}
+                    isRoundTrip={isRoundTrip} originCode={fromCode} destCode={toCode}
+                    onReset={resetFilters}
+                  />
                 </CardContent>
               </Card>
             </aside>
 
             {/* Main content */}
             <div className="flex-1 space-y-3">
-              {/* Airline filter bar — real API data, 3D card */}
+              {/* Airline filter bar — real API data, 3D card with working scroll */}
               {airlineStats.length > 0 && !isMultiCity && (
                 <Card className="shadow-[0_4px_20px_-4px_hsl(var(--foreground)/0.08),0_1px_3px_hsl(var(--foreground)/0.06)] border-border/60 overflow-hidden">
                   <div className="flex items-center">
-                    <button className="shrink-0 px-2 py-3 text-muted-foreground hover:text-foreground transition-colors border-r border-border">
+                    <button
+                      className="shrink-0 px-1 sm:px-2 text-accent font-semibold text-xs hover:bg-muted/50 transition-colors border-r border-border hidden sm:block"
+                      onClick={resetFilters}
+                    >
+                      Reset
+                    </button>
+                    <button
+                      className="shrink-0 px-1.5 sm:px-2 py-3 text-muted-foreground hover:text-foreground transition-colors border-r border-border"
+                      onClick={() => airlineBarRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
+                    >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <div className="flex-1 overflow-x-auto scrollbar-none">
+                    <div ref={airlineBarRef} className="flex-1 overflow-x-auto scrollbar-none">
                       <div className="flex">
                         {airlineStats.map((a) => {
                           const isActive = airlineFilter === a.code;
@@ -1717,21 +1737,21 @@ const FlightResults = () => {
                             <button
                               key={a.code}
                               onClick={() => setAirlineFilter(isActive ? null : a.code)}
-                              className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-2 sm:py-2.5 whitespace-nowrap border-r border-border last:border-r-0 transition-colors ${
+                              className={`flex items-center gap-2 px-3 py-2.5 whitespace-nowrap border-r border-border last:border-r-0 transition-colors shrink-0 ${
                                 isActive ? "bg-accent/10" : "hover:bg-muted/50"
                               }`}
                             >
                               <img
                                 src={getAirlineLogo(a.code) || ''}
                                 alt={a.name}
-                                className="w-5 h-5 rounded-full object-contain"
+                                className="w-5 h-5 rounded-full object-contain shrink-0"
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                               />
-                              <div className="text-left">
-                                <p className={`text-[11px] sm:text-xs font-bold ${isActive ? "text-accent" : "text-foreground"}`}>
+                              <div className="text-left min-w-0">
+                                <p className={`text-xs font-bold ${isActive ? "text-accent" : "text-foreground"}`}>
                                   {a.code}
                                 </p>
-                                <p className={`text-[10px] sm:text-[11px] ${isActive ? "text-accent" : "text-muted-foreground"}`}>
+                                <p className={`text-[10px] whitespace-nowrap ${isActive ? "text-accent" : "text-muted-foreground"}`}>
                                   BDT {a.cheapest.toLocaleString()} ({a.count})
                                 </p>
                               </div>
@@ -1740,7 +1760,10 @@ const FlightResults = () => {
                         })}
                       </div>
                     </div>
-                    <button className="shrink-0 px-2 py-3 text-muted-foreground hover:text-foreground transition-colors border-l border-border">
+                    <button
+                      className="shrink-0 px-1.5 sm:px-2 py-3 text-muted-foreground hover:text-foreground transition-colors border-l border-border"
+                      onClick={() => airlineBarRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
+                    >
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>

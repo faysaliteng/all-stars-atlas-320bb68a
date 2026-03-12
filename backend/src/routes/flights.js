@@ -699,5 +699,52 @@ router.post('/book', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Something went wrong', status: 500 });
   }
 });
+// POST /flights/cancel — customer cancellation
+router.post('/cancel', authenticate, async (req, res) => {
+  try {
+    const { bookingId, reason } = req.body;
+    if (!bookingId) return res.status(400).json({ message: 'bookingId required' });
+
+    const [rows] = await db.query('SELECT * FROM bookings WHERE id = ? AND user_id = ?', [bookingId, req.user.sub]);
+    if (rows.length === 0) return res.status(404).json({ message: 'Booking not found' });
+
+    const booking = rows[0];
+    if (['cancelled', 'void', 'refunded', 'completed'].includes(booking.status)) {
+      return res.status(422).json({ message: `Booking already ${booking.status}` });
+    }
+
+    const details = typeof booking.details === 'string' ? JSON.parse(booking.details) : (booking.details || {});
+    const gdsPnr = details.gdsPnr || booking.pnr;
+    const source = details.outbound?.source || '';
+
+    // Attempt GDS cancellation if PNR exists
+    let gdsCancelResult = null;
+    if (gdsPnr) {
+      try {
+        if (source === 'sabre') {
+          const { cancelBooking: sabreCancelBooking } = require('./sabre-flights');
+          gdsCancelResult = await sabreCancelBooking({ pnr: gdsPnr });
+        } else if (source === 'tti') {
+          // TTI cancel not yet wired — proceed with local cancel
+          console.log('[Cancel] TTI cancel not implemented — local cancel only');
+        }
+      } catch (gdsErr) {
+        console.error('[Cancel] GDS cancel error:', gdsErr.message);
+      }
+    }
+
+    await db.query('UPDATE bookings SET status = ?, notes = CONCAT(IFNULL(notes,""), ?) WHERE id = ?', [
+      'cancelled',
+      `\n[Customer Cancel ${new Date().toISOString()}] ${reason || 'No reason provided'}`,
+      bookingId,
+    ]);
+
+    console.log(`[Cancel] Booking ${booking.booking_ref} cancelled by user ${req.user.sub}`);
+    res.json({ success: true, message: 'Booking cancelled', gdsCancelled: !!(gdsCancelResult?.success) });
+  } catch (err) {
+    console.error('Cancel error:', err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+});
 
 module.exports = router;

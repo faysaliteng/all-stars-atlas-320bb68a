@@ -685,37 +685,37 @@ const LegMini = ({ flight, label, labelColor }: { flight: any; label: string; la
 
   return (
     <div className="flex-1 min-w-0">
-      <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5">
+      <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 truncate">
         <span className={`font-semibold ${labelColor}`}>{label}:</span>{" "}
         {flight.airline}, {formatShortDate(flight.departureTime)}
       </p>
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Origin */}
         <div className="text-center shrink-0">
-          <p className="text-xs sm:text-[10px] font-medium text-muted-foreground">{fromCode}</p>
-          <p className="text-base sm:text-xl font-black tracking-tight">{departTime}</p>
+          <p className="text-[10px] sm:text-[10px] font-medium text-muted-foreground">{fromCode}</p>
+          <p className="text-sm sm:text-base lg:text-lg font-black tracking-tight">{departTime}</p>
         </div>
 
         {/* Duration bar */}
-        <div className="flex-1 flex flex-col items-center gap-0.5 min-w-[50px]">
+        <div className="flex-1 flex flex-col items-center gap-0.5 min-w-[40px]">
           <div className="w-full flex items-center">
             <div className="w-1 h-1 rounded-full bg-muted-foreground" />
             <div className="flex-1 h-[1px] bg-border relative">
-              <Plane className="w-3.5 h-3.5 text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              <Plane className="w-3 h-3 text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               <StopDotsWithTooltip flight={flight} stops={stops} />
             </div>
             <div className="w-1 h-1 rounded-full bg-muted-foreground" />
           </div>
-          <p className="text-[10px] text-muted-foreground">{duration}</p>
-          <p className={`text-[10px] font-semibold ${stops === 0 ? "text-foreground" : "text-warning"}`}>{stopsLabel}</p>
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground">{duration}</p>
+          <p className={`text-[9px] sm:text-[10px] font-semibold ${stops === 0 ? "text-foreground" : "text-warning"}`}>{stopsLabel}</p>
         </div>
 
         {/* Destination */}
         <div className="text-center shrink-0">
-          <p className="text-xs sm:text-[10px] font-medium text-muted-foreground">{toCode}</p>
-          <p className="text-base sm:text-xl font-black tracking-tight">
+          <p className="text-[10px] sm:text-[10px] font-medium text-muted-foreground">{toCode}</p>
+          <p className="text-sm sm:text-base lg:text-lg font-black tracking-tight">
             {arriveTime}
-            {nextDay && <sup className="text-[7px] text-destructive font-bold ml-0.5">+1 days</sup>}
+            {nextDay && <sup className="text-[7px] text-destructive font-bold ml-0.5">+1</sup>}
           </p>
         </div>
       </div>
@@ -742,9 +742,9 @@ const RoundTripFlightCard = ({
   return (
     <Card className={`overflow-hidden transition-all border ${isExpanded ? "border-accent/30 shadow-md" : "border-border hover:shadow-md"}`}>
       <CardContent className="p-0">
-        <div className="flex flex-col sm:flex-row">
+        <div className="flex flex-col sm:flex-row min-w-0">
           {/* Airline section */}
-          <div className="flex items-center gap-3 p-3 sm:p-4 sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-r border-border/50">
+          <div className="flex items-center gap-3 p-3 sm:p-4 sm:w-36 lg:w-40 shrink-0 border-b sm:border-b-0 sm:border-r border-border/50">
             <div className="flex flex-col items-center gap-1 shrink-0">
               {logo ? (
                 <img src={logo} alt={outbound.airline} className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
@@ -755,22 +755,22 @@ const RoundTripFlightCard = ({
                 </div>
               )}
             </div>
-            <div>
-              <p className="text-xs sm:text-sm font-bold leading-tight">{outbound.airline}</p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">{flightNo}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-bold leading-tight truncate">{outbound.airline}</p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 truncate">{flightNo}</p>
             </div>
           </div>
 
           {/* Both legs side by side */}
-          <div className="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 gap-3 sm:gap-4">
+          <div className="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 gap-3 sm:gap-3 min-w-0">
             <LegMini flight={outbound} label="Departure" labelColor="text-foreground" />
-            <div className="hidden sm:block w-px bg-border/60 self-stretch" />
+            <div className="hidden sm:block w-px bg-border/60 self-stretch shrink-0" />
             <div className="sm:hidden h-px bg-border/60" />
             <LegMini flight={returnFlight} label="Return" labelColor="text-foreground" />
           </div>
 
           {/* Price */}
-          <div className="flex flex-col items-end gap-1 p-4 sm:p-5 sm:w-52 shrink-0 border-t sm:border-t-0 sm:border-l border-border/50 bg-muted/20">
+          <div className="flex flex-col items-end gap-1 p-3 sm:p-4 sm:w-40 lg:w-48 shrink-0 border-t sm:border-t-0 sm:border-l border-border/50 bg-muted/20">
             <div className="flex items-center gap-2">
               {totalPrice === cheapest && totalPrice > 0 && (
                 <Badge className="bg-accent/10 text-accent border-0 text-[9px] font-bold">Cheapest</Badge>
@@ -782,7 +782,7 @@ const RoundTripFlightCard = ({
                 </Badge>
               )}
             </div>
-            <p className="text-xl sm:text-2xl font-black leading-none whitespace-nowrap">BDT {totalPrice.toLocaleString()}</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-black leading-none whitespace-nowrap">BDT {totalPrice.toLocaleString()}</p>
             <p className="text-[10px] text-muted-foreground">Price for {parseInt(new URLSearchParams(window.location.search).get("adults") || "1")} traveller{parseInt(new URLSearchParams(window.location.search).get("adults") || "1") > 1 ? "s" : ""}</p>
             <Popover>
               <PopoverTrigger asChild>
@@ -1183,9 +1183,9 @@ const FlightCard = ({
     <Card className={`overflow-hidden transition-all border ${isSelected ? "border-accent ring-2 ring-accent/20 shadow-lg" : isExpanded ? "border-accent/30 shadow-md" : "border-border hover:shadow-md"}`}>
       <CardContent className="p-0">
         {/* ── Main card row ── */}
-        <div className="flex flex-col sm:flex-row">
+        <div className="flex flex-col sm:flex-row min-w-0">
           {/* Airline section */}
-          <div className="flex items-center gap-3 p-3 sm:p-5 sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-r border-border/50">
+          <div className="flex items-center gap-3 p-3 sm:p-4 sm:w-36 lg:w-44 shrink-0 border-b sm:border-b-0 sm:border-r border-border/50">
             <div className="flex flex-col items-center gap-1 shrink-0">
               {logo ? (
                 <img src={logo} alt={flight.airline} className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
@@ -1196,9 +1196,9 @@ const FlightCard = ({
                 </div>
               )}
             </div>
-            <div>
-              <p className="text-xs sm:text-sm font-bold leading-tight">{flight.airline}</p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">{flightNo}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-bold leading-tight truncate">{flight.airline}</p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 truncate">{flightNo}</p>
               {availableSeats !== null && availableSeats <= 9 && (
                 <p className="text-[10px] sm:text-[11px] font-bold text-orange-500 mt-0.5">{availableSeats} Seat{availableSeats !== 1 ? "s" : ""} Left</p>
               )}
@@ -1206,7 +1206,7 @@ const FlightCard = ({
           </div>
 
           {/* Flight times + baggage info */}
-          <div className="flex-1 p-3 sm:p-5">
+          <div className="flex-1 p-3 sm:p-4 min-w-0">
             <div className="flex items-center gap-2 sm:gap-5">
               {/* Departure */}
               <div className="text-center shrink-0">
@@ -2474,7 +2474,7 @@ const FlightResults = () => {
             </aside>
 
             {/* Main content */}
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 min-w-0 space-y-3">
               {/* Airline filter bar — real API data, 3D card with working scroll */}
               {airlineStats.length > 0 && !isMultiCity && (
                 <Card className="shadow-[0_4px_20px_-4px_hsl(var(--foreground)/0.08),0_1px_3px_hsl(var(--foreground)/0.06)] border-border/60 overflow-hidden">

@@ -938,6 +938,8 @@ const FlightCard = ({
 
   const stopsLabel = stops === 0 ? "Non-Stop" : `${stops} Stop${stops > 1 ? "s" : ""}`;
   const cabinDisplay = bookingClass ? `${cabin} - ${bookingClass}` : cabin;
+  const distanceKm = calcDistanceKm(fromCode, toCode);
+  const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
 
   return (
     <Card className={`overflow-hidden transition-all border ${isSelected ? "border-accent ring-2 ring-accent/20 shadow-lg" : isExpanded ? "border-accent/30 shadow-md" : "border-border hover:shadow-md"}`}>

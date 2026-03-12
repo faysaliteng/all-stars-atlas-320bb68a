@@ -6,11 +6,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Plane, Clock, ArrowRight, Filter, X, Luggage,
   SlidersHorizontal, ChevronDown, ChevronUp, Shield, Timer,
   CircleDot, Zap, TrendingUp, Check, Info, FileText,
   ChevronLeft, ChevronRight, Star, Sun, Moon, Sunrise, Sunset,
+  ArrowLeftRight, Users, Search, CalendarDays,
 } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -20,6 +23,7 @@ import DataLoader from "@/components/DataLoader";
 import { AIRPORTS } from "@/lib/airports";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/lib/constants";
+import { format } from "date-fns";
 
 /* ─── Airline logo — dynamic CDN, no hardcoded map ─── */
 function getAirlineLogo(code?: string): string | null {

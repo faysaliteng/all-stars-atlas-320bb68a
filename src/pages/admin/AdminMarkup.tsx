@@ -220,6 +220,25 @@ const AdminMarkup = () => {
 
           <Separator />
 
+          {/* Fare Summary Display Settings */}
+          <div>
+            <h4 className="text-sm font-bold mb-3">Fare Summary Display</h4>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Discount on Base Fare (%)</Label>
+                <Input type="number" step="0.01" value={current.fareSummaryDiscount ?? 6.30} onChange={(e) => updateField("fareSummaryDiscount", parseFloat(e.target.value) || 0)} className="h-9" />
+                <p className="text-[10px] text-muted-foreground">Applied as discount on base fare in fare summary</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">AIT VAT on Base Fare after Discount (%)</Label>
+                <Input type="number" step="0.01" value={current.fareSummaryAitVat ?? 3.0} onChange={(e) => updateField("fareSummaryAitVat", parseFloat(e.target.value) || 0)} className="h-9" />
+                <p className="text-[10px] text-muted-foreground">Applied on (Base Fare - Discount) amount</p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Ticket Issue Charge + Penalty */}
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">

@@ -1571,7 +1571,12 @@ const FlightResults = () => {
     return !relevantFlights.some((f: any) => (f.cabinClass || "").toLowerCase() === searchedCabinNorm || (f.cabinClass || "") === searchedLabel);
   }, [searchedCabinNorm, flights, allMultiCityFlights, isMultiCity]);
 
-  const resetFilters = useCallback(() => { setSelectedAirlines([]); setPriceRange([0, maxPrice]); setStopsFilter("all"); setDepartTimeRange([0, 24]); setAirlineFilter(null); }, [maxPrice]);
+  const resetFilters = useCallback(() => {
+    setSelectedAirlines([]); setPriceRange([0, maxPrice]); setStopsFilter("all");
+    setDepartTimeRange([0, 24]); setArrivalTimeRange([0, 24]); setDurationRange([minDuration, maxDuration]);
+    setSelectedAlliances([]); setRefundableOnly(false); setSelectedLayoverAirports([]);
+    setLayoverDurationRange([0, maxLayoverDuration || 5000]); setAirlineFilter(null);
+  }, [maxPrice, minDuration, maxDuration, maxLayoverDuration]);
 
   const sources = apiData.sources || {};
 

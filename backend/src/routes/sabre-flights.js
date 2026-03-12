@@ -608,7 +608,7 @@ function normalizeGroupedResponse(response, params) {
             totalRoundTripPrice: itinLegs.length > 1 ? totalAmount : undefined,
             currency,
             refundable: fare.passengerInfoList?.[0]?.passengerInfo?.nonRefundable === false,
-            baggage: null,
+            baggage: checkedBaggage,
             handBaggage: null,
             aircraft: firstLeg.aircraft,
             legs,

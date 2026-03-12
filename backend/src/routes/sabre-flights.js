@@ -1203,17 +1203,21 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
 
       // DOCS — Passport/Travel Document (IATA standard, always recommended for international)
-      if (pax.passport && pax.dob) {
+      const passportNo = pax.passport || pax.passportNumber || '';
+      const dobValue = pax.dob || pax.dateOfBirth || '';
+      const passportExpiry = pax.passportExpiry || '';
+      const docCountry = pax.documentCountry || pax.passportCountry || 'BD';
+
+      if (passportNo && dobValue) {
         const gender = (pax.gender || '').toUpperCase().startsWith('F') ? 'F' : 'M';
-        const dobFormatted = (pax.dob || '').replace(/-/g, '');
-        const expiryFormatted = (pax.passportExpiry || '').replace(/-/g, '');
-        const docCountry = pax.documentCountry || 'BD';
+        const dobFormatted = String(dobValue).replace(/-/g, '');
+        const expiryFormatted = String(passportExpiry).replace(/-/g, '');
         const nationality = docCountry; // ISO 2-letter
 
         advancePassenger.push({
           Document: {
             Type: 'P', // Passport
-            Number: pax.passport,
+            Number: String(passportNo).toUpperCase(),
             IssueCountry: docCountry,
             NationalityCountry: nationality,
             ExpirationDate: expiryFormatted,

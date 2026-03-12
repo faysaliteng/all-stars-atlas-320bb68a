@@ -189,7 +189,7 @@ router.put('/bookings/:id', async (req, res) => {
     const bookingDetails = safeJsonParse(booking.details, {});
     const isFlightBooking = booking.booking_type === 'flight';
     const flightSource = bookingDetails.outbound?.source || '';
-    const gdsPnr = bookingDetails.gdsPnr || bookingDetails.outbound?.pnr || null;
+    const gdsPnr = booking.pnr || bookingDetails.gdsPnr || bookingDetails.outbound?.pnr || null;
     const gdsBookingId = bookingDetails.gdsBookingResult?.ttiBookingId || bookingDetails.gdsBookingResult?.bookingId || null;
     const bdfOrderId = bookingDetails.gdsBookingResult?.orderId || bookingDetails.outbound?._bdfOfferId || null;
 

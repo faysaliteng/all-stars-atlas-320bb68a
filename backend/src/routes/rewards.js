@@ -18,7 +18,7 @@ async function ensurePointsAccount(userId) {
 }
 
 // ── GET /rewards/balance — Current points balance ──
-router.get('/balance', authenticateToken, async (req, res) => {
+router.get('/balance', authenticate, async (req, res) => {
   try {
     await ensurePointsAccount(req.user.id);
     const [rows] = await db.query(

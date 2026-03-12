@@ -177,6 +177,31 @@ const FlightBooking = () => {
   const [selectedMeal, setSelectedMeal] = useState("");
   const [selectedBaggage, setSelectedBaggage] = useState<string[]>([]);
 
+  // Read passenger counts from URL — MUST be before any state that depends on paxTypes
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const locationState = location.state as any;
+
+  const adultCount = parseInt(searchParams.get("adults") || "1");
+  const childCount = parseInt(searchParams.get("children") || "0");
+  const infantCount = parseInt(searchParams.get("infants") || "0");
+  const searchCabin = searchParams.get("cabin") || "economy";
+  const totalPaxCount = adultCount + childCount + infantCount;
+
+  // Build passenger type labels
+  const paxTypes: { type: "adult" | "child" | "infant"; label: string }[] = [];
+  for (let i = 0; i < adultCount; i++) paxTypes.push({ type: "adult", label: `Adult ${adultCount > 1 ? i + 1 : ""}`.trim() });
+  for (let i = 0; i < childCount; i++) paxTypes.push({ type: "child", label: `Child ${childCount > 1 ? i + 1 : ""}`.trim() });
+  for (let i = 0; i < infantCount; i++) paxTypes.push({ type: "infant", label: `Infant ${infantCount > 1 ? i + 1 : ""}`.trim() });
+
+  const emptyPax = () => ({ title: "", firstName: "", lastName: "", dob: "", nationality: "Bangladeshi", passport: "", passportExpiry: "", email: "", phone: "", gender: "", documentCountry: "BD" });
+
+  const [passengers, setPassengers] = useState(() => paxTypes.map(() => emptyPax()));
+  const [passportScanOpen, setPassportScanOpen] = useState(false);
+  const [searchPaxOpen, setSearchPaxOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [activePaxIndex, setActivePaxIndex] = useState(0);
+
   // ── Seat Selection State ──
   const [selectedSeats, setSelectedSeats] = useState<Record<number, string>>({});
   const [seatPrices, setSeatPrices] = useState<Record<number, number>>({});
@@ -269,31 +294,6 @@ const FlightBooking = () => {
   const [baggageOptions, setBaggageOptions] = useState<{ id: string; name: string; price: number; desc: string; icon?: string }[]>([]);
   const [ancillarySource, setAncillarySource] = useState("none");
   const [ancillaryLoading, setAncillaryLoading] = useState(false);
-
-  // Read passenger counts from URL
-  const [searchParams] = useSearchParams();
-  const location = useLocation();
-  const locationState = location.state as any;
-
-  const adultCount = parseInt(searchParams.get("adults") || "1");
-  const childCount = parseInt(searchParams.get("children") || "0");
-  const infantCount = parseInt(searchParams.get("infants") || "0");
-  const searchCabin = searchParams.get("cabin") || "economy";
-  const totalPaxCount = adultCount + childCount + infantCount;
-
-  // Build passenger type labels
-  const paxTypes: { type: "adult" | "child" | "infant"; label: string }[] = [];
-  for (let i = 0; i < adultCount; i++) paxTypes.push({ type: "adult", label: `Adult ${adultCount > 1 ? i + 1 : ""}`.trim() });
-  for (let i = 0; i < childCount; i++) paxTypes.push({ type: "child", label: `Child ${childCount > 1 ? i + 1 : ""}`.trim() });
-  for (let i = 0; i < infantCount; i++) paxTypes.push({ type: "infant", label: `Infant ${infantCount > 1 ? i + 1 : ""}`.trim() });
-
-  const emptyPax = () => ({ title: "", firstName: "", lastName: "", dob: "", nationality: "Bangladeshi", passport: "", passportExpiry: "", email: "", phone: "", gender: "", documentCountry: "BD" });
-
-  const [passengers, setPassengers] = useState(() => paxTypes.map(() => emptyPax()));
-  const [passportScanOpen, setPassportScanOpen] = useState(false);
-  const [searchPaxOpen, setSearchPaxOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [activePaxIndex, setActivePaxIndex] = useState(0);
 
   // Travel document uploads (passport copy + visa copy) for international flights
   const [travelDocs, setTravelDocs] = useState<Record<string, { file: File; url?: string; uploading?: boolean }>>({});

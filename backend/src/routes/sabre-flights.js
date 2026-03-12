@@ -243,18 +243,25 @@ async function searchFlights(params) {
             ATPCO: 'Enable',
             LCC: 'Enable',
           },
+          DiversityParameters: {
+            Weightings: {
+              PriceWeight: 8,
+              TravelTimeWeight: 2,
+            },
+          },
         },
         CabinPref: [{ Cabin: sabreCabin, PreferLevel: 'Preferred' }],
+      },
+      TPA_Extensions: {
+        IntelliSellTransaction: {
+          RequestType: { Name: '200ITINS' },
+          CompressResponse: { Value: true },
+        },
       },
       TravelerInfoSummary: {
         AirTravelerAvail: [{
           PassengerTypeQuantity: passengers,
         }],
-      },
-      TPA_Extensions: {
-        IntelliSellTransaction: {
-          RequestType: { Name: '200ITINS' },
-        },
       },
     },
   };
@@ -593,19 +600,42 @@ function normalizeGroupedResponse(response, params) {
           console.log(`[Sabre] Resolved baggage: checked=${checkedBaggageGlobal}, hand=${handBaggageGlobal}, total infos=${allBaggageInfos.length}`);
         }
 
-        // Extract fare details from pricingInformation for fare options
+        // Extract fare details from pricingInformation for fare options (branded fares)
         const fareDetailsArr = pricingInfo.map((pi, piIdx) => {
           const piFare = pi.fare || {};
           const piTotal = piFare.totalFare || {};
           const piPassengers = piFare.passengerInfoList || [];
           const piFareComponents = piPassengers[0]?.passengerInfo?.fareComponents || [];
           
+          // Extract brand name from fareComponentDescs reference
+          let brandName = '';
+          let brandCode = '';
+          for (const fc of piFareComponents) {
+            const brand = fc.brand || fc.brandFeatures || {};
+            brandName = brand.brandName || brand.name || brandName;
+            brandCode = brand.brandCode || brand.code || brandCode;
+            // Also check fareComponentDescs lookup by ref
+            const fcRef = fc.ref ?? fc.id;
+            if (!brandName && fcRef !== undefined) {
+              const fcDesc = fareComponentDescs.find(d => d.id === fcRef);
+              if (fcDesc) {
+                brandName = fcDesc.brandName || fcDesc.brand?.brandName || fcDesc.brand?.name || '';
+                brandCode = fcDesc.brandCode || fcDesc.brand?.brandCode || '';
+              }
+            }
+          }
+          
           // Extract per-pax baggage for this fare option
           let piBaggage = checkedBaggageGlobal;
           let piHandBaggage = handBaggageGlobal;
+          let mealIncluded = false;
+          let seatSelection = false;
+          let isNonRefundable = true;
+
           for (const paxInfo of piPassengers) {
             const pInfo = paxInfo.passengerInfo || {};
             const bInfos = pInfo.baggageInformation || [];
+            if (pInfo.nonRefundable === false) isNonRefundable = false;
             for (const bi of bInfos) {
               const allowance = bi.allowance || {};
               const ref = allowance.ref ?? allowance.Ref;
@@ -624,6 +654,20 @@ function normalizeGroupedResponse(response, params) {
             }
           }
 
+          // Extract penalty info for this pricing option
+          const penInfos = piPassengers[0]?.passengerInfo?.penaltyInformation || [];
+          let rebookingAllowed = true;
+          let cancellationAllowed = !isNonRefundable;
+          for (const pen of penInfos) {
+            const cat = pen.cat || pen.category || '';
+            if (cat === 'Exchange' || cat === 'Reissue') {
+              rebookingAllowed = !(pen.details?.isNonChangeable);
+            }
+            if (cat === 'Refund' || cat === 'Cancel') {
+              cancellationAllowed = !(pen.details?.isNonRefundable);
+            }
+          }
+
           return {
             fareBasis: piFareComponents[0]?.segments?.[0]?.fareBasisCode || '',
             bookingClass: piFareComponents[0]?.segments?.[0]?.bookingCode || '',
@@ -635,7 +679,13 @@ function normalizeGroupedResponse(response, params) {
             currency: piTotal.currency || 'BDT',
             baggage: piBaggage,
             handBaggage: piHandBaggage,
-            refundable: piFare.passengerInfoList?.[0]?.passengerInfo?.nonRefundable === false,
+            refundable: !isNonRefundable,
+            brandName: brandName || '',
+            brandCode: brandCode || '',
+            mealIncluded,
+            seatSelection,
+            rebookingAllowed,
+            cancellationAllowed,
           };
         });
 

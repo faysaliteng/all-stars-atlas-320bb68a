@@ -900,6 +900,14 @@ key = flightNumber + departureTime + arrivalTime + destination + stops + stopCod
 
 Previous bug: using only first-leg data caused all round-trip combos sharing the same outbound (e.g., 14 Gulf Air DAC→JED combos with different returns) to collapse into 1 result.
 
+### Branded Fares (Sabre)
+
+Sabre BFM returns multiple `pricingInformation[]` entries per itinerary when branded fares are available. Each entry represents a different fare brand (e.g., "Economy Light", "Economy Smart") with its own pricing, baggage, refund/rebooking policies. The normalizer extracts brand names from `fareComponentDescs` and passes them as `fareDetails[]` with `brandName`, `brandCode`, `baggage`, `handBaggage`, `mealIncluded`, `seatSelection`, `rebookingAllowed`, `cancellationAllowed` fields. The frontend `FareOptionsPanel` renders these as scrollable columns with the cheapest marked "Best Value".
+
+### NDC Fares
+
+The BFM request includes `DataSources: { NDC: 'Enable' }`, but NDC content requires the Sabre agency PCC to have active NDC carrier agreements. Contact Sabre support to enable NDC content for your PCC if NDC fares are not appearing.
+
 ### Preferred Airline Filter
 
 The search widget includes an optional airline dropdown. When selected, the `carrier` IATA code is passed as a query parameter to `GET /flights/search`. The backend applies a post-aggregation filter (`airlineCode === carrier`) after all providers return results, ensuring only flights from the selected airline are returned regardless of source provider.

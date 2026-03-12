@@ -540,23 +540,51 @@ const FareOptionsPanel = ({ flights, onBook }: { flights: any[]; onBook: (flight
     const primary = flights[0];
     const fd = primary.fareDetails || [];
     
-    // If API returns multiple fare options, use them
+    // If API returns multiple fare options (branded fares from Sabre/BDFare), use them
     if (fd.length > 1) {
-      return fd.map((f: any, i: number) => ({
-        id: `option-${i}`,
-        label: `Fare Option ${i + 1}`,
+      // Sort by price ascending
+      const sorted = [...fd].sort((a: any, b: any) => (a.price || a.amount || 0) - (b.price || b.amount || 0));
+      return sorted.map((f: any, i: number) => {
+        // Use brand name if available, otherwise generate label
+        const label = f.brandName 
+          ? f.brandName.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+          : f.label || `Fare Option ${i + 1}`;
+        return {
+          id: `option-${i}`,
+          label,
+          handBaggage: f.handBaggage || primary.handBaggage || null,
+          checkedBaggage: f.baggage || f.checkedBaggage || primary.baggage || null,
+          meal: f.mealIncluded ? "Included" : null,
+          seatSelection: f.seatSelection ?? false,
+          rebooking: f.rebookingAllowed !== false,
+          cancellation: f.cancellationAllowed !== false,
+          miles: f.milesAccrual ?? false,
+          bookingClass: f.bookingClass || f.cabinClass || primary.bookingClass || "",
+          grossFare: f.price || f.amount || f.total || primary.price || 0,
+          refundable: f.refundable ?? primary.refundable ?? false,
+          flight: { ...primary, price: f.price || primary.price, fareDetails: [f] },
+          isBestValue: i === 0,
+        };
+      });
+    } else if (fd.length === 1 && fd[0].brandName) {
+      // Single branded fare
+      const f = fd[0];
+      return [{
+        id: "option-0",
+        label: f.brandName.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
         handBaggage: f.handBaggage || primary.handBaggage || null,
-        checkedBaggage: f.baggage || f.checkedBaggage || primary.baggage || null,
-        meal: f.meal || f.mealIncluded ? "Included" : null,
+        checkedBaggage: f.baggage || primary.baggage || null,
+        meal: f.mealIncluded ? "Included" : null,
         seatSelection: f.seatSelection ?? false,
         rebooking: f.rebookingAllowed !== false,
         cancellation: f.cancellationAllowed !== false,
-        miles: f.milesAccrual ?? false,
-        bookingClass: f.bookingClass || f.cabinClass || primary.bookingClass || "",
-        grossFare: f.amount || f.total || primary.price || 0,
+        miles: false,
+        bookingClass: f.bookingClass || primary.bookingClass || "",
+        grossFare: f.price || primary.price || 0,
         refundable: f.refundable ?? primary.refundable ?? false,
         flight: primary,
-      }));
+        isBestValue: true,
+      }];
     }
     
     // Generate a single option from the flight data
@@ -574,6 +602,7 @@ const FareOptionsPanel = ({ flights, onBook }: { flights: any[]; onBook: (flight
       grossFare: primary.price || 0,
       refundable: primary.refundable ?? false,
       flight: primary,
+      isBestValue: true,
     }];
   }, [flights]);
 
@@ -625,14 +654,14 @@ const FareOptionsPanel = ({ flights, onBook }: { flights: any[]; onBook: (flight
               {fareOptions.map((opt, idx) => (
                 <div key={opt.id}
                   className={`shrink-0 w-48 rounded-xl border transition-all hover:shadow-md ${
-                    idx === 0 ? "border-accent/40 bg-accent/[0.03] shadow-sm" : "border-border bg-card"
+                    opt.isBestValue ? "border-accent/40 bg-accent/[0.03] shadow-sm" : "border-border bg-card"
                   }`}>
                   {/* Header */}
                   <div className={`px-4 py-3 rounded-t-xl text-center ${
-                    idx === 0 ? "bg-accent/10" : "bg-muted/40"
+                    opt.isBestValue ? "bg-accent/10" : "bg-muted/40"
                   }`}>
-                    <p className={`text-sm font-bold ${idx === 0 ? "text-accent" : "text-foreground"}`}>{opt.label}</p>
-                    {idx === 0 && <p className="text-[10px] text-accent/70 font-medium mt-0.5">Best Value</p>}
+                    <p className={`text-sm font-bold ${opt.isBestValue ? "text-accent" : "text-foreground"}`}>{opt.label}</p>
+                    {opt.isBestValue && <p className="text-[10px] text-accent/70 font-medium mt-0.5">Best Value</p>}
                   </div>
 
                   {/* Values */}

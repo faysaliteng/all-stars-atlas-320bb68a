@@ -4,6 +4,22 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [3.7.9] — 2026-03-12 — Branded Fares & Dedup Fix
+
+### Added
+- **Sabre branded fares**: BFM request now includes `DiversityParameters` and `CompressResponse` for richer fare options. Normalizer extracts brand names (e.g., "Economy Light", "Economy Smart") from `fareComponentDescs` and maps per-brand baggage, refund, rebooking, and cancellation policies
+- **Fare Options panel brand labels**: Shows real brand names from GDS instead of generic "Fare Option 1/2". Each branded fare shows its own baggage, meal, seat selection, and policy data with "Best Value" badge on cheapest
+
+### Fixed
+- **Round-trip combinations collapsed to 1 result**: Backend dedup key now includes ALL leg flight numbers, arrival time, direction, and per-leg departure times — preserving every unique outbound+return combination
+- **Fare options "Best Value" badge**: Now uses API-driven `isBestValue` flag instead of array index
+
+### Notes
+- **NDC fares**: `NDC: 'Enable'` is set in BFM request, but NDC content requires active airline NDC agreements on your Sabre PCC (J4YL). Contact Sabre to enable NDC carrier content for your agency
+- **Base fare differences vs BDFare**: BDFare shows net/agent fares; Sabre shows published fares. Different commission models explain price differences on the same flight
+
+---
+
 ## [3.7.8] — 2026-03-12 — Round-Trip Deduplication Fix
 
 ### Fixed

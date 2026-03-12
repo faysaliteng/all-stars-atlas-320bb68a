@@ -723,7 +723,8 @@ const FlightBooking = () => {
     setBookingLoading(true);
     try {
       const bookingData = {
-        flightData: outboundFlight, returnFlightData: returnFlight,
+        flightData: bookingFlightData,
+        returnFlightData: returnFlight,
         multiCityFlights: isMultiCity ? multiCityFlights : undefined,
         passengers, isRoundTrip, isMultiCity, isDomestic: domestic, payLater,
         paymentMethod: payLater ? "pay_later" : (selectedPaymentMethod || "card"), totalAmount: grandTotal, baseFare, taxes, serviceCharge,

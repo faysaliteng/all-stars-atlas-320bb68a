@@ -556,10 +556,12 @@ function normalizeGroupedResponse(response, params) {
           const direction = legIdx === 0 ? 'outbound' : 'return';
           const pricePerDirection = itinLegs.length > 1 ? Math.round(totalAmount / itinLegs.length) : totalAmount;
 
-          // Seat availability from fare components
+          // Seat availability + baggage from fare components
           let minSeats = Infinity;
           let bookingClass = '';
-          const fareComponents = fare.passengerInfoList?.[0]?.passengerInfo?.fareComponents || [];
+          let checkedBaggage = null;
+          const passengerInfoList = fare.passengerInfoList || [];
+          const fareComponents = passengerInfoList[0]?.passengerInfo?.fareComponents || [];
           for (const fc of fareComponents) {
             const segments = fc.segments || [];
             for (const seg of segments) {
@@ -567,6 +569,16 @@ function normalizeGroupedResponse(response, params) {
                 minSeats = seg.seatsAvailable;
               }
               if (seg.bookingCode) bookingClass = seg.bookingCode;
+            }
+          }
+          // Extract baggage from baggageInformation
+          const baggageInfos = passengerInfoList[0]?.passengerInfo?.baggageInformation || [];
+          for (const bi of baggageInfos) {
+            const allowance = bi.allowance || {};
+            if (allowance.weight) {
+              checkedBaggage = `${allowance.weight}${allowance.unit || 'kg'}`;
+            } else if (allowance.pieces !== undefined) {
+              checkedBaggage = `${allowance.pieces} piece${allowance.pieces > 1 ? 's' : ''}`;
             }
           }
 

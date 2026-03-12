@@ -55,9 +55,9 @@ app.post('/api/admin/auth/login', authLimiter, (req, res, next) => {
   authRoutes(req, res, next);
 });
 
-// Services
-app.use('/api/flights', flightRoutes);
+// Services — ancillary routes MUST be before flight routes (/:id wildcard would catch /ancillaries)
 app.use('/api/flights', ancillaryRoutes);
+app.use('/api/flights', flightRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api', serviceRoutes); // holidays, medical, cars, esim, recharge, paybill, contact
 app.use('/api', visaRoutes);

@@ -386,10 +386,11 @@ const FlightBooking = () => {
       }
     };
     fetchSeatMap();
+  }, [outboundFlight]);
 
   const mealCost = mealOptions.find(m => m.id === selectedMeal)?.price || 0;
   const baggageCost = selectedBaggage.reduce((sum, id) => sum + (baggageOptions.find(b => b.id === id)?.price || 0), 0);
-  const addOnTotal = (mealCost + baggageCost) * totalPaxCount;
+  const addOnTotal = (mealCost + baggageCost) * totalPaxCount + totalSeatCost;
   // Multi-city flights support
   const multiCityFlights: any[] = locationState?.multiCityFlights || [];
   const isMultiCity = multiCityFlights.length >= 2;
@@ -416,22 +417,16 @@ const FlightBooking = () => {
 
   const deadlineInfo = resolveDeadlineInfo(outboundFlight, domestic);
 
-  // Dynamic steps: only show Extras if real API data is available
-  const STEPS = hasRealExtras
-    ? [
-        { label: "Flight Details", icon: Plane },
-        { label: "Passenger Info", icon: Users },
-        { label: "Extras", icon: Plus },
-        { label: "Review & Pay", icon: CreditCard },
-      ]
-    : [
-        { label: "Flight Details", icon: Plane },
-        { label: "Passenger Info", icon: Users },
-        { label: "Review & Pay", icon: CreditCard },
-      ];
-  const totalSteps = STEPS.length;
-  const reviewStep = totalSteps;
-  const extrasStep = hasRealExtras ? 3 : -1; // -1 means no extras step
+  // Always 4 steps: Flight Details → Passenger Info → Seat & Extras → Review & Pay
+  const STEPS = [
+    { label: "Flight Details", icon: Plane },
+    { label: "Passenger Info", icon: Users },
+    { label: "Seat & Extras", icon: Armchair },
+    { label: "Review & Pay", icon: CreditCard },
+  ];
+  const totalSteps = 4;
+  const reviewStep = 4;
+  const seatExtrasStep = 3;
 
   const validateStep = (currentStep: number): boolean => {
     const errors: Record<string, string> = {};

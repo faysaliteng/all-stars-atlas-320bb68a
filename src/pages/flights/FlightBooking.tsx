@@ -1209,62 +1209,103 @@ const FlightBooking = () => {
                 </CardContent>
               </Card>
             )}
-            {/* STEP 3: Extras — ONLY when real airline API data is available */}
-            {step === extrasStep && hasRealExtras && (
-              <Card>
-                <CardHeader className="bg-accent/5 border-b border-border">
-                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                    <Plus className="w-5 h-5 text-accent" /> Customize Your Flight
-                    <Badge className="bg-accent/10 text-accent border-0 text-[9px] ml-2">Live Airline Data</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-5">
-                  <Tabs defaultValue="baggage" className="w-full">
-                    <TabsList className="w-full grid grid-cols-2 mb-4 h-auto">
-                      <TabsTrigger value="baggage" className="gap-1 sm:gap-1.5 text-[11px] sm:text-sm py-2"><Luggage className="w-3.5 h-3.5" /> Baggage</TabsTrigger>
-                      <TabsTrigger value="meal" className="gap-1 sm:gap-1.5 text-[11px] sm:text-sm py-2"><UtensilsCrossed className="w-3.5 h-3.5" /> Meal</TabsTrigger>
-                    </TabsList>
-
-                    {/* ── EXTRA BAGGAGE ── */}
-                    <TabsContent value="baggage" className="space-y-3">
-                      <div className="flex items-center gap-2 p-3 bg-accent/5 rounded-lg border border-accent/10">
-                        <Briefcase className="w-4 h-4 text-accent shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium">Included: 20kg Checked + 7kg Cabin</p>
-                          <p className="text-xs text-muted-foreground">Your fare includes standard baggage allowance</p>
-                        </div>
+            {/* STEP 3: Seat Selection & Extras — Always visible */}
+            {step === seatExtrasStep && (
+              <>
+                {/* ── SEAT SELECTION ── */}
+                <Card>
+                  <CardHeader className="bg-accent/5 border-b border-border">
+                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                      <Armchair className="w-5 h-5 text-accent" /> Select Your Seats
+                      {seatMapSource !== "none" && (
+                        <Badge className="bg-accent/10 text-accent border-0 text-[9px] ml-2">
+                          {seatMapSource === "sabre" ? "Live Sabre Data" : seatMapSource === "tti" ? "Live Airline Data" : "Aircraft Layout"}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">Choose preferred seats for each passenger. Seat assignments are subject to airline confirmation.</p>
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-5">
+                    {seatMapLoading ? (
+                      <div className="space-y-3 py-6">
+                        <Skeleton className="h-8 w-48 mx-auto" />
+                        <Skeleton className="h-[300px] w-full max-w-[400px] mx-auto" />
                       </div>
-                      {baggageOptions.length > 0 ? (
-                        <div className="space-y-2">
-                          {baggageOptions.map(bag => (
-                            <AddOnCard key={bag.id} item={bag} multi
-                              selected={selectedBaggage.includes(bag.id)}
-                              onSelect={() => setSelectedBaggage(prev => prev.includes(bag.id) ? prev.filter(x => x !== bag.id) : [...prev, bag.id])} />
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground p-3">No extra baggage options available from this airline.</p>
-                      )}
-                    </TabsContent>
+                    ) : (
+                      <SeatMap
+                        flightNumber={`${outboundFlight?.airlineCode || ""}${outboundFlight?.flightNumber || ""}`}
+                        aircraft={seatMapData?.aircraft || outboundFlight?.aircraft || "A320"}
+                        cabinClass={outboundFlight?.cabinClass || searchCabin || "Economy"}
+                        passengers={passengers.map((p, i) => ({
+                          firstName: p.firstName || paxTypes[i]?.label || `Pax ${i + 1}`,
+                          lastName: p.lastName || "",
+                          title: p.title || "",
+                        }))}
+                        selectedSeats={selectedSeats}
+                        onSeatSelect={handleSeatSelect}
+                        onSeatDeselect={handleSeatDeselect}
+                        isDomestic={domestic}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
 
-                    {/* ── MEAL SELECTION ── */}
-                    <TabsContent value="meal" className="space-y-3">
-                      <p className="text-sm text-muted-foreground">Select your preferred meal for this flight.</p>
-                      {mealOptions.length > 0 ? (
-                        <div className="space-y-2">
-                          {mealOptions.map(meal => (
-                            <AddOnCard key={meal.id} item={meal}
-                              selected={selectedMeal === meal.id}
-                              onSelect={() => setSelectedMeal(meal.id)} />
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground p-3">No meal options available from this airline.</p>
+                {/* ── EXTRA BAGGAGE & MEALS ── */}
+                <Card>
+                  <CardHeader className="bg-accent/5 border-b border-border">
+                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                      <Plus className="w-5 h-5 text-accent" /> Extra Baggage & Meals
+                      {ancillarySource !== "none" && ancillarySource !== "standard" && (
+                        <Badge className="bg-accent/10 text-accent border-0 text-[9px] ml-2">Live Airline Data</Badge>
                       )}
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-5">
+                    <Tabs defaultValue="baggage" className="w-full">
+                      <TabsList className="w-full grid grid-cols-2 mb-4 h-auto">
+                        <TabsTrigger value="baggage" className="gap-1 sm:gap-1.5 text-[11px] sm:text-sm py-2"><Luggage className="w-3.5 h-3.5" /> Extra Baggage</TabsTrigger>
+                        <TabsTrigger value="meal" className="gap-1 sm:gap-1.5 text-[11px] sm:text-sm py-2"><UtensilsCrossed className="w-3.5 h-3.5" /> Meal Selection</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="baggage" className="space-y-3">
+                        <div className="flex items-center gap-2 p-3 bg-accent/5 rounded-lg border border-accent/10">
+                          <Briefcase className="w-4 h-4 text-accent shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium">Included: {outboundFlight?.baggage || "As per airline policy"}</p>
+                            <p className="text-xs text-muted-foreground">Your fare includes standard baggage allowance. Add extra below.</p>
+                          </div>
+                        </div>
+                        {baggageOptions.length > 0 ? (
+                          <div className="space-y-2">
+                            {baggageOptions.map(bag => (
+                              <AddOnCard key={bag.id} item={bag} multi
+                                selected={selectedBaggage.includes(bag.id)}
+                                onSelect={() => setSelectedBaggage(prev => prev.includes(bag.id) ? prev.filter(x => x !== bag.id) : [...prev, bag.id])} />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground p-3">No extra baggage options available from this airline.</p>
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="meal" className="space-y-3">
+                        <p className="text-sm text-muted-foreground">Select your preferred meal for this flight.</p>
+                        {mealOptions.length > 0 ? (
+                          <div className="space-y-2">
+                            {mealOptions.map(meal => (
+                              <AddOnCard key={meal.id} item={meal}
+                                selected={selectedMeal === meal.id}
+                                onSelect={() => setSelectedMeal(meal.id)} />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground p-3">No meal options available from this airline.</p>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </>
             )}
 
             {/* REVIEW STEP: Review & Booking */}

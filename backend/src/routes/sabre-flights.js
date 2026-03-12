@@ -1280,17 +1280,36 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
 
     const response = await sabreRequest(config, '/v2.4.0/passenger/records?mode=create', body);
 
+    // Log full response keys for debugging
+    console.log('[Sabre] CreatePNR response keys:', JSON.stringify(Object.keys(response || {})));
+    const rs = response?.CreatePassengerNameRecordRS;
+    if (rs) {
+      console.log('[Sabre] RS keys:', JSON.stringify(Object.keys(rs)));
+      if (rs.ApplicationResults) {
+        console.log('[Sabre] ApplicationResults status:', rs.ApplicationResults.status);
+        if (rs.ApplicationResults.Error) {
+          console.log('[Sabre] RS Errors:', JSON.stringify(rs.ApplicationResults.Error).slice(0, 500));
+        }
+        if (rs.ApplicationResults.Warning) {
+          console.log('[Sabre] RS Warnings:', JSON.stringify(rs.ApplicationResults.Warning).slice(0, 500));
+        }
+      }
+      if (rs.ItineraryRef) console.log('[Sabre] ItineraryRef:', JSON.stringify(rs.ItineraryRef));
+    } else {
+      console.log('[Sabre] CreatePNR raw (truncated):', JSON.stringify(response).slice(0, 1000));
+    }
+
     const pnrCandidates = [
-      response.CreatePassengerNameRecordRS?.ItineraryRef?.ID,
-      response.CreatePassengerNameRecordRS?.ItineraryRef?.id,
-      response.CreatePassengerNameRecordRS?.TravelItineraryRead?.TravelItinerary?.ItineraryRef?.ID,
-      response.CreatePassengerNameRecordRS?.TravelItineraryRead?.TravelItinerary?.ItineraryRef?.id,
-      response.CreatePassengerNameRecordRS?.TravelItineraryRead?.ItineraryRef?.ID,
-      response.CreatePassengerNameRecordRS?.TravelItineraryRead?.ItineraryRef?.id,
-      response.ItineraryRef?.ID,
-      response.RecordLocator,
-      response.PNR,
-      response.BookingReference,
+      rs?.ItineraryRef?.ID,
+      rs?.ItineraryRef?.id,
+      rs?.TravelItineraryRead?.TravelItinerary?.ItineraryRef?.ID,
+      rs?.TravelItineraryRead?.TravelItinerary?.ItineraryRef?.id,
+      rs?.TravelItineraryRead?.ItineraryRef?.ID,
+      rs?.TravelItineraryRead?.ItineraryRef?.id,
+      response?.ItineraryRef?.ID,
+      response?.RecordLocator,
+      response?.PNR,
+      response?.BookingReference,
     ];
 
     const pnr = pnrCandidates.find((value) =>

@@ -10,13 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Plane, ArrowRight, User, Clock, Luggage, Shield, CreditCard,
   UtensilsCrossed, Plus, Briefcase, Users, FileText,
   AlertCircle, CheckCircle2, Timer, AlertTriangle, Package,
   ScanLine, Search, Share2, Save, Upload, X, Eye,
   Accessibility, Heart, Dog, Baby, MessageSquare, Star,
-  Armchair,
+  Armchair, Info,
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useCmsPageContent } from "@/hooks/useCmsContent";
@@ -78,6 +79,96 @@ function fmtTime(dt?: string) { if (!dt) return "—"; try { const d = new Date(
 function fmtDate(dt?: string) { if (!dt) return "—"; try { const d = new Date(dt); return isNaN(d.getTime()) ? dt : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); } catch { return dt; } }
 
 /* ─── No hardcoded defaults — extras only from real API data ─── */
+
+/* ─── Airline Support Info Dialog ─── */
+const AirlineSupportDialog = ({ 
+  airline, airlineCode, hasBaggage, hasHandBaggage, hasSeatMap, hasExtras, seatMapSource, ancillarySource 
+}: { 
+  airline?: string; airlineCode?: string; hasBaggage: boolean; hasHandBaggage: boolean; 
+  hasSeatMap: boolean; hasExtras: boolean; seatMapSource: string; ancillarySource: string;
+}) => {
+  const features = [
+    { 
+      label: "Checked Baggage Info", 
+      available: hasBaggage, 
+      source: "BFM Search",
+      desc: hasBaggage ? "Baggage allowance provided by the airline's booking system" : "Not provided in this fare — check airline website",
+    },
+    { 
+      label: "Hand Baggage Info", 
+      available: hasHandBaggage, 
+      source: "BFM Search",
+      desc: hasHandBaggage ? "Cabin baggage allowance included in fare data" : "Not provided in this fare — typically 7kg for Economy",
+    },
+    { 
+      label: "Seat Map / Seat Selection", 
+      available: hasSeatMap, 
+      source: seatMapSource === "sabre" ? "Sabre SOAP (Live)" : seatMapSource,
+      desc: hasSeatMap ? "Real-time seat availability from the airline's system" : "Not available — seats will be assigned at check-in",
+    },
+    { 
+      label: "Extra Baggage (Paid)", 
+      available: hasExtras && ancillarySource !== "none" && ancillarySource !== "bfm", 
+      source: ancillarySource === "sabre" ? "Sabre GAO" : ancillarySource === "tti" ? "TTI" : "Post-booking",
+      desc: "Extra baggage and meal options are available after booking (requires PNR). You can add extras from your dashboard after confirming your booking.",
+      postBooking: true,
+    },
+    { 
+      label: "Meal Selection (Paid)", 
+      available: hasExtras && ancillarySource !== "none" && ancillarySource !== "bfm", 
+      source: ancillarySource === "sabre" ? "Sabre GAO" : ancillarySource === "tti" ? "TTI" : "Post-booking",
+      desc: "Premium meal options become available after PNR creation. Free SSR meal requests (Halal, Vegetarian, etc.) can be added in Step 2.",
+      postBooking: true,
+    },
+  ];
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="text-xs text-accent hover:underline inline-flex items-center gap-1">
+          <Info className="w-3 h-3" /> Airline data availability
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            {airlineCode && (
+              <img src={`https://images.kiwi.com/airlines/64/${airlineCode}.png`} alt="" className="w-6 h-6 object-contain" 
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            )}
+            {airline || "Airline"} — Data Availability
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 mt-2">
+          <p className="text-xs text-muted-foreground">
+            Data availability depends on what the airline provides through its booking system. Features marked as unavailable are not provided by this airline for this specific fare.
+          </p>
+          {features.map((f, i) => (
+            <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border ${f.available ? "border-accent/20 bg-accent/5" : "border-border bg-muted/30"}`}>
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${f.available ? "bg-accent/20" : "bg-muted"}`}>
+                {f.available ? <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> : <X className="w-3 h-3 text-muted-foreground" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{f.label}</p>
+                  {(f as any).postBooking && <Badge variant="outline" className="text-[9px] h-4">After Booking</Badge>}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{f.desc}</p>
+                {f.available && <p className="text-[10px] text-accent mt-1">Source: {f.source}</p>}
+              </div>
+            </div>
+          ))}
+          <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
+            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-[11px] text-muted-foreground">
+              <strong>Extra baggage & meal purchases</strong> require a PNR (booking reference). Book your flight first, then add extras from your Dashboard → Bookings.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 /* ─── Add-on Card ─── */
 const AddOnCard = ({ item, selected, onSelect, multi }: { item: { id: string; name: string; price: number; desc: string; icon?: string }; selected: boolean; onSelect: () => void; multi?: boolean }) => (
@@ -666,6 +757,9 @@ const FlightBooking = () => {
               </p>
               <div className="bg-muted/50 rounded-xl p-4 text-left space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Booking Ref</span><span className="font-bold font-mono">{bookingResult.bookingRef}</span></div>
+                {(bookingResult.pnr || bookingResult.gdsPnr) && (
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">PNR (Airline)</span><span className="font-bold font-mono text-accent">{bookingResult.pnr || bookingResult.gdsPnr}</span></div>
+                )}
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status</span>
                   <Badge className={bookingResult.payLater ? "bg-warning/10 text-warning border-warning/20" : "bg-accent/10 text-accent border-accent/20"}>
                     {bookingResult.payLater ? "On Hold" : "Confirmed"}
@@ -680,6 +774,18 @@ const FlightBooking = () => {
                   </div>
                 )}
               </div>
+              {/* Post-booking extras notice */}
+              {(bookingResult.pnr || bookingResult.gdsPnr) && (
+                <div className="flex items-start gap-3 p-4 bg-accent/5 border border-accent/20 rounded-xl text-left">
+                  <Package className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold">Add Extra Baggage & Meals</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your PNR <strong className="font-mono text-accent">{bookingResult.pnr || bookingResult.gdsPnr}</strong> has been generated. You can now purchase extra baggage, premium meals, and other add-ons from your <strong>Dashboard → Bookings</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
               {bookingResult.payLater && bookingResult.paymentDeadline && (
                 <div className="flex items-start gap-3 p-4 bg-destructive/5 border border-destructive/20 rounded-xl text-left">
                   <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -788,6 +894,39 @@ const FlightBooking = () => {
                     <FlightSegmentCard flight={outboundFlight} label="Outbound" searchedCabinClass={searchCabin ? searchCabin.charAt(0).toUpperCase() + searchCabin.slice(1) : undefined} />
                     {isRoundTrip && <FlightSegmentCard flight={returnFlight} label="Return" searchedCabinClass={searchCabin ? searchCabin.charAt(0).toUpperCase() + searchCabin.slice(1) : undefined} />}
                   </>
+                )}
+                {/* Baggage summary + airline support link */}
+                {outboundFlight && (
+                  <Card className="border-border">
+                    <CardContent className="p-3 sm:p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold flex items-center gap-2"><Luggage className="w-4 h-4 text-accent" /> Baggage Allowance</p>
+                        <AirlineSupportDialog
+                          airline={outboundFlight.airline} airlineCode={outboundFlight.airlineCode}
+                          hasBaggage={!!outboundFlight.baggage} hasHandBaggage={!!outboundFlight.handBaggage}
+                          hasSeatMap={seatMapData?.available === true} hasExtras={ancillarySource !== "none"}
+                          seatMapSource={seatMapSource} ancillarySource={ancillarySource}
+                        />
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className={`flex items-start gap-3 p-3 rounded-lg border ${outboundFlight.baggage ? "border-accent/20 bg-accent/5" : "border-border bg-muted/30"}`}>
+                          <Briefcase className={`w-4 h-4 shrink-0 mt-0.5 ${outboundFlight.baggage ? "text-accent" : "text-muted-foreground"}`} />
+                          <div>
+                            <p className="text-xs font-semibold">Checked Baggage</p>
+                            <p className="text-[11px] text-muted-foreground">{outboundFlight.baggage || "Not provided by airline booking system"}</p>
+                          </div>
+                        </div>
+                        <div className={`flex items-start gap-3 p-3 rounded-lg border ${outboundFlight.handBaggage ? "border-accent/20 bg-accent/5" : "border-border bg-muted/30"}`}>
+                          <Package className={`w-4 h-4 shrink-0 mt-0.5 ${outboundFlight.handBaggage ? "text-accent" : "text-muted-foreground"}`} />
+                          <div>
+                            <p className="text-xs font-semibold">Hand Baggage</p>
+                            <p className="text-[11px] text-muted-foreground">{outboundFlight.handBaggage || "Not provided by airline booking system"}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Cabin Class: {searchCabin ? searchCabin.charAt(0).toUpperCase() + searchCabin.slice(1) : outboundFlight.cabinClass || "Economy"}</p>
+                    </CardContent>
+                  </Card>
                 )}
                 {!isMultiCity && !isRoundTrip && !outboundFlight && (
                   <Card className="border-dashed"><CardContent className="py-8 text-center"><p className="text-sm text-muted-foreground">Loading flight details...</p></CardContent></Card>
@@ -1151,10 +1290,18 @@ const FlightBooking = () => {
                 {/* ── SEAT SELECTION ── */}
                 <Card>
                   <CardHeader className="bg-accent/5 border-b border-border">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                      <Armchair className="w-5 h-5 text-accent" /> Select Your Seats
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1">Choose preferred seats for each passenger. Seat assignments are subject to airline confirmation.</p>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                        <Armchair className="w-5 h-5 text-accent" /> Select Your Seats
+                      </CardTitle>
+                      <AirlineSupportDialog
+                        airline={outboundFlight?.airline} airlineCode={outboundFlight?.airlineCode}
+                        hasBaggage={!!outboundFlight?.baggage} hasHandBaggage={!!outboundFlight?.handBaggage}
+                        hasSeatMap={seatMapData?.available === true} hasExtras={ancillarySource !== "none"}
+                        seatMapSource={seatMapSource} ancillarySource={ancillarySource}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Choose preferred seats for each passenger. Seat assignments are subject to airline confirmation. Seat prices are per passenger per segment.</p>
                   </CardHeader>
                   <CardContent className="p-3 sm:p-5">
                     <SeatMap
@@ -1180,14 +1327,18 @@ const FlightBooking = () => {
                 {/* ── EXTRA BAGGAGE & MEALS ── */}
                 <Card>
                   <CardHeader className="bg-accent/5 border-b border-border">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                      <Plus className="w-5 h-5 text-accent" /> Extra Baggage & Meals
-                      {ancillarySource !== "none" && (
-                        <Badge className="bg-accent/10 text-accent border-0 text-[9px] ml-2">
-                          {ancillarySource === "sabre" ? "Live Sabre Data" : ancillarySource === "tti" ? "Live Airline Data" : "No Extras Available"}
-                        </Badge>
-                      )}
-                    </CardTitle>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                        <Plus className="w-5 h-5 text-accent" /> Extra Baggage & Meals
+                        <Badge className="bg-warning/10 text-warning border-0 text-[9px] ml-1">After Booking</Badge>
+                      </CardTitle>
+                      <AirlineSupportDialog
+                        airline={outboundFlight?.airline} airlineCode={outboundFlight?.airlineCode}
+                        hasBaggage={!!outboundFlight?.baggage} hasHandBaggage={!!outboundFlight?.handBaggage}
+                        hasSeatMap={seatMapData?.available === true} hasExtras={ancillarySource !== "none"}
+                        seatMapSource={seatMapSource} ancillarySource={ancillarySource}
+                      />
+                    </div>
                   </CardHeader>
                   <CardContent className="p-3 sm:p-5">
                     <Tabs defaultValue="baggage" className="w-full">
@@ -1201,7 +1352,7 @@ const FlightBooking = () => {
                           <Briefcase className="w-4 h-4 text-accent shrink-0" />
                           <div>
                             <p className="text-sm font-medium">Included: {outboundFlight?.baggage || "Check airline website for baggage details"}</p>
-                            <p className="text-xs text-muted-foreground">{outboundFlight?.baggage ? "Your fare includes this baggage allowance. Add extra below if available." : "Baggage information was not provided by the airline's booking system."}</p>
+                            <p className="text-xs text-muted-foreground">{outboundFlight?.baggage ? "Your fare includes this baggage allowance." : "Baggage information was not provided by the airline's booking system."}</p>
                           </div>
                         </div>
                         {baggageOptions.length > 0 ? (
@@ -1213,22 +1364,33 @@ const FlightBooking = () => {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground p-3">No extra baggage options available from this airline.</p>
+                          <div className="p-4 bg-muted/30 rounded-lg border border-border text-center space-y-2">
+                            <Package className="w-8 h-8 mx-auto text-muted-foreground/40" />
+                            <p className="text-sm font-medium text-muted-foreground">Extra baggage options available after booking</p>
+                            <p className="text-xs text-muted-foreground">Once your booking is confirmed and a PNR is generated, you can purchase extra baggage from your <strong>Dashboard → Bookings</strong>.</p>
+                          </div>
                         )}
                       </TabsContent>
 
                       <TabsContent value="meal" className="space-y-3">
-                        <p className="text-sm text-muted-foreground">Select your preferred meal for this flight.</p>
                         {mealOptions.length > 0 ? (
-                          <div className="space-y-2">
-                            {mealOptions.map(meal => (
-                              <AddOnCard key={meal.id} item={meal}
-                                selected={selectedMeal === meal.id}
-                                onSelect={() => setSelectedMeal(meal.id)} />
-                            ))}
-                          </div>
+                          <>
+                            <p className="text-sm text-muted-foreground">Select your preferred meal for this flight.</p>
+                            <div className="space-y-2">
+                              {mealOptions.map(meal => (
+                                <AddOnCard key={meal.id} item={meal}
+                                  selected={selectedMeal === meal.id}
+                                  onSelect={() => setSelectedMeal(meal.id)} />
+                              ))}
+                            </div>
+                          </>
                         ) : (
-                          <p className="text-sm text-muted-foreground p-3">No meal options available from this airline.</p>
+                          <div className="p-4 bg-muted/30 rounded-lg border border-border text-center space-y-2">
+                            <UtensilsCrossed className="w-8 h-8 mx-auto text-muted-foreground/40" />
+                            <p className="text-sm font-medium text-muted-foreground">Paid meal options available after booking</p>
+                            <p className="text-xs text-muted-foreground">Premium meal purchases require a PNR. You can add paid meals from your <strong>Dashboard → Bookings</strong> after confirmation.</p>
+                            <p className="text-xs text-accent">💡 Free meal requests (Halal, Vegetarian, etc.) can be set in Step 2 — Special Services.</p>
+                          </div>
                         )}
                       </TabsContent>
                     </Tabs>

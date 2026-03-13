@@ -1205,12 +1205,12 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
     });
 
     const travelersInfo = passengers.map((p, i) => {
-      // Sabre schema does NOT allow NamePrefix in PersonName — append title to GivenName instead
+      // Sabre schema does NOT allow NamePrefix — prepend title to GivenName (BDFare-proven format)
       const title = (p.title || '').toUpperCase().replace(/\./g, '');
       const givenName = (p.firstName || '').toUpperCase();
       const personName = {
         NameNumber: `${i + 1}.1`,
-        GivenName: title ? `${givenName} ${title}` : givenName,
+        GivenName: title ? `${title} ${givenName}` : givenName,
         Surname: (p.lastName || '').toUpperCase(),
       };
       return { PersonName: personName };

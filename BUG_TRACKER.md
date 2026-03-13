@@ -95,7 +95,7 @@
 ### By Component
 | Component | Count |
 |-----------|-------|
-| Sabre REST | 6 |
+| Sabre REST | 8 |
 | Sabre SOAP | 3 |
 | TTI/ZENITH | 3 |
 | BDFare | 3 |

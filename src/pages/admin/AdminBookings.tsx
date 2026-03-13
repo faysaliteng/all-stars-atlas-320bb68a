@@ -1090,6 +1090,17 @@ const AdminBookings = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg border border-warning/30 bg-warning/5">
+              <Checkbox
+                id="skipGds"
+                checked={bulkCancelSkipGds}
+                onCheckedChange={(v) => setBulkCancelSkipGds(Boolean(v))}
+              />
+              <label htmlFor="skipGds" className="text-sm cursor-pointer">
+                <span className="font-medium">Force cancel locally</span>
+                <span className="text-muted-foreground"> — skip GDS API calls, just mark as cancelled in database (use when GDS keeps failing)</span>
+              </label>
+            </div>
 
                 {bulkCancelLoading && bulkCancelProgress && (
                   <div className="p-3 rounded-lg border bg-muted/50 text-sm text-muted-foreground flex items-center gap-2">

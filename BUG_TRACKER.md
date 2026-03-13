@@ -1,7 +1,7 @@
 # Seven Trip — Bug Tracker & Root Cause Analysis
 
 > Complete record of all bugs discovered and fixed during development.
-> Last updated: 2026-03-13 (v3.9.9.8)
+> Last updated: 2026-03-13 (v3.9.9.9)
 
 ---
 
@@ -9,6 +9,7 @@
 
 | # | Version | Bug | Root Cause | Fix | Impact |
 |---|---------|-----|-----------|-----|--------|
+| C00z | v3.9.9.9 | Sabre cancel failing — Host TA exhaustion blocks all SOAP sessions | Too many concurrent SOAP sessions (seat maps + cancel retries) leaked without proper close, exhausting Sabre's TA pool allocation | `resetSoapSessionCacheWithClose()` + retry-only on session/auth errors + proper session close in finally block | All cancellations blocked until TA pool auto-recovers (~30 min) |
 | C00 | v3.9.9.7 | Sabre DOCS silently dropped — PNR created without passport data | `passport` field contained upload path not number; `no_special_req` fallback succeeded without DOCS | Smart passport field detection + DOCS strict mode (disable no_special_req fallback when DOCS exist) | Passport data missing from airline records |
 | C00a | v3.9.9.7 | Sabre booking fails with AreaCityCode validation | `AreaCityCode` not allowed in `ContactNumber` schema | Removed `AreaCityCode` from phone mapping | Bookings blocked |
 | C00b | v3.9.9.5 | One-way & multi-city Sabre bookings failing silently | Error caught but not returned to client; no `gdsError` in response | Added `gdsError` field to booking response + detailed logging per CreatePNR attempt | Bookings appeared local-only |
@@ -77,10 +78,10 @@
 ### By Severity
 | Severity | Count | % |
 |----------|-------|---|
-| 🔴 Critical | 17 | 40% |
-| 🟡 Major | 10 | 24% |
-| 🟢 Minor | 12 | 29% |
-| **Total** | **39** | 100% |
+| 🔴 Critical | 18 | 41% |
+| 🟡 Major | 10 | 23% |
+| 🟢 Minor | 12 | 27% |
+| **Total** | **40** | 100% |
 
 ### By Category
 | Category | Count |
@@ -96,7 +97,7 @@
 | Component | Count |
 |-----------|-------|
 | Sabre REST | 8 |
-| Sabre SOAP | 3 |
+| Sabre SOAP | 4 |
 | TTI/ZENITH | 3 |
 | BDFare | 3 |
 | Frontend - Flight Results | 5 |
@@ -108,7 +109,7 @@
 ### Resolution Time
 | Speed | Count | Description |
 |-------|-------|------------|
-| Same-day | 35 | Fixed within the day discovered |
+| Same-day | 36 | Fixed within the day discovered |
 | Next-day | 2 | Required investigation/probe testing |
 
 ---
@@ -125,10 +126,10 @@
 - **Lesson**: Add defensive parsing with multiple format fallbacks
 - **Occurrences**: C06, C08, M02
 
-### Pattern 3: Cache Staleness
-- Cached tokens/configs expire but cache doesn't self-invalidate
-- **Lesson**: Always add retry-with-fresh-cache logic for auth tokens
-- **Occurrences**: C02, C07
+### Pattern 3: Cache Staleness / Session Pool Exhaustion
+- Cached tokens expire but cache doesn't self-invalidate; concurrent sessions can exhaust TA pools
+- **Lesson**: Always add retry-with-fresh-cache logic AND proper session close. Gate retries to session/auth errors only.
+- **Occurrences**: C02, C07, C00z
 
 ### Pattern 4: Mock Data Leakage
 - Placeholder/hardcoded data persisting in production code
@@ -146,6 +147,9 @@
 | DOCS strict mode | v3.9.9.7 — no fallback without passport data |
 | Smart field detection | v3.9.9.7 — file path vs passport number |
 | Retry-with-fresh-session | v3.9.7 — SOAP seat map |
+| Session close in finally | v3.9.9.9 — prevent TA leaks |
+| Retry-only on session errors | v3.9.9.9 — `isSoapSessionError()` regex gate |
+| GDS PNR-only cancel | v3.9.9.9 — `resolveCancelLocators()` |
 | Priority chain extraction | v3.9.6 — TTI airline PNR |
 | Dual PNR extraction | v3.9.9.7 — CreatePNR + GetBooking |
 | Dedup key comprehensive | v3.7.8 — all legs included |

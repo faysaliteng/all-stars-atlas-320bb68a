@@ -1,7 +1,7 @@
 # Seven Trip — GDS Integration History & Troubleshooting
 
 > Complete timeline of all GDS provider integrations, issues encountered, and solutions applied.
-> Last updated: 2026-03-13 (v3.9.9.8 — Dual PNR Display: Booking ID + Airlines PNR)
+> Last updated: 2026-03-13 (v3.9.9.9 — Sabre Cancel Hardening + Host TA Recovery)
 
 ---
 
@@ -155,6 +155,7 @@
 | Mar 12 | v3.5 | SessionCreateRQ, EnhancedSeatMapRQ v6, GetAncillaryOffersRQ v3 |
 | Mar 13 | v3.9.6 | Cancel PNR via SOAP fallback (when REST fails) |
 | Mar 13 | v3.9.7 | **Seat map retry** with session cache clearing |
+| Mar 13 | v3.9.9.9 | **Host TA exhaustion fix**: `resetSoapSessionCacheWithClose()`, retry-only on session errors, proper session close |
 
 ### Issues & Resolutions
 
@@ -169,12 +170,24 @@
 - **Root Cause**: `sabre-soap.js` had its own `getSabreConfig` but cancel function used undefined variable
 - **Fix**: Added local config loader + exported `cancelPnrViaSoap`
 
+#### Issue #3: Host TA Pool Exhaustion (v3.9.9.9)
+- **Symptom**: All SOAP calls failing with "You have reached the limit of Host TAs allocated to you"
+- **Root Cause**: Multiple concurrent SOAP sessions (seat maps + cancel retries) leaked without proper `SessionCloseRQ`, exhausting Sabre's Host Terminal Address pool for PCC J4YL / TAM pool ABBDJ4YL
+- **Fix**: 
+  1. `resetSoapSessionCacheWithClose()` — closes stale session before creating new one
+  2. `isSoapSessionError()` regex gate — only retries on session/auth/network errors, not application errors
+  3. `cancelPnrViaSoap()` always closes session in `finally` block
+- **Recovery**: TA pool auto-recovers after stale sessions expire (~15-30 min)
+- **Verification**: PNR AQDAMJ (airline PNR FDDPE6) cancelled successfully after TA pool recovery
+
 ### Session Management
 - Token cached with 14-minute TTL (Sabre sessions expire at 15 min)
 - `createSession()` → `SessionCreateRQ` → extracts `BinarySecurityToken`
 - `closeSession()` → `SessionCloseRQ` → invalidates cache
+- `resetSoapSessionCacheWithClose()` — closes stale session then clears cache (v3.9.9.9)
 - All SOAP calls share the cached session token
-- Automatic retry with fresh session on fault detection
+- Automatic retry with fresh session on fault detection (gated by `isSoapSessionError()` regex)
+- **Host TA limit**: PCC J4YL has finite TA allocation. If exhausted, wait ~30 min or contact Sabre to release/increase
 
 ---
 
@@ -253,7 +266,8 @@ SSR:       REST CreatePNR (at booking time) — meals, wheelchair, medical, FF#
 | Get Booking | Sabre REST | 1-2 seconds |
 | Ticket Status | Sabre REST | 1-2 seconds |
 | Ticketing | Sabre REST v1.3.0 | 3-8 seconds |
-| Booking Cancel | Sabre REST | 1-3 seconds |
+| Booking Cancel | Sabre SOAP (primary) | 3-8 seconds |
+| Booking Cancel | Sabre REST (403 blocked) | N/A — PCC lacks privileges |
 | Booking Cancel | TTI | 1-2 seconds |
 
 ---

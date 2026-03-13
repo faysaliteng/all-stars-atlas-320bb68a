@@ -2,7 +2,7 @@
 
 > Complete timeline of all development conversations, decisions made, bugs discovered, and features implemented.
 > This serves as the institutional memory of the project — every significant interaction is recorded.
-> Last updated: 2026-03-13 (v3.9.9.7 — Sabre DOCS Strict Mode + Airline PNR from CreatePNR)
+> Last updated: 2026-03-13 (v3.9.9.9 — Sabre Cancel Hardening + Host TA Recovery)
 
 ---
 
@@ -11,10 +11,10 @@
 | Metric | Count |
 |--------|-------|
 | **Development Days** | 18 (Mar 1–13, 2026) |
-| **Total Versions Released** | 40+ |
-| **Bugs Discovered & Fixed** | 43 |
+| **Total Versions Released** | 42+ |
+| **Bugs Discovered & Fixed** | 44 |
 | **GDS Providers Integrated** | 5 (TTI, BDFare, FlyHub, Sabre REST, Sabre SOAP) |
-| **VPS Deployments** | 8 |
+| **VPS Deployments** | 9 |
 | **Documentation Files** | 20 |
 
 ---
@@ -354,6 +354,8 @@ Placeholder data persisting in production code. Lesson: zero-mock audit + automa
 | 40 | v3.9.8 | Mar 13 | 🟡 | Post-booking extras missing seat UI | Added SeatMap component |
 | 41 | v3.9.9.7 | Mar 13 | 🔴 | Sabre DOCS silently dropped (passport field was file path) | Smart passport field detection + DOCS strict mode |
 | 42 | v3.9.9.7 | Mar 13 | 🔴 | AreaCityCode validation error | Removed AreaCityCode from ContactNumber |
+| 43 | v3.9.9.9 | Mar 13 | 🔴 | Sabre SOAP cancel blocked — Host TA exhaustion | `resetSoapSessionCacheWithClose()` + retry gate + session close in finally |
+| 44 | v3.9.9.9 | Mar 13 | 🔴 | Cancel using wrong PNR type (airline vs GDS) | `resolveCancelLocators()` ensures GDS PNR |
 
 ---
 
@@ -368,6 +370,14 @@ Placeholder data persisting in production code. Lesson: zero-mock audit + automa
 - **Enhanced**: 3-tier seat map fallback: SOAP → REST → TTI
 - **New routes**: `POST /flights/revalidate-price`, `GET /flights/booking/:pnr`, `GET /flights/ticket-status/:pnr`, `GET /flights/seats-rest`
 - **Result**: All 12 Sabre cert endpoints now implemented
+
+### v3.9.9.9 — Mar 13 — Sabre Cancel Hardening + Host TA Recovery
+- **🔴 Bug C00z**: Sabre SOAP cancel blocked — "You have reached the limit of Host TAs allocated to you"
+- **Root Cause**: Concurrent SOAP sessions (seat maps + cancel retries) leaked without proper close, exhausting TA pool
+- **Fix**: `resetSoapSessionCacheWithClose()`, `isSoapSessionError()` retry gate, always-close in finally
+- **Added**: `resolveCancelLocators()` — ensures GDS PNR used for cancel (not airline PNR)
+- **Added**: Cancel safety guard — local status only changes on GDS confirmation
+- **Verified**: PNR AQDAMJ (airline PNR FDDPE6) cancelled successfully after TA pool recovery
 
 ### v3.9.9.7 — Mar 13 — Sabre DOCS Strict Mode + Airline PNR from CreatePNR
 - **Analysis**: Studied Ticketlagbe HAR logs (`combined-air-booking`) and BDFare HAR — both use same Sabre backend and send full DOCS server-side

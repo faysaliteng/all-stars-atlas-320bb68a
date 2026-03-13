@@ -1,7 +1,7 @@
 # Seven Trip — Troubleshooting Guide
 
 > Solutions for every known issue encountered during development and production.
-> Last updated: 2026-03-13 (v3.9.9.8 — Dual PNR Display: Booking ID + Airlines PNR)
+> Last updated: 2026-03-13 (v3.9.9.9 — Sabre Cancel Hardening + Host TA Recovery)
 
 ---
 
@@ -57,6 +57,30 @@ UPDATE system_settings SET setting_value = JSON_SET(setting_value, '$.environmen
 ```bash
 pm2 restart seventrip-api  # Clears all in-memory caches
 ```
+
+### 5. Sabre Cancel Fails — "Host TAs Allocated" (v3.9.9.9)
+
+**Symptoms:** All SOAP calls fail with `You have reached the limit of Host TAs allocated to you`
+
+**Root Cause:** Too many concurrent SOAP sessions leaked without proper `SessionCloseRQ`, exhausting Sabre's Host Terminal Address pool for PCC J4YL.
+
+**Immediate fix:** Wait 15-30 minutes for stale sessions to auto-expire, then:
+```bash
+pm2 restart seventrip-api  # Clears session cache
+# Verify SOAP is working:
+curl -s "http://localhost:3001/api/flights/sabre-soap-diagnostic?origin=DAC&destination=BOM&departureDate=2026-03-20&airlineCode=AI&flightNumber=2184" | jq '.seatMap.success'
+```
+
+**If persistent:** Contact Sabre to increase TA allocation for PCC J4YL / TAM pool ABBDJ4YL.
+
+**Prevention (v3.9.9.9):**
+- `resetSoapSessionCacheWithClose()` properly closes stale sessions before creating new ones
+- SOAP retries only trigger on session/auth/network errors (not application errors)
+- Cancel always closes session in `finally` block
+
+### 6. Sabre REST Cancel Returns 403 NOT_AUTHORIZED
+
+**Not a code bug.** PCC J4YL lacks REST cancel API privileges. SOAP cancel (`OTA_CancelLLSRQ`) is the confirmed working method.
 
 ### 4. TTI Cancellation Fails
 

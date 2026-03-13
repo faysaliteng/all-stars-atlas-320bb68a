@@ -899,6 +899,13 @@ function parseDurationToMinutes(dur) {
   return 0;
 }
 
+function formatDuration(mins) {
+  if (!mins || mins <= 0) return '0h 0m';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h ${m}m`;
+}
+
 // GET /flights/:id
 router.get('/:id', async (req, res) => {
   try {

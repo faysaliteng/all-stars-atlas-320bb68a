@@ -41,6 +41,26 @@ cd ~/projects/all-stars-atlas && git pull origin main && cd backend && npm insta
 
 ---
 
+## ✈️ Run 30-Route Booking Test Suite
+
+After deploying backend changes, validate all booking modes:
+
+```bash
+cd ~/projects/all-stars-atlas && git pull origin main && pm2 restart seventrip-api && sleep 5 && bash backend/test-bookings.sh
+```
+
+Check detailed logs after test:
+```bash
+pm2 logs seventrip-api --lines 300 | grep -E '\[Sabre\]|\[Booking\]' | head -200
+```
+
+Verify Sabre environment:
+```bash
+pm2 logs seventrip-api --lines 50 | grep 'Config loaded'
+```
+
+---
+
 ## 🗄️ Database Migration
 
 When new migration files are added in `backend/database/`:

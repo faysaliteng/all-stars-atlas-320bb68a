@@ -704,7 +704,7 @@ async function createBooking({ flightData, passengers, contactInfo }) {
   if (!config) throw new Error('TTI API not configured');
 
   // Build passenger list for TTI — must match WCF DataContract format
-  const selectedItinRef = flightData._ttiItineraryRef || flightData.itineraryRef;
+  const selectedItinRef = flightData._ttiItineraryRef || flightData.itineraryRef || flightData?._ttiRawItinerary?.Ref || null;
   
   // ── Get search response's passenger groups to link named passengers ──
   const searchPassengers = flightData._ttiPassengers || [];

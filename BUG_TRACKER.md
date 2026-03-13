@@ -9,6 +9,7 @@
 
 | # | Version | Bug | Root Cause | Fix | Impact |
 |---|---------|-----|-----------|-----|--------|
+| C00z | v3.9.9.9 | Sabre cancel failing — Host TA exhaustion blocks all SOAP sessions | Too many concurrent SOAP sessions (seat maps + cancel retries) leaked without proper close, exhausting Sabre's TA pool allocation | `resetSoapSessionCacheWithClose()` + retry-only on session/auth errors + proper session close in finally block | All cancellations blocked until TA pool auto-recovers (~30 min) |
 | C00 | v3.9.9.7 | Sabre DOCS silently dropped — PNR created without passport data | `passport` field contained upload path not number; `no_special_req` fallback succeeded without DOCS | Smart passport field detection + DOCS strict mode (disable no_special_req fallback when DOCS exist) | Passport data missing from airline records |
 | C00a | v3.9.9.7 | Sabre booking fails with AreaCityCode validation | `AreaCityCode` not allowed in `ContactNumber` schema | Removed `AreaCityCode` from phone mapping | Bookings blocked |
 | C00b | v3.9.9.5 | One-way & multi-city Sabre bookings failing silently | Error caught but not returned to client; no `gdsError` in response | Added `gdsError` field to booking response + detailed logging per CreatePNR attempt | Bookings appeared local-only |

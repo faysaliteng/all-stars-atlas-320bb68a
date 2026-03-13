@@ -142,9 +142,12 @@
 | Measure | Implemented In |
 |---------|---------------|
 | Zero-mock enforcement | v3.0+ — no hardcoded flight/hotel data |
-| Schema-safe payload builders | v3.9.3+ — `toSabreDateTime()`, stripped DOCS |
+| Schema-safe payload builders | v3.9.3+ — `toSabreDateTime()`, full DOCS |
+| DOCS strict mode | v3.9.9.7 — no fallback without passport data |
+| Smart field detection | v3.9.9.7 — file path vs passport number |
 | Retry-with-fresh-session | v3.9.7 — SOAP seat map |
 | Priority chain extraction | v3.9.6 — TTI airline PNR |
+| Dual PNR extraction | v3.9.9.7 — CreatePNR + GetBooking |
 | Dedup key comprehensive | v3.7.8 — all legs included |
 | `safeJsonParse()` utility | v2.1 — prevents JSON.parse crashes |
 | Centralized validators | v3.5.1 — `isScopeInvalidRoute()` |

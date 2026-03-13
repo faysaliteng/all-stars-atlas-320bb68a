@@ -1115,6 +1115,40 @@ function extractSabrePnrFromCreateResponse(response) {
   }) || null;
 }
 
+function extractDistinctSabreAirlinePnr(payload, gdsPnr) {
+  const gds = String(gdsPnr || '').trim().toUpperCase();
+  const candidates = [];
+  const stack = [payload];
+  const visited = new Set();
+
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node || typeof node !== 'object') continue;
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (Array.isArray(node)) {
+      node.forEach((item) => stack.push(item));
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(node)) {
+      if (value && typeof value === 'object') {
+        stack.push(value);
+        continue;
+      }
+      if (typeof value !== 'string') continue;
+      if (!/(vendorlocator|airlinelocator|airlinepnr|reservationnumber|confirmationnumber|vendorconfirmation|supplierlocator|otherpnr)/i.test(key)) continue;
+      const code = value.trim().toUpperCase();
+      if (/^[A-Z0-9]{5,20}$/.test(code)) {
+        candidates.push(code);
+      }
+    }
+  }
+
+  return candidates.find((code) => code !== gds) || null;
+}
+
 function logSabreCreatePnrDebug(response) {
   console.log('[Sabre] CreatePNR response keys:', JSON.stringify(Object.keys(response || {})));
   const rs = response?.CreatePassengerNameRecordRS;
@@ -1206,12 +1240,12 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
 
     const travelersInfo = passengers.map((p, i) => {
       // Sabre schema does NOT allow NamePrefix — prepend title to GivenName (BDFare-proven format)
-      const title = (p.title || '').toUpperCase().replace(/\./g, '');
-      const givenName = (p.firstName || '').toUpperCase();
+      const title = (p.title || p.prefix || '').toUpperCase().replace(/\./g, '');
+      const givenName = (p.firstName || p.givenName || '').toUpperCase();
       const personName = {
         NameNumber: `${i + 1}.1`,
         GivenName: title ? `${title} ${givenName}` : givenName,
-        Surname: (p.lastName || '').toUpperCase(),
+        Surname: (p.lastName || p.surname || '').toUpperCase(),
       };
       return { PersonName: personName };
     });
@@ -1337,7 +1371,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
 
       // ── CTCM (Mobile Contact SSR) — Required by many airlines ──
-      const paxPhone = contactInfo?.phone || pax.phone || '';
+      const paxPhone = contactInfo?.phone || contactInfo?.contactPhone || pax.phone || '';
       if (paxPhone) {
         // Split phone: remove leading + and country code for E164 format
         const cleanPhone = paxPhone.replace(/[\s\-\(\)]/g, '');
@@ -1354,7 +1388,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
 
       // ── CTCE (Email Contact SSR) — Required by many airlines ──
-      const paxEmail = contactInfo?.email || pax.email || '';
+      const paxEmail = contactInfo?.email || contactInfo?.contactEmail || pax.email || '';
       if (paxEmail) {
         // Sabre CTCE format: replace @ with // and . with ..
         const emailForSSR = paxEmail.toUpperCase().replace('@', '//').replace(/\./g, '..');
@@ -1367,8 +1401,22 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
 
       // DOCS — Passport/Travel Document (full fields required by Sabre)
-      const passportNo = pax.passport || pax.passportNumber || '';
-      const passportExpiry = pax.passportExpiry || '';
+      const rawPassportField = typeof pax.passport === 'string' ? pax.passport.trim() : '';
+      const passportLooksLikeFilePath = /[\\/]/.test(rawPassportField) || /\.(jpg|jpeg|png|pdf|webp)$/i.test(rawPassportField);
+      const passportNumberSource = [
+        pax.passportNumber,
+        pax.passportNo,
+        pax.documentNumber,
+        pax.travelDocumentNumber,
+        !passportLooksLikeFilePath ? rawPassportField : '',
+      ].find((val) => val !== undefined && val !== null && String(val).trim() !== '');
+
+      const passportNo = passportNumberSource ? String(passportNumberSource).trim().toUpperCase() : '';
+      const passportExpiry = pax.passportExpiry || pax.passportEx || pax.documentExpiry || pax.expiryDate || '';
+
+      if (rawPassportField && passportLooksLikeFilePath && !pax.passportNumber && !pax.passportNo) {
+        console.warn(`[Sabre] Pax ${i + 1}: passport field looks like upload path, not passport number (${rawPassportField})`);
+      }
 
       if (passportNo) {
         // Sabre ExpirationDate schema requires YYYY-MM-DD format
@@ -1419,19 +1467,20 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
         }
 
         // Nationality — 2-letter country code
-        const nationality = (pax.nationality || pax.citizenshipCountry || 'BD').toUpperCase().substring(0, 2);
+        const nationalitySource = pax.nationalityCountry || pax.nationality || pax.citizenshipCountry || pax.countryCode || 'BD';
+        const nationality = String(nationalitySource).trim().toUpperCase().replace(/[^A-Z]/g, '').substring(0, 2) || 'BD';
 
         // Full DOCS payload matching what Sabre requires
         const docPayload = {
           Type: 'P',
-          Number: String(passportNo).toUpperCase(),
+          Number: passportNo,
           ExpirationDate: expiryFormatted,
           ...(dobFormatted ? { DateOfBirth: dobFormatted } : {}),
           Gender: genderCode,
           IssueCountry: nationality,
           Nationality: nationality,
-          GivenName: (pax.firstName || '').toUpperCase(),
-          Surname: (pax.lastName || '').toUpperCase(),
+          GivenName: String(pax.firstName || pax.givenName || '').toUpperCase(),
+          Surname: String(pax.lastName || pax.surname || '').toUpperCase(),
         };
 
         console.log(`[Sabre] DOCS pax ${i + 1}: ${docPayload.Number} | exp=${docPayload.ExpirationDate} | dob=${docPayload.DateOfBirth || 'N/A'} | gender=${docPayload.Gender} | nat=${docPayload.Nationality}`);
@@ -1465,7 +1514,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           CustomerInfo: {
             ContactNumbers: {
               ContactNumber: (() => {
-                const rawPhone = contactInfo?.phone || '01700000000';
+                const rawPhone = contactInfo?.phone || contactInfo?.contactPhone || '01700000000';
                 const clean = rawPhone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '');
                 let phoneNum = clean;
                 // If starts with 880, strip it for local number
@@ -1478,7 +1527,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
                 }];
               })(),
             },
-            Email: [{ Address: contactInfo?.email || '', Type: 'TO' }],
+            Email: [{ Address: contactInfo?.email || contactInfo?.contactEmail || '', Type: 'TO' }],
             PersonName: travelersInfo.map(t => t.PersonName),
           },
         },
@@ -1540,13 +1589,19 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       });
     }
 
-    // Variant 3: No SpecialReqDetails at all (some airlines reject DOCS/SSR for certain PCC configs)
-    const bodyNoSpecial = JSON.parse(JSON.stringify(body));
-    delete bodyNoSpecial.CreatePassengerNameRecordRQ.SpecialReqDetails;
-    requestVariants.push({
-      label: 'no_special_req',
-      body: bodyNoSpecial,
-    });
+    const hasPassportDocs = advancePassenger.some((entry) => entry?.Document?.Type === 'P');
+
+    // Variant 3: No SpecialReqDetails at all (fallback only when no passport DOCS are expected)
+    if (!hasPassportDocs) {
+      const bodyNoSpecial = JSON.parse(JSON.stringify(body));
+      delete bodyNoSpecial.CreatePassengerNameRecordRQ.SpecialReqDetails;
+      requestVariants.push({
+        label: 'no_special_req',
+        body: bodyNoSpecial,
+      });
+    } else {
+      console.warn('[Sabre] DOCS strict mode: skipping no_special_req fallback so booking cannot succeed without SSR DOCS');
+    }
 
     let finalResponse = null;
     let finalPnr = null;
@@ -1665,7 +1720,19 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       console.log(`[Sabre] Ticket time limit: ${ticketTimeLimit}`);
     }
 
-    return { success: true, pnr: finalPnr, ticketTimeLimit, rawResponse: finalResponse };
+    const airlinePnr = extractDistinctSabreAirlinePnr(finalResponse, finalPnr);
+    if (airlinePnr) {
+      console.log(`[Sabre] Distinct airline locator found in CreatePNR response: ${airlinePnr}`);
+    }
+
+    return {
+      success: true,
+      pnr: finalPnr,
+      airlinePnr: airlinePnr || null,
+      ticketTimeLimit,
+      createVariant: successfulVariant || null,
+      rawResponse: finalResponse,
+    };
   } catch (err) {
     console.error('[Sabre] CreateBooking failed:', err.message);
     return { success: false, error: err.message, pnr: null };
@@ -1785,7 +1852,7 @@ async function getBooking({ pnr }) {
         if (v && typeof v === 'object') { stack.push(v); continue; }
         if (typeof v !== 'string') continue;
         // Match vendor/airline locator keys
-        if (/(vendorlocator|airlinelocator|airlinepnr|airlineconfirmation|vendorconfirmation|vendorPNR|otherPNR|supplierlocator)/i.test(k)) {
+        if (/(vendorlocator|airlinelocator|airlinepnr|airlineconfirmation|vendorconfirmation|vendorPNR|otherPNR|supplierlocator|reservationnumber|confirmationnumber)/i.test(k)) {
           const code = v.trim().toUpperCase();
           if (/^[A-Z0-9]{5,20}$/.test(code) && code !== pnr.toUpperCase()) {
             vendorLocators.push(code);

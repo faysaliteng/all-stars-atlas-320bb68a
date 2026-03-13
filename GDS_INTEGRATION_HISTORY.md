@@ -1,7 +1,7 @@
 # Seven Trip — GDS Integration History & Troubleshooting
 
 > Complete timeline of all GDS provider integrations, issues encountered, and solutions applied.
-> Last updated: 2026-03-13 (v3.9.7)
+> Last updated: 2026-03-13 (v3.9.9)
 
 ---
 

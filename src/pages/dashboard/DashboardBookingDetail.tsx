@@ -42,6 +42,26 @@ function fmtTime(dt?: string) { if (!dt) return "—"; try { const d = new Date(
 function fmtDate(dt?: string) { if (!dt) return "—"; try { const d = new Date(dt); return isNaN(d.getTime()) ? dt : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); } catch { return dt; } }
 function getAirlineLogo(code?: string): string | null { return code ? `https://images.kiwi.com/airlines/64/${code}.png` : null; }
 
+function parseAmount(value: any): number | undefined {
+  if (value === null || value === undefined || value === "") return undefined;
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "string") {
+    const cleaned = value.replace(/[^0-9.-]/g, "");
+    if (!cleaned) return undefined;
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
+function pickAmount(...values: any[]): number | undefined {
+  for (const value of values) {
+    const parsed = parseAmount(value);
+    if (parsed !== undefined) return parsed;
+  }
+  return undefined;
+}
+
 function mapBooking(b: any) {
   const details = b.details || {};
   const outbound = details.outbound || {};
@@ -65,9 +85,60 @@ function mapBooking(b: any) {
   const source = outbound.source || details.source || "db";
   const isDomestic = details.isDomestic ?? (BD_AIRPORTS.includes(origin.toUpperCase()) && BD_AIRPORTS.includes(destination.toUpperCase()));
 
+  const rawAmount = pickAmount(
+    b.totalAmount,
+    details.totalAmount,
+    details.total,
+    outbound.totalAmount,
+    outbound.price,
+  ) || 0;
+
+  const rawBaseFare = pickAmount(
+    details.baseFare,
+    details.base_fare,
+    details.fare?.baseFare,
+    details.fare?.base_fare,
+    outbound.baseFare,
+    outbound.base_fare,
+    outbound.fare?.baseFare,
+    b.baseFare,
+    b.base_fare,
+  );
+
+  const rawTaxes = pickAmount(
+    details.taxes,
+    details.tax,
+    details.taxesAndFees,
+    details.taxes_and_fees,
+    details.fare?.taxes,
+    outbound.taxes,
+    outbound.tax,
+    b.taxes,
+    b.taxes_and_fees,
+  );
+
+  const serviceCharge = pickAmount(
+    details.serviceCharge,
+    details.service_charge,
+    details.serviceFee,
+    details.service_fee,
+    outbound.serviceCharge,
+    outbound.service_charge,
+    b.serviceCharge,
+    b.service_charge,
+  ) || 0;
+
+  let baseFare = rawBaseFare || 0;
+  const taxes = rawTaxes || 0;
+
+  if (baseFare <= 0 && rawAmount > 0) {
+    const knownExtra = taxes + serviceCharge;
+    baseFare = knownExtra > 0 ? Math.max(0, rawAmount - knownExtra) : rawAmount;
+  }
+
   return {
     id: b.bookingRef || b.id, rawId: b.id, type: b.bookingType || "flight", status: b.status || "pending",
-    amount: `৳${(b.totalAmount || 0).toLocaleString()}`, rawAmount: b.totalAmount || 0,
+    amount: `৳${rawAmount.toLocaleString()}`, rawAmount,
     date: b.bookedAt ? new Date(b.bookedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—",
     pnr: b.pnr || details.gdsPnr || "—",
     gdsPnr: details.gdsPnr || b.pnr || null,
@@ -79,7 +150,7 @@ function mapBooking(b: any) {
     airline, airlineCode, flightNumber, cabinClass, aircraft, departureTime, arrivalTime, duration, stops, baggage, refundable,
     legs, returnFlight, isRoundTrip, source, origin, destination,
     details, passengers, contactInfo: b.contactInfo || {}, addOns: details.addOns || {},
-    baseFare: details.baseFare || 0, taxes: details.taxes || 0, serviceCharge: details.serviceCharge || 0,
+    baseFare, taxes, serviceCharge,
     isDomestic,
   };
 }

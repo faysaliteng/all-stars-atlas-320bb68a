@@ -2246,6 +2246,133 @@ async function cancelBooking({ pnr }) {
   }
 }
 
+/**
+ * Assign seats to a PNR using UpdatePassengerNameRecord
+ * Seats are assigned via SSR RQST (seat request) per segment per passenger
+ * @param {string} pnr - Existing PNR
+ * @param {Array} seatAssignments - [{ passengerIndex: 0, segmentNumber: 1, seatNumber: '12A' }]
+ */
+async function assignSeats({ pnr, seatAssignments }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  if (!pnr || !seatAssignments?.length) {
+    return { success: false, error: 'PNR and seat assignments are required' };
+  }
+
+  console.log(`[Sabre] Assigning ${seatAssignments.length} seat(s) to PNR ${pnr}`);
+
+  try {
+    // First, retrieve the PNR to get segment details
+    const booking = await getBooking({ pnr });
+    if (!booking?.success) {
+      return { success: false, error: `Cannot retrieve PNR ${pnr}: ${booking?.error || 'Unknown'}` };
+    }
+
+    const segments = booking.flights || [];
+    const passengers = booking.passengers || [];
+
+    // Build seat SSR requests
+    const seatRequests = seatAssignments.map(sa => {
+      const segIdx = (sa.segmentNumber || 1) - 1;
+      const paxIdx = sa.passengerIndex || 0;
+      const seg = segments[segIdx] || {};
+      const pax = passengers[paxIdx] || {};
+      const seatRow = String(sa.seatNumber || '').replace(/[A-Za-z]+$/, '');
+      const seatLetter = String(sa.seatNumber || '').replace(/^\d+/, '');
+      const airlineCode = seg.airlineCode || seg.operatingAirlineCode || '';
+
+      return {
+        SSR_Code: 'RQST',
+        Text: `${seatRow}${seatLetter}`,
+        PersonName: { NameNumber: `${paxIdx + 1}.1` },
+        SegmentNumber: String(segIdx + 1),
+        VendorPrefs: airlineCode ? { Airline: { Code: airlineCode } } : undefined,
+      };
+    });
+
+    const body = {
+      CreatePassengerNameRecordRQ: {
+        targetCity: config.pcc,
+        AirBook: {
+          RetryRebook: { Option: true },
+        },
+        SpecialReqDetails: {
+          SpecialService: {
+            SpecialServiceInfo: {
+              Service: seatRequests,
+            },
+          },
+        },
+        PostProcessing: {
+          EndTransaction: { Source: { ReceivedFrom: 'SEVEN TRIP SEAT' } },
+        },
+      },
+    };
+
+    // Use UpdatePassengerNameRecord approach - modify existing PNR
+    const response = await sabreRequest(config, `/v2.4.0/passenger/records?mode=update&recordLocator=${pnr}`, body, 'POST', 30000);
+    
+    const updatedPnr = extractSabrePnrFromCreateResponse(response);
+    if (updatedPnr) {
+      console.log(`[Sabre] ✓ Seats assigned to PNR ${pnr}`);
+      return { success: true, pnr: updatedPnr, rawResponse: response };
+    }
+
+    console.warn('[Sabre] Seat assignment response did not confirm PNR');
+    return { success: false, error: 'Seat assignment may not have been confirmed', rawResponse: response };
+  } catch (err) {
+    console.error(`[Sabre] Seat assignment failed for PNR ${pnr}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Add ancillary SSRs (extra baggage, meals) to an existing PNR
+ */
+async function addAncillarySSR({ pnr, ssrList }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  if (!pnr || !ssrList?.length) {
+    return { success: false, error: 'PNR and SSR list required' };
+  }
+
+  console.log(`[Sabre] Adding ${ssrList.length} ancillary SSR(s) to PNR ${pnr}`);
+
+  try {
+    const body = {
+      CreatePassengerNameRecordRQ: {
+        targetCity: config.pcc,
+        SpecialReqDetails: {
+          SpecialService: {
+            SpecialServiceInfo: {
+              Service: ssrList.map(ssr => ({
+                SSR_Code: ssr.code || 'OTHS',
+                Text: ssr.text || '',
+                PersonName: { NameNumber: `${(ssr.passengerIndex || 0) + 1}.1` },
+                SegmentNumber: String(ssr.segmentNumber || 'A'),
+                ...(ssr.airlineCode ? { VendorPrefs: { Airline: { Code: ssr.airlineCode } } } : {}),
+              })),
+            },
+          },
+        },
+        PostProcessing: {
+          EndTransaction: { Source: { ReceivedFrom: 'SEVEN TRIP ANC' } },
+        },
+      },
+    };
+
+    const response = await sabreRequest(config, `/v2.4.0/passenger/records?mode=update&recordLocator=${pnr}`, body, 'POST', 30000);
+    const updatedPnr = extractSabrePnrFromCreateResponse(response);
+    console.log(`[Sabre] Ancillary SSR update result: PNR=${updatedPnr || pnr}`);
+    return { success: true, pnr: updatedPnr || pnr, rawResponse: response };
+  } catch (err) {
+    console.error(`[Sabre] Ancillary SSR failed for PNR ${pnr}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = {
   searchFlights,
   createBooking,
@@ -2255,6 +2382,8 @@ module.exports = {
   getBooking,
   checkTicketStatus,
   getSeatsRest,
+  assignSeats,
+  addAncillarySSR,
   getSabreConfig,
   clearSabreConfigCache,
 };

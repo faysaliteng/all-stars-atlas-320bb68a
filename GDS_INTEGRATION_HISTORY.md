@@ -1,7 +1,7 @@
 # Seven Trip — GDS Integration History & Troubleshooting
 
 > Complete timeline of all GDS provider integrations, issues encountered, and solutions applied.
-> Last updated: 2026-03-13 (v3.9.9.5 — Production Sabre + Dual PNR + 30-Route Test Suite)
+> Last updated: 2026-03-13 (v3.9.9.6 — Full Provider Booking Wiring + Seat/Ancillary APIs)
 
 ---
 
@@ -25,6 +25,8 @@
 | Mar 9 | v2.5 | Initial integration — SearchFlights + CreateBooking |
 | Mar 10 | v3.0 | Enhanced seat availability extraction from AirCoupons |
 | Mar 11 | v3.3 | Cabin class mapping (case-insensitive) |
+| Mar 13 | v3.9.6 | **Critical fix**: Cancel API requires airline PNR, not TTI booking ID |
+| Mar 13 | v3.9.9.6 | **CHLD/INFT SSR fix**: Added SpecialServices with DateOfBirth for child/infant passengers |
 | Mar 13 | v3.9.6 | **Critical fix**: Cancel API requires airline PNR, not TTI booking ID |
 
 ### Issues & Resolutions
@@ -60,6 +62,7 @@
 |------|---------|-------|
 | Mar 9 | v2.5 | Initial integration |
 | Mar 12 | v3.7.7 | **Complete normalizer rewrite** to match actual API v2 structure |
+| Mar 13 | v3.9.9.6 | **Booking wired** — `createBooking()` now called from `POST /flights/book` for BDFare-sourced flights |
 
 ### Issues & Resolutions
 
@@ -197,8 +200,10 @@ key = flightNumber + departureTime + arrivalTime + destination + stops +
 ### Provider Priority for Ancillaries
 ```
 Seat Map:  Sabre SOAP EnhancedSeatMapRQ (pre+post) → Sabre REST GetSeats v1 (post-booking PNR only) → TTI → "Not Available"
+Seat Assignment: POST /flights/assign-seats → Sabre UpdatePNR SSR RQST (post-booking) → TTI UpdateBooking SpecialService SEAT
 Meals:     Sabre SOAP GetAncillaryOffersRQ (post-booking only) → TTI → empty
 Baggage:   Sabre SOAP GetAncillaryOffersRQ (post-booking only) → TTI → empty
+Ancillary Purchase: POST /flights/purchase-ancillary → Sabre UpdatePNR SSR (XBAG, meal codes) via addAncillarySSR
 SSR:       REST CreatePNR (at booking time) — meals, wheelchair, medical, FF#
 ```
 

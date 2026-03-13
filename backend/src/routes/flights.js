@@ -7,8 +7,8 @@ const db = require('../config/db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { notifyBookingConfirm } = require('../services/notify');
 const { searchFlights: ttiSearch, createBooking: ttiCreateBooking } = require('./tti-flights');
-const { searchFlights: bdfSearch } = require('./bdf-flights');
-const { searchFlights: flyhubSearch } = require('./flyhub-flights');
+const { searchFlights: bdfSearch, createBooking: bdfCreateBooking } = require('./bdf-flights');
+const { searchFlights: flyhubSearch, createBooking: flyhubCreateBooking } = require('./flyhub-flights');
 const { searchFlights: sabreSearch, createBooking: sabreCreateBooking, revalidatePrice: sabreRevalidate, getBooking: sabreGetBooking, checkTicketStatus: sabreCheckTickets, getSeatsRest: sabreGetSeatsRest } = require('./sabre-flights');
 const { searchFlights: galileoSearch } = require('./galileo-flights');
 const { searchFlights: ndcSearch } = require('./ndc-flights');
@@ -154,8 +154,94 @@ router.get('/seats-rest', async (req, res) => {
   }
 });
 
+// POST /flights/assign-seats — assign seats to an existing PNR
+router.post('/assign-seats', authenticate, async (req, res) => {
+  try {
+    const { pnr, seatAssignments, source } = req.body;
+    if (!pnr || !seatAssignments?.length) {
+      return res.status(400).json({ message: 'pnr and seatAssignments[] required' });
+    }
 
-// GET /flights/tti-diagnostic — test TTI API connectivity
+    const providerSource = String(source || '').toLowerCase();
+
+    if (providerSource.includes('sabre') || !providerSource) {
+      // Default to Sabre seat assignment
+      const { assignSeats } = require('./sabre-flights');
+      const result = await assignSeats({ pnr, seatAssignments });
+      return res.json(result);
+    }
+
+    if (providerSource.includes('tti') || providerSource.includes('astra')) {
+      // TTI seat assignment via SpecialService with Seat data
+      // TTI uses UpdateBooking with SpecialServices[].Code="SEAT", Data.Seat.SeatRow + SeatLetter
+      const { ttiRequest, getTTIConfig } = require('./tti-flights');
+      const config = await getTTIConfig();
+      if (!config) return res.status(500).json({ message: 'TTI not configured' });
+
+      const specialServices = seatAssignments.map(sa => ({
+        Code: 'SEAT',
+        RefPassenger: String((sa.passengerIndex || 0) + 1),
+        RefSegment: String(sa.segmentNumber || 1),
+        Data: {
+          Seat: {
+            SeatRow: parseInt(String(sa.seatNumber || '').replace(/[A-Za-z]+$/, '')) || 0,
+            SeatLetter: String(sa.seatNumber || '').replace(/^\d+/, '') || 'A',
+          },
+        },
+      }));
+
+      try {
+        const response = await ttiRequest('UpdateBooking', {
+          RequestInfo: { AuthenticationKey: config.key },
+          BookingID: pnr,
+          SpecialServices: specialServices,
+        });
+        return res.json({ success: true, rawResponse: response });
+      } catch (ttiErr) {
+        return res.json({ success: false, error: ttiErr.message });
+      }
+    }
+
+    return res.status(400).json({ message: `Seat assignment not supported for provider: ${source}` });
+  } catch (err) {
+    console.error('[AssignSeats] Error:', err.message);
+    res.status(500).json({ message: 'Failed to assign seats', error: err.message });
+  }
+});
+
+// POST /flights/purchase-ancillary — purchase ancillary services (extra baggage, meals) for an existing PNR
+router.post('/purchase-ancillary', authenticate, async (req, res) => {
+  try {
+    const { pnr, ancillaries, source } = req.body;
+    // ancillaries: [{ type: 'baggage'|'meal', code: 'XBAG'|'VGML', passengerIndex: 0, segmentNumber: 1, offerId?: string }]
+    if (!pnr || !ancillaries?.length) {
+      return res.status(400).json({ message: 'pnr and ancillaries[] required' });
+    }
+
+    const providerSource = String(source || '').toLowerCase();
+
+    if (providerSource.includes('sabre') || !providerSource) {
+      const { addAncillarySSR } = require('./sabre-flights');
+      const ssrList = ancillaries.map(anc => ({
+        code: anc.code || 'OTHS',
+        text: anc.text || `${anc.code} - ${anc.type}`,
+        passengerIndex: anc.passengerIndex || 0,
+        segmentNumber: anc.segmentNumber || 'A',
+        airlineCode: anc.airlineCode || '',
+      }));
+
+      const result = await addAncillarySSR({ pnr, ssrList });
+      return res.json(result);
+    }
+
+    return res.status(400).json({ message: `Ancillary purchase not supported for provider: ${source}` });
+  } catch (err) {
+    console.error('[PurchaseAncillary] Error:', err.message);
+    res.status(500).json({ message: 'Failed to purchase ancillary', error: err.message });
+  }
+});
+
+
 router.get('/tti-diagnostic', async (req, res) => {
   try {
     const { getTTIConfig, ttiRequest } = require('./tti-flights');
@@ -857,7 +943,9 @@ router.post('/book', authenticate, async (req, res) => {
     const airlineCode = String(flightData?.airlineCode || '').toUpperCase();
     const isTtiFlight = flightSource.includes('tti') || flightSource.includes('astra') || ['2A', 'S2'].includes(airlineCode);
     const isSabreFlight = flightSource.includes('sabre') || !!flightData?._sabreSource;
-    const isGdsFlight = isTtiFlight || isSabreFlight;
+    const isBdfareFlight = flightSource.includes('bdfare') || flightSource.includes('bdf');
+    const isFlyhubFlight = flightSource.includes('flyhub');
+    const isGdsFlight = isTtiFlight || isSabreFlight || isBdfareFlight || isFlyhubFlight;
 
     if (isGdsFlight) {
       const missingPassportIndex = passengers.findIndex((p) => !p.passportNumber || !p.passportExpiry || !p.nationality);
@@ -998,7 +1086,83 @@ router.post('/book', authenticate, async (req, res) => {
       }
     }
 
-    // GDS PNR is MANDATORY — without it, booking is failed
+    // ── BDFare booking ──
+    if (!gdsPnr && isBdfareFlight) {
+      console.log('[Booking] BDFare flight detected — creating GDS booking...');
+      try {
+        const bdfOfferId = flightData?._bdfOfferId || flightData?.id || null;
+        if (!bdfOfferId) {
+          console.warn('[Booking] BDFare: No offerId found in flight data');
+        } else {
+          gdsBookingResult = await bdfCreateBooking({
+            offerId: bdfOfferId,
+            passengers: passengers.map(p => ({
+              type: p.type === 'child' ? 'CHD' : p.type === 'infant' ? 'INF' : 'ADT',
+              title: p.title || 'Mr',
+              firstName: p.firstName,
+              lastName: p.lastName,
+              dob: p.dateOfBirth || p.dob,
+              gender: p.gender || 'male',
+              nationality: p.nationality || 'BD',
+              passport: p.passportNumber || p.passport,
+              passportExpiry: p.passportExpiry,
+            })),
+            contactInfo: contactInfo || {},
+          });
+
+          if (gdsBookingResult?.success && gdsBookingResult?.pnr) {
+            gdsPnr = gdsBookingResult.pnr;
+            airlinePnr = gdsBookingResult.pnr;
+            gdsBookingId = gdsBookingResult.orderId || null;
+            console.log('[Booking] ✓ BDFare PNR:', gdsPnr, '| OrderId:', gdsBookingId);
+          } else {
+            console.warn('[Booking] BDFare booking failed:', gdsBookingResult?.error);
+          }
+        }
+      } catch (bdfErr) {
+        console.error('[Booking] BDFare CreateBooking exception:', bdfErr.message);
+      }
+    }
+
+    // ── FlyHub booking ──
+    if (!gdsPnr && isFlyhubFlight) {
+      console.log('[Booking] FlyHub flight detected — creating GDS booking...');
+      try {
+        const flyhubResultId = flightData?._flyhubResultId || flightData?.id || null;
+        if (!flyhubResultId) {
+          console.warn('[Booking] FlyHub: No resultId found in flight data');
+        } else {
+          gdsBookingResult = await flyhubCreateBooking({
+            resultId: flyhubResultId,
+            passengers: passengers.map(p => ({
+              title: p.title || 'Mr',
+              firstName: p.firstName,
+              lastName: p.lastName,
+              type: p.type === 'child' ? 'Child' : p.type === 'infant' ? 'Infant' : 'Adult',
+              dob: p.dateOfBirth || p.dob,
+              gender: p.gender || 'male',
+              nationality: p.nationality || 'BD',
+              passport: p.passportNumber || p.passport,
+              passportExpiry: p.passportExpiry,
+            })),
+            contactInfo: contactInfo || {},
+          });
+
+          if (gdsBookingResult?.success && gdsBookingResult?.pnr) {
+            gdsPnr = gdsBookingResult.pnr;
+            airlinePnr = gdsBookingResult.pnr;
+            gdsBookingId = gdsBookingResult.bookingId || null;
+            console.log('[Booking] ✓ FlyHub PNR:', gdsPnr, '| BookingId:', gdsBookingId);
+          } else {
+            console.warn('[Booking] FlyHub booking failed:', gdsBookingResult?.error);
+          }
+        }
+      } catch (fhErr) {
+        console.error('[Booking] FlyHub CreateBooking exception:', fhErr.message);
+      }
+    }
+
+
     // Airline PNR is best-effort (often only available after ticketing for Sabre)
     if (isGdsFlight && !gdsPnr) {
       return res.status(422).json({
@@ -1099,6 +1263,8 @@ router.post('/cancel', authenticate, async (req, res) => {
     const airlineCode = String(details.outbound?.airlineCode || details.airlineCode || '').toUpperCase();
     const isSabreSource = source.includes('sabre');
     const isTtiSource = source.includes('tti') || source.includes('astra') || ['2A', 'S2'].includes(airlineCode);
+    const isBdfareSource = source.includes('bdfare') || source.includes('bdf');
+    const isFlyhubSource = source.includes('flyhub');
 
     // For TTI, provider booking id from GDS response is required (local booking.id is NOT valid for TTI Cancel API)
     const ttiBookingId = details?.gdsBookingResult?.ttiBookingId
@@ -1121,6 +1287,16 @@ router.post('/cancel', authenticate, async (req, res) => {
         } else if (isTtiSource) {
           const { cancelBooking: ttiCancelBooking } = require('./tti-flights');
           gdsCancelResult = await ttiCancelBooking({ pnr: gdsPnr, bookingId: ttiBookingId });
+          if (!gdsCancelResult?.success) gdsCancelFailed = true;
+        } else if (isBdfareSource) {
+          const { cancelBooking: bdfCancelBooking } = require('./bdf-flights');
+          const bdfOrderId = details?.gdsBookingId || details?.gdsBookingResult?.orderId || null;
+          gdsCancelResult = await bdfCancelBooking({ orderId: bdfOrderId, pnr: gdsPnr });
+          if (!gdsCancelResult?.success) gdsCancelFailed = true;
+        } else if (isFlyhubSource) {
+          const { cancelBooking: fhCancelBooking } = require('./flyhub-flights');
+          const fhBookingId = details?.gdsBookingId || details?.gdsBookingResult?.bookingId || gdsPnr;
+          gdsCancelResult = await fhCancelBooking({ bookingId: fhBookingId, pnr: gdsPnr });
           if (!gdsCancelResult?.success) gdsCancelFailed = true;
         } else {
           gdsCancelFailed = true;

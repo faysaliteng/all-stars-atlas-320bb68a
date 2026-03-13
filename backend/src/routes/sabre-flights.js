@@ -1439,8 +1439,8 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
 
       if (ssrList.length > 0) {
         specialServiceInfo.Service = ssrList.map(ssr => ({
-          SSRCode: ssr.SSRCode,
-          ...(ssr.AirlineCode ? { Airline: { Code: ssr.AirlineCode } } : {}),
+          SSR_Code: ssr.SSRCode,
+          ...(ssr.AirlineCode ? { VendorPrefs: { Airline: { Code: ssr.AirlineCode } } } : {}),
           Text: ssr.Text,
           PersonName: ssr.PersonName,
           SegmentNumber: ssr.SegmentNumber,

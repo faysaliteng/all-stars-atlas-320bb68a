@@ -155,6 +155,7 @@
 | Mar 12 | v3.5 | SessionCreateRQ, EnhancedSeatMapRQ v6, GetAncillaryOffersRQ v3 |
 | Mar 13 | v3.9.6 | Cancel PNR via SOAP fallback (when REST fails) |
 | Mar 13 | v3.9.7 | **Seat map retry** with session cache clearing |
+| Mar 13 | v3.9.9.9 | **Host TA exhaustion fix**: `resetSoapSessionCacheWithClose()`, retry-only on session errors, proper session close |
 
 ### Issues & Resolutions
 

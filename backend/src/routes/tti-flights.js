@@ -1009,6 +1009,17 @@ async function createBooking({ flightData, passengers, contactInfo }) {
 
     console.log('[TTI BOOKING] ✅ Extracted — AirlinePNR:', airlinePnr, '| TTI BookingId:', ttiBookingId, '| PNR (used):', pnr, '| TimeLimit:', ticketTimeLimit);
 
+    if (!pnr) {
+      return {
+        success: false,
+        error: 'TTI booking succeeded upstream but no airline/GDS PNR was returned',
+        pnr: null,
+        airlinePnr: null,
+        ttiBookingId,
+        rawResponse: response,
+      };
+    }
+
     return {
       success: true,
       pnr,

@@ -417,11 +417,11 @@ router.patch('/bookings/:id/archive', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }
 });
 
-// POST /admin/bookings/bulk-cancel — cancel bookings via GDS (or force-local) in small batches
-// Accepts: filter, bookingIds[], batchSize (default 3), offset (default 0), skipGds (default false)
+// POST /admin/bookings/bulk-cancel — cancel ONE booking per request; frontend loops through all
+// Accepts: filter, bookingIds[], offset (default 0), skipGds (default false)
 router.post('/bookings/bulk-cancel', async (req, res) => {
   try {
-    const { filter = 'reserved', bookingIds, batchSize = 3, offset = 0, skipGds = false } = req.body;
+    const { filter = 'reserved', bookingIds, offset = 0, skipGds = false } = req.body;
     let sql, params = [];
 
     if (filter === 'selected' && bookingIds?.length) {
@@ -434,52 +434,46 @@ router.post('/bookings/bulk-cancel', async (req, res) => {
       sql = `SELECT * FROM bookings WHERE pnr IS NOT NULL AND pnr != '' AND status = 'on_hold' AND (archived IS NULL OR archived = 0)`;
     }
 
-    // Add deterministic ordering so offset-based pagination is stable
     sql += ' ORDER BY booked_at ASC';
-
     const [allBookings] = await db.query(sql, params);
-    const totalRemaining = allBookings.length;
-    const batch = allBookings.slice(offset, offset + batchSize);
-    console.log(`[Admin Bulk Cancel] filter=${filter} total=${totalRemaining} offset=${offset} batchSize=${batchSize} thisBatch=${batch.length}`);
+    const totalBookings = allBookings.length;
 
-    const results = [];
-    for (const booking of batch) {
-      const details = safeJsonParse(booking.details, {});
-      const flightSource = (details.outbound?.source || '').toLowerCase();
-      const gdsPnr = booking.pnr || details.gdsPnr || details.outbound?.pnr || null;
-      const gdsBookingId = details.gdsBookingResult?.ttiBookingId || details.gdsBookingResult?.bookingId || null;
-      const bdfOrderId = details.gdsBookingResult?.orderId || null;
-      const isTTI = flightSource === 'tti' || details.outbound?.airlineCode === '2A' || details.outbound?.airlineCode === 'S2';
+    if (offset >= totalBookings) {
+      return res.json({ done: true, totalBookings, message: 'All bookings processed' });
+    }
 
-      const result = {
-        id: booking.id,
-        bookingRef: booking.booking_ref,
-        pnr: gdsPnr,
-        source: flightSource || (isTTI ? 'tti' : 'unknown'),
-        oldStatus: booking.status,
-      };
+    const booking = allBookings[offset];
+    const details = safeJsonParse(booking.details, {});
+    const flightSource = (details.outbound?.source || '').toLowerCase();
+    const gdsPnr = booking.pnr || details.gdsPnr || details.outbound?.pnr || null;
+    const gdsBookingId = details.gdsBookingResult?.ttiBookingId || details.gdsBookingResult?.bookingId || null;
+    const bdfOrderId = details.gdsBookingResult?.orderId || null;
+    const isTTI = flightSource === 'tti' || details.outbound?.airlineCode === '2A' || details.outbound?.airlineCode === 'S2';
 
-      if (!gdsPnr && !skipGds) {
-        result.status = 'skipped';
-        result.reason = 'No PNR';
-        results.push(result);
-        continue;
-      }
+    const result = {
+      id: booking.id,
+      bookingRef: booking.booking_ref,
+      pnr: gdsPnr,
+      source: flightSource || (isTTI ? 'tti' : 'unknown'),
+      oldStatus: booking.status,
+    };
 
-      // Force-cancel mode: skip GDS, just update DB
-      if (skipGds) {
-        await db.query('UPDATE bookings SET status = ? WHERE id = ?', ['cancelled', booking.id]);
-        await db.query('UPDATE tickets SET status = ? WHERE booking_id = ?', ['cancelled', booking.id]);
-        result.status = 'cancelled';
-        result.gdsResponse = { success: true, method: 'force-local (GDS skipped)' };
-        console.log(`[Bulk Cancel] ✓ ${booking.booking_ref} force-cancelled locally (GDS skipped)`);
-        results.push(result);
-        continue;
-      }
-
-      let gdsResult = null;
+    if (!gdsPnr && !skipGds) {
+      result.status = 'skipped';
+      result.reason = 'No PNR';
+    } else if (skipGds) {
+      // Force-cancel locally — skip GDS
+      await db.query('UPDATE bookings SET status = ? WHERE id = ?', ['cancelled', booking.id]);
+      await db.query('UPDATE tickets SET status = ? WHERE booking_id = ?', ['cancelled', booking.id]);
+      result.status = 'cancelled';
+      result.method = 'force-local';
+      console.log(`[Bulk Cancel] ✓ ${booking.booking_ref} force-cancelled locally`);
+    } else {
+      // Real GDS cancel — same logic as single cancel via PUT /admin/bookings/:id
       try {
+        let gdsResult = null;
         console.log(`[Bulk Cancel] Cancelling ${booking.booking_ref} | PNR: ${gdsPnr} | Source: ${flightSource}`);
+
         if (isTTI) {
           gdsResult = await ttiFlights.cancelBooking({ pnr: gdsPnr, bookingId: gdsBookingId });
         } else if (flightSource === 'bdfare') {
@@ -496,12 +490,11 @@ router.post('/bookings/bulk-cancel', async (req, res) => {
           await db.query('UPDATE bookings SET status = ? WHERE id = ?', ['cancelled', booking.id]);
           await db.query('UPDATE tickets SET status = ? WHERE booking_id = ?', ['cancelled', booking.id]);
           result.status = 'cancelled';
-          result.gdsResponse = { success: true, method: gdsResult.methodUsed || null };
-          console.log(`[Bulk Cancel] ✓ ${booking.booking_ref} PNR ${gdsPnr} cancelled`);
+          result.method = gdsResult.methodUsed || flightSource;
+          console.log(`[Bulk Cancel] ✓ ${booking.booking_ref} PNR ${gdsPnr} cancelled via GDS`);
         } else {
           result.status = 'gds_failed';
           result.reason = gdsResult?.error || 'GDS returned failure';
-          result.gdsResponse = gdsResult;
           console.warn(`[Bulk Cancel] ✗ ${booking.booking_ref} GDS cancel failed: ${result.reason}`);
         }
       } catch (err) {
@@ -509,23 +502,11 @@ router.post('/bookings/bulk-cancel', async (req, res) => {
         result.reason = err.message;
         console.error(`[Bulk Cancel] ✗ ${booking.booking_ref} exception: ${err.message}`);
       }
-
-      results.push(result);
     }
 
-    const cancelled = results.filter(r => r.status === 'cancelled').length;
-    const failed = results.filter(r => r.status === 'gds_failed' || r.status === 'error').length;
-    const skipped = results.filter(r => r.status === 'skipped').length;
-    const nextOffset = offset + batchSize;
-    const hasMore = nextOffset < totalRemaining;
-
-    console.log(`[Admin Bulk Cancel] Batch done: ${cancelled}/${batch.length} cancelled | hasMore=${hasMore} nextOffset=${nextOffset}`);
-
     res.json({
-      message: `Batch ${Math.floor(offset / batchSize) + 1}: ${cancelled} cancelled, ${failed} failed, ${skipped} skipped`,
-      summary: { total: batch.length, cancelled, failed, skipped },
-      pagination: { totalBookings: totalRemaining, offset, batchSize, nextOffset, hasMore },
-      results,
+      result,
+      progress: { current: offset + 1, total: totalBookings, hasMore: offset + 1 < totalBookings },
     });
   } catch (err) {
     console.error('[Admin Bulk Cancel] Error:', err.message);

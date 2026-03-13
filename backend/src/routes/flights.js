@@ -1270,30 +1270,35 @@ router.post('/book', authenticate, async (req, res) => {
         if (gdsBookingResult?.success && gdsBookingResult?.pnr) {
           gdsPnr = gdsBookingResult.pnr;
           gdsBookingId = gdsBookingResult.pnr;
-          console.log('[Booking] ✓ Sabre GDS PNR created:', gdsPnr);
+          airlinePnr = gdsBookingResult.airlinePnr || null;
+          console.log('[Booking] ✓ Sabre GDS PNR created:', gdsPnr, '| createVariant:', gdsBookingResult.createVariant || 'unknown');
 
-          try {
-            console.log('[Booking] Fetching GetBooking to extract distinct Airline PNR...');
-            const bookingDetail = await sabreGetBooking({ pnr: gdsPnr });
-            if (bookingDetail?.success) {
-              // Use vendorLocators array from enhanced GetBooking
-              if (bookingDetail.vendorLocators?.length > 0) {
-                airlinePnr = bookingDetail.vendorLocators[0];
-                console.log('[Booking] ✓ Distinct Airline PNR from vendorLocators:', airlinePnr);
-              } else {
-                // Fallback: deep scan raw response
-                airlinePnr = extractDistinctSabreAirlinePnr(bookingDetail.rawResponse, gdsPnr);
-                if (airlinePnr) {
-                  console.log('[Booking] ✓ Distinct Airline PNR from deep scan:', airlinePnr);
+          if (airlinePnr) {
+            console.log('[Booking] ✓ Distinct Airline PNR from CreatePNR response:', airlinePnr);
+          } else {
+            try {
+              console.log('[Booking] Fetching GetBooking to extract distinct Airline PNR...');
+              const bookingDetail = await sabreGetBooking({ pnr: gdsPnr });
+              if (bookingDetail?.success) {
+                // Use vendorLocators array from enhanced GetBooking
+                if (bookingDetail.vendorLocators?.length > 0) {
+                  airlinePnr = bookingDetail.vendorLocators[0];
+                  console.log('[Booking] ✓ Distinct Airline PNR from vendorLocators:', airlinePnr);
                 } else {
-                  console.log('[Booking] No distinct airline locator found — airline PNR may equal GDS PNR or be assigned after ticketing');
+                  // Fallback: deep scan raw response
+                  airlinePnr = extractDistinctSabreAirlinePnr(bookingDetail.rawResponse, gdsPnr);
+                  if (airlinePnr) {
+                    console.log('[Booking] ✓ Distinct Airline PNR from deep scan:', airlinePnr);
+                  } else {
+                    console.log('[Booking] No distinct airline locator found — airline PNR may equal GDS PNR or be assigned after ticketing');
+                  }
                 }
+              } else {
+                console.warn('[Booking] GetBooking returned no data:', bookingDetail?.error);
               }
-            } else {
-              console.warn('[Booking] GetBooking returned no data:', bookingDetail?.error);
+            } catch (getBookErr) {
+              console.warn('[Booking] GetBooking for airline PNR extraction failed:', getBookErr.message);
             }
-          } catch (getBookErr) {
-            console.warn('[Booking] GetBooking for airline PNR extraction failed:', getBookErr.message);
           }
 
           if (gdsBookingResult.ticketTimeLimit && payLater) {

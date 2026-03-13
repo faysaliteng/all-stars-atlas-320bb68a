@@ -255,6 +255,7 @@ const AdminBookings = () => {
     setActionLoading(null);
   };
 
+  const [bulkCancelSkipGds, setBulkCancelSkipGds] = useState(false);
   const [bulkCancelProgress, setBulkCancelProgress] = useState<string>("");
 
   const handleBulkCancel = async () => {
@@ -275,8 +276,9 @@ const AdminBookings = () => {
         setBulkCancelProgress(`Processing batch ${batchNum}...`);
         const result: any = await api.post('/admin/bookings/bulk-cancel', {
           filter: bulkCancelFilter,
-          batchSize,
+          batchSize: bulkCancelSkipGds ? 10 : 3,
           offset,
+          skipGds: bulkCancelSkipGds,
         });
 
         allResults.push(...(result.results || []));
@@ -1087,6 +1089,17 @@ const AdminBookings = () => {
                   <SelectItem value="all_with_pnr">All active with PNR — {stats.confirmed} bookings</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg border border-warning/30 bg-warning/5">
+              <Checkbox
+                id="skipGds"
+                checked={bulkCancelSkipGds}
+                onCheckedChange={(v) => setBulkCancelSkipGds(Boolean(v))}
+              />
+              <label htmlFor="skipGds" className="text-sm cursor-pointer">
+                <span className="font-medium">Force cancel locally</span>
+                <span className="text-muted-foreground"> — skip GDS API calls, just mark as cancelled in database (use when GDS keeps failing)</span>
+              </label>
             </div>
 
                 {bulkCancelLoading && bulkCancelProgress && (

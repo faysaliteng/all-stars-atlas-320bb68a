@@ -351,6 +351,51 @@ const AdminBookings = () => {
         </CardContent></Card>
       </DataLoader>
 
+      {/* ── Failed Bookings (No PNR) ── */}
+      {filteredFailed.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-5 h-5" /> Failed Bookings (No PNR) — {filteredFailed.length}
+          </h2>
+          <Card className="border-destructive/30"><CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow className="bg-destructive/5">
+                <TableHead>ID</TableHead><TableHead>Customer</TableHead>
+                <TableHead className="hidden md:table-cell">Type</TableHead>
+                <TableHead className="hidden lg:table-cell">Route</TableHead>
+                <TableHead className="hidden md:table-cell">Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {filteredFailed.map((b: any) => (
+                  <TableRow key={b.id} className="cursor-pointer hover:bg-destructive/5" onClick={() => openDetail(b)}>
+                    <TableCell className="font-mono text-xs">{b.id}</TableCell>
+                    <TableCell><div><p className="text-sm font-medium">{b.customer}</p><p className="text-xs text-muted-foreground">{b.email}</p></div></TableCell>
+                    <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{b.type}</Badge></TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">{b.route}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{b.date}</TableCell>
+                    <TableCell><Badge variant="destructive" className="text-[11px]">Failed</Badge></TableCell>
+                    <TableCell className="text-right font-semibold text-sm">{b.amount}</TableCell>
+                    <TableCell>
+                      <DropdownMenu modal={false}><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openDetail(b); }}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); archiveBooking(b); }}><Archive className="w-4 h-4 mr-2" /> Archive</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(b); }}><Trash2 className="w-4 h-4 mr-2" /> Delete Permanently</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent></Card>
+        </div>
+      )}
+
       {/* ── Comprehensive Booking Detail Dialog ── */}
       <Dialog open={!!viewBooking} onOpenChange={() => { setViewBooking(null); setEditMode(false); }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

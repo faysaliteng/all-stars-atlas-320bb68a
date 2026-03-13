@@ -707,7 +707,7 @@ router.post('/book', authenticate, async (req, res) => {
     }
 
     const flightRoute = `${origin}-${destination}`;
-    const flightProvider = flightSource || (gdsPnr ? 'gds' : 'local');
+    const flightProvider = flightSource || (isTtiFlight ? 'tti' : (isSabreFlight ? 'sabre' : (gdsPnr ? 'gds' : 'local')));
 
     await db.query(
       `INSERT INTO bookings (id, user_id, booking_type, booking_ref, pnr, status, ticket_status, provider, route, total_amount, payment_method, payment_status, details, passenger_info, contact_info, payment_deadline)

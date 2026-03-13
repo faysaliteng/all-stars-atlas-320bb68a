@@ -460,6 +460,13 @@ const AdminBookings = () => {
               <TableBody>
                 {filteredFailed.map((b: any) => (
                   <TableRow key={b.id} className="cursor-pointer hover:bg-destructive/5" onClick={() => openDetail(b)}>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedBookingIds.includes(String(b.rawId || b.id))}
+                        onCheckedChange={(checked) => toggleSelectOne(String(b.rawId || b.id), Boolean(checked))}
+                        aria-label={`Select booking ${b.id}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{b.id}</TableCell>
                     <TableCell><div><p className="text-sm font-medium">{b.customer}</p><p className="text-xs text-muted-foreground">{b.email}</p></div></TableCell>
                     <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{b.type}</Badge></TableCell>

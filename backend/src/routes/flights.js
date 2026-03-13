@@ -1254,7 +1254,7 @@ router.post('/book', authenticate, async (req, res) => {
       console.log('[Booking] multiCityFlights:', (req.body.multiCityFlights || []).length, 'segments');
       console.log('[Booking] Passengers:', passengers.length, '| Contact:', contactInfo?.email);
       passengers.forEach((p, i) => {
-        console.log(`[Booking] Pax ${i + 1}: ${p.title} ${p.firstName} ${p.lastName} | DOB: ${p.dateOfBirth || p.dob} | Passport: ${p.passportNumber || p.passport} | Expiry: ${p.passportExpiry} | Gender: ${p.gender} | Type: ${p.type}`);
+        console.log(`[Booking] Pax ${i + 1}: ${(p.title || p.prefix || '').toUpperCase()} ${p.firstName || p.givenName} ${p.lastName || p.surname} | DOB: ${p.dateOfBirth || p.dob} | Passport: ${p.passportNumber || p.passportNo || p.passport} | Expiry: ${p.passportExpiry || p.passportEx} | Gender: ${p.gender} | Type: ${p.type || p.passengerType}`);
       });
 
       try {

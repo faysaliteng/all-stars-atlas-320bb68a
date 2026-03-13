@@ -1466,9 +1466,43 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           genderCode = genderCode === 'F' ? 'FI' : 'MI';
         }
 
-        // Nationality — 2-letter country code
-        const nationalitySource = pax.nationalityCountry || pax.nationality || pax.citizenshipCountry || pax.countryCode || 'BD';
-        const nationality = String(nationalitySource).trim().toUpperCase().replace(/[^A-Z]/g, '').substring(0, 2) || 'BD';
+        // Country normalization (handles ISO2/ISO3 and common demonyms like "Bangladeshi")
+        const normalizeCountryCode = (value) => {
+          const raw = String(value || '').trim();
+          if (!raw) return '';
+
+          const compact = raw.toUpperCase().replace(/[^A-Z]/g, '');
+          if (compact.length === 2) return compact;
+
+          const aliases = {
+            BANGLADESH: 'BD',
+            BANGLADESHI: 'BD',
+            BGD: 'BD',
+          };
+
+          return aliases[compact] || '';
+        };
+
+        const docCountry =
+          normalizeCountryCode(
+            pax.documentCountry ||
+            pax.issueCountry ||
+            pax.passportCountry ||
+            pax.passportIssueCountry
+          ) || '';
+
+        const nationality =
+          normalizeCountryCode(
+            pax.nationalityCountry ||
+            pax.nationality ||
+            pax.citizenshipCountry ||
+            pax.countryCode ||
+            pax.documentCountry
+          ) ||
+          docCountry ||
+          'BD';
+
+        const issueCountry = docCountry || nationality;
 
         // Full DOCS payload matching what Sabre requires
         const docPayload = {
@@ -1477,7 +1511,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           ExpirationDate: expiryFormatted,
           ...(dobFormatted ? { DateOfBirth: dobFormatted } : {}),
           Gender: genderCode,
-          IssueCountry: nationality,
+          IssueCountry: issueCountry,
           Nationality: nationality,
           GivenName: String(pax.firstName || pax.givenName || '').toUpperCase(),
           Surname: String(pax.lastName || pax.surname || '').toUpperCase(),
@@ -1571,7 +1605,8 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
     }
 
-    const toSchemaSafeDocsBody = (inputBody) => {
+    const toSchemaSafeDocsBody = (inputBody, options = {}) => {
+      const { includeIssueCountry = true } = options;
       const cloned = JSON.parse(JSON.stringify(inputBody));
       const advancePax = cloned?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo?.AdvancePassenger;
 
@@ -1584,7 +1619,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           Type: document.Type,
           Number: document.Number,
           ExpirationDate: document.ExpirationDate,
-          ...(document.IssueCountry ? { IssueCountry: document.IssueCountry } : {}),
+          ...(includeIssueCountry && document.IssueCountry ? { IssueCountry: document.IssueCountry } : {}),
         };
       });
 
@@ -1600,11 +1635,17 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       // Variant 2: Keep SSR + DOCS, but strip non-portable DOCS fields rejected by stricter Sabre schemas
       requestVariants.push({
         label: 'full_payload_docs_minimal',
-        body: toSchemaSafeDocsBody(body),
+        body: toSchemaSafeDocsBody(body, { includeIssueCountry: true }),
       });
 
-      // Variant 3: Keep only DOCS (no meal/wheelchair SSR) with schema-safe DOCS
-      const bodyDocsOnly = toSchemaSafeDocsBody(body);
+      // Variant 3: Keep SSR + DOCS with ultra-minimal Document (Type/Number/ExpirationDate only)
+      requestVariants.push({
+        label: 'full_payload_docs_ultra_minimal',
+        body: toSchemaSafeDocsBody(body, { includeIssueCountry: false }),
+      });
+
+      // Variant 4: Keep only DOCS (no meal/wheelchair SSR) with schema-safe DOCS
+      const bodyDocsOnly = toSchemaSafeDocsBody(body, { includeIssueCountry: true });
       const specialServiceInfo2 = bodyDocsOnly?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo;
       if (specialServiceInfo2?.Service) {
         delete specialServiceInfo2.Service;
@@ -1612,6 +1653,17 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       requestVariants.push({
         label: 'docs_only_no_ssr',
         body: bodyDocsOnly,
+      });
+
+      // Variant 5: DOCS-only + ultra-minimal Document for strict schemas
+      const bodyDocsOnlyUltra = toSchemaSafeDocsBody(body, { includeIssueCountry: false });
+      const specialServiceInfo3 = bodyDocsOnlyUltra?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo;
+      if (specialServiceInfo3?.Service) {
+        delete specialServiceInfo3.Service;
+      }
+      requestVariants.push({
+        label: 'docs_only_ultra_minimal_no_ssr',
+        body: bodyDocsOnlyUltra,
       });
     }
 

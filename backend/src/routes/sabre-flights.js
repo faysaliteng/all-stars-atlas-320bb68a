@@ -1371,7 +1371,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
 
       // ── CTCM (Mobile Contact SSR) — Required by many airlines ──
-      const paxPhone = contactInfo?.phone || pax.phone || '';
+      const paxPhone = contactInfo?.phone || contactInfo?.contactPhone || pax.phone || '';
       if (paxPhone) {
         // Split phone: remove leading + and country code for E164 format
         const cleanPhone = paxPhone.replace(/[\s\-\(\)]/g, '');
@@ -1388,7 +1388,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
 
       // ── CTCE (Email Contact SSR) — Required by many airlines ──
-      const paxEmail = contactInfo?.email || pax.email || '';
+      const paxEmail = contactInfo?.email || contactInfo?.contactEmail || pax.email || '';
       if (paxEmail) {
         // Sabre CTCE format: replace @ with // and . with ..
         const emailForSSR = paxEmail.toUpperCase().replace('@', '//').replace(/\./g, '..');
@@ -1401,8 +1401,22 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
 
       // DOCS — Passport/Travel Document (full fields required by Sabre)
-      const passportNo = pax.passport || pax.passportNumber || '';
-      const passportExpiry = pax.passportExpiry || '';
+      const rawPassportField = typeof pax.passport === 'string' ? pax.passport.trim() : '';
+      const passportLooksLikeFilePath = /[\\/]/.test(rawPassportField) || /\.(jpg|jpeg|png|pdf|webp)$/i.test(rawPassportField);
+      const passportNumberSource = [
+        pax.passportNumber,
+        pax.passportNo,
+        pax.documentNumber,
+        pax.travelDocumentNumber,
+        !passportLooksLikeFilePath ? rawPassportField : '',
+      ].find((val) => val !== undefined && val !== null && String(val).trim() !== '');
+
+      const passportNo = passportNumberSource ? String(passportNumberSource).trim().toUpperCase() : '';
+      const passportExpiry = pax.passportExpiry || pax.passportEx || pax.documentExpiry || pax.expiryDate || '';
+
+      if (rawPassportField && passportLooksLikeFilePath && !pax.passportNumber && !pax.passportNo) {
+        console.warn(`[Sabre] Pax ${i + 1}: passport field looks like upload path, not passport number (${rawPassportField})`);
+      }
 
       if (passportNo) {
         // Sabre ExpirationDate schema requires YYYY-MM-DD format
@@ -1453,19 +1467,20 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
         }
 
         // Nationality — 2-letter country code
-        const nationality = (pax.nationality || pax.citizenshipCountry || 'BD').toUpperCase().substring(0, 2);
+        const nationalitySource = pax.nationalityCountry || pax.nationality || pax.citizenshipCountry || pax.countryCode || 'BD';
+        const nationality = String(nationalitySource).trim().toUpperCase().replace(/[^A-Z]/g, '').substring(0, 2) || 'BD';
 
         // Full DOCS payload matching what Sabre requires
         const docPayload = {
           Type: 'P',
-          Number: String(passportNo).toUpperCase(),
+          Number: passportNo,
           ExpirationDate: expiryFormatted,
           ...(dobFormatted ? { DateOfBirth: dobFormatted } : {}),
           Gender: genderCode,
           IssueCountry: nationality,
           Nationality: nationality,
-          GivenName: (pax.firstName || '').toUpperCase(),
-          Surname: (pax.lastName || '').toUpperCase(),
+          GivenName: String(pax.firstName || pax.givenName || '').toUpperCase(),
+          Surname: String(pax.lastName || pax.surname || '').toUpperCase(),
         };
 
         console.log(`[Sabre] DOCS pax ${i + 1}: ${docPayload.Number} | exp=${docPayload.ExpirationDate} | dob=${docPayload.DateOfBirth || 'N/A'} | gender=${docPayload.Gender} | nat=${docPayload.Nationality}`);

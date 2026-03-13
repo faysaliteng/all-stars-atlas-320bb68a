@@ -1000,7 +1000,83 @@ router.post('/book', authenticate, async (req, res) => {
       }
     }
 
-    // GDS PNR is MANDATORY — without it, booking is failed
+    // ── BDFare booking ──
+    if (!gdsPnr && isBdfareFlight) {
+      console.log('[Booking] BDFare flight detected — creating GDS booking...');
+      try {
+        const bdfOfferId = flightData?._bdfOfferId || flightData?.id || null;
+        if (!bdfOfferId) {
+          console.warn('[Booking] BDFare: No offerId found in flight data');
+        } else {
+          gdsBookingResult = await bdfCreateBooking({
+            offerId: bdfOfferId,
+            passengers: passengers.map(p => ({
+              type: p.type === 'child' ? 'CHD' : p.type === 'infant' ? 'INF' : 'ADT',
+              title: p.title || 'Mr',
+              firstName: p.firstName,
+              lastName: p.lastName,
+              dob: p.dateOfBirth || p.dob,
+              gender: p.gender || 'male',
+              nationality: p.nationality || 'BD',
+              passport: p.passportNumber || p.passport,
+              passportExpiry: p.passportExpiry,
+            })),
+            contactInfo: contactInfo || {},
+          });
+
+          if (gdsBookingResult?.success && gdsBookingResult?.pnr) {
+            gdsPnr = gdsBookingResult.pnr;
+            airlinePnr = gdsBookingResult.pnr;
+            gdsBookingId = gdsBookingResult.orderId || null;
+            console.log('[Booking] ✓ BDFare PNR:', gdsPnr, '| OrderId:', gdsBookingId);
+          } else {
+            console.warn('[Booking] BDFare booking failed:', gdsBookingResult?.error);
+          }
+        }
+      } catch (bdfErr) {
+        console.error('[Booking] BDFare CreateBooking exception:', bdfErr.message);
+      }
+    }
+
+    // ── FlyHub booking ──
+    if (!gdsPnr && isFlyhubFlight) {
+      console.log('[Booking] FlyHub flight detected — creating GDS booking...');
+      try {
+        const flyhubResultId = flightData?._flyhubResultId || flightData?.id || null;
+        if (!flyhubResultId) {
+          console.warn('[Booking] FlyHub: No resultId found in flight data');
+        } else {
+          gdsBookingResult = await flyhubCreateBooking({
+            resultId: flyhubResultId,
+            passengers: passengers.map(p => ({
+              title: p.title || 'Mr',
+              firstName: p.firstName,
+              lastName: p.lastName,
+              type: p.type === 'child' ? 'Child' : p.type === 'infant' ? 'Infant' : 'Adult',
+              dob: p.dateOfBirth || p.dob,
+              gender: p.gender || 'male',
+              nationality: p.nationality || 'BD',
+              passport: p.passportNumber || p.passport,
+              passportExpiry: p.passportExpiry,
+            })),
+            contactInfo: contactInfo || {},
+          });
+
+          if (gdsBookingResult?.success && gdsBookingResult?.pnr) {
+            gdsPnr = gdsBookingResult.pnr;
+            airlinePnr = gdsBookingResult.pnr;
+            gdsBookingId = gdsBookingResult.bookingId || null;
+            console.log('[Booking] ✓ FlyHub PNR:', gdsPnr, '| BookingId:', gdsBookingId);
+          } else {
+            console.warn('[Booking] FlyHub booking failed:', gdsBookingResult?.error);
+          }
+        }
+      } catch (fhErr) {
+        console.error('[Booking] FlyHub CreateBooking exception:', fhErr.message);
+      }
+    }
+
+
     // Airline PNR is best-effort (often only available after ticketing for Sabre)
     if (isGdsFlight && !gdsPnr) {
       return res.status(422).json({

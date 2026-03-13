@@ -255,6 +255,7 @@ const AdminBookings = () => {
     setActionLoading(null);
   };
 
+  const [bulkCancelSkipGds, setBulkCancelSkipGds] = useState(false);
   const [bulkCancelProgress, setBulkCancelProgress] = useState<string>("");
 
   const handleBulkCancel = async () => {

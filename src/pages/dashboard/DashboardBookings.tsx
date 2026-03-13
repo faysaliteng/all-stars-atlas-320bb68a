@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Plane, Building2, Search, Eye, Download, MoreHorizontal, RotateCcw, XCircle,
-  FileText, Globe, Palmtree, CreditCard, Timer, Package, Ban,
+  FileText, Globe, Palmtree, CreditCard, Timer, Package, Ban, AlertTriangle,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { generateTicketPDF } from "@/lib/pdf-generator";
@@ -19,7 +19,7 @@ import DataLoader from "@/components/DataLoader";
 import { useToast } from "@/hooks/use-toast";
 import TravelDocVerificationModal from "@/components/TravelDocVerificationModal";
 
-const statusTabs = ["All", "Reserved", "Pending", "In Progress", "Confirmed", "Completed", "Void", "Refund", "Exchange", "Expired", "Cancelled", "Un-Confirmed"];
+const statusTabs = ["All", "Reserved", "Pending", "In Progress", "Confirmed", "Completed", "Void", "Refund", "Exchange", "Expired", "Cancelled", "Un-Confirmed", "Failed"];
 
 const statusLabelMap: Record<string, string> = {
   on_hold: "Reserved", "On Hold": "Reserved",
@@ -118,20 +118,30 @@ const DashboardBookings = () => {
 
   const resolved = (data as any) || {};
   const rawBookings = resolved?.data || resolved?.bookings || [];
-  const bookings = rawBookings.map(mapBooking);
+  const allMapped = rawBookings.map(mapBooking);
+
+  // Split: bookings WITH PNR = valid, WITHOUT PNR = failed
+  const hasPnr = (b: any) => b.pnr && b.pnr !== "—" && b.pnr.trim().length > 0;
+  const validBookings = allMapped.filter((b: any) => hasPnr(b));
+  const failedBookings = allMapped.filter((b: any) => !hasPnr(b));
+
+  // Show failed bookings only in "Failed" or "All" tab
+  const isFailedTab = activeTab === "Failed";
+  const bookings = isFailedTab ? failedBookings : validBookings;
 
   const tabCounts: Record<string, number> = resolved?.tabCounts || {};
   if (!tabCounts["All"]) {
-    tabCounts["All"] = bookings.length;
+    tabCounts["All"] = validBookings.length;
+    tabCounts["Failed"] = failedBookings.length;
     statusTabs.forEach(tab => {
-      if (tab !== "All") {
+      if (tab !== "All" && tab !== "Failed") {
         const tabKey = tab === "Reserved" ? "on_hold" : tab.toLowerCase().replace(/ /g, "_");
-        tabCounts[tab] = bookings.filter((b: any) => b.status?.toLowerCase() === tabKey || displayStatus(b.status) === tab).length;
+        tabCounts[tab] = validBookings.filter((b: any) => b.status?.toLowerCase() === tabKey || displayStatus(b.status) === tab).length;
       }
     });
   }
 
-  const total = resolved?.total || bookings.length;
+  const total = isFailedTab ? failedBookings.length : validBookings.length;
   const totalPages = Math.ceil(total / Number(perPage)) || 1;
   const paginatedBookings = bookings.slice((page - 1) * Number(perPage), page * Number(perPage));
 
@@ -152,7 +162,7 @@ const DashboardBookings = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div><h1 className="text-xl sm:text-2xl font-bold">My Bookings</h1><p className="text-xs sm:text-sm text-muted-foreground mt-1">{total} total bookings</p></div>
+        <div><h1 className="text-xl sm:text-2xl font-bold">My Bookings</h1><p className="text-xs sm:text-sm text-muted-foreground mt-1">{validBookings.length} confirmed bookings{failedBookings.length > 0 ? ` · ${failedBookings.length} failed` : ''}</p></div>
         <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => {
           downloadCSV('bookings', ['ID', 'Type', 'Route', 'Date', 'PNR', 'Status', 'Amount'], bookings.map((b: any) => [b.id, b.type, b.title, b.date, b.pnr, displayStatus(b.status), b.amount]));
           toast({ title: "Exported", description: "Bookings CSV downloaded." });
@@ -240,7 +250,13 @@ const DashboardBookings = () => {
                         </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm">{booking.pax}</TableCell>
-                      <TableCell><Badge variant="outline" className={`text-[10px] ${statusColors[booking.status] || ""}`}>{displayStatus(booking.status)}</Badge></TableCell>
+                      <TableCell>
+                        {isFailedTab ? (
+                          <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="w-3 h-3 mr-1" />Failed</Badge>
+                        ) : (
+                          <Badge variant="outline" className={`text-[10px] ${statusColors[booking.status] || ""}`}>{displayStatus(booking.status)}</Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right font-semibold text-sm">{booking.amount}</TableCell>
                       <TableCell>
                         <DropdownMenu modal={false}>

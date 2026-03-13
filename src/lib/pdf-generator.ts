@@ -1033,20 +1033,20 @@ export async function generateTicketPDF(ticket: TicketData) {
     y += 6;
   });
 
-  // Right side: Booking ID + Airlines PNR (dual PNR display)
-  const airlinesPnr = ticket.pnr || ticket.gdsPnr || "";
-  const systemRef = ticket.bookingRef || ticket.id || "";
+  // Right side: Booking ID (GDS PNR) + Airlines PNR (dual PNR display)
+  const airlinesPnr = ticket.airlinePnr || "";
+  const systemRef = ticket.gdsPnr || ticket.bookingRef || ticket.id || "";
 
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100);
-  doc.text("BOOKING REFERENCE", w - 60, 28);
+  doc.text("BOOKING ID", w - 60, 28);
   doc.setTextColor(0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text(systemRef, w - 60, 34);
 
-  if (airlinesPnr && airlinesPnr !== systemRef) {
+  if (airlinesPnr) {
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100);

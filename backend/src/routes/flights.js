@@ -154,8 +154,121 @@ router.get('/seats-rest', async (req, res) => {
   }
 });
 
+// POST /flights/assign-seats — assign seats to an existing PNR
+router.post('/assign-seats', authenticate, async (req, res) => {
+  try {
+    const { pnr, seatAssignments, source } = req.body;
+    if (!pnr || !seatAssignments?.length) {
+      return res.status(400).json({ message: 'pnr and seatAssignments[] required' });
+    }
 
-// GET /flights/tti-diagnostic — test TTI API connectivity
+    const providerSource = String(source || '').toLowerCase();
+
+    if (providerSource.includes('sabre') || !providerSource) {
+      // Default to Sabre seat assignment
+      const { assignSeats } = require('./sabre-flights');
+      const result = await assignSeats({ pnr, seatAssignments });
+      return res.json(result);
+    }
+
+    if (providerSource.includes('tti') || providerSource.includes('astra')) {
+      // TTI seat assignment via SpecialService with Seat data
+      // TTI uses UpdateBooking with SpecialServices[].Code="SEAT", Data.Seat.SeatRow + SeatLetter
+      const { ttiRequest, getTTIConfig } = require('./tti-flights');
+      const config = await getTTIConfig();
+      if (!config) return res.status(500).json({ message: 'TTI not configured' });
+
+      const specialServices = seatAssignments.map(sa => ({
+        Code: 'SEAT',
+        RefPassenger: String((sa.passengerIndex || 0) + 1),
+        RefSegment: String(sa.segmentNumber || 1),
+        Data: {
+          Seat: {
+            SeatRow: parseInt(String(sa.seatNumber || '').replace(/[A-Za-z]+$/, '')) || 0,
+            SeatLetter: String(sa.seatNumber || '').replace(/^\d+/, '') || 'A',
+          },
+        },
+      }));
+
+      try {
+        const response = await ttiRequest('UpdateBooking', {
+          RequestInfo: { AuthenticationKey: config.key },
+          BookingID: pnr,
+          SpecialServices: specialServices,
+        });
+        return res.json({ success: true, rawResponse: response });
+      } catch (ttiErr) {
+        return res.json({ success: false, error: ttiErr.message });
+      }
+    }
+
+    return res.status(400).json({ message: `Seat assignment not supported for provider: ${source}` });
+  } catch (err) {
+    console.error('[AssignSeats] Error:', err.message);
+    res.status(500).json({ message: 'Failed to assign seats', error: err.message });
+  }
+});
+
+// POST /flights/purchase-ancillary — purchase ancillary services (extra baggage, meals) for an existing PNR
+router.post('/purchase-ancillary', authenticate, async (req, res) => {
+  try {
+    const { pnr, ancillaries, source } = req.body;
+    // ancillaries: [{ type: 'baggage'|'meal', code: 'XBAG'|'VGML', passengerIndex: 0, segmentNumber: 1, offerId?: string }]
+    if (!pnr || !ancillaries?.length) {
+      return res.status(400).json({ message: 'pnr and ancillaries[] required' });
+    }
+
+    const providerSource = String(source || '').toLowerCase();
+
+    if (providerSource.includes('sabre') || !providerSource) {
+      // Sabre: Add ancillary SSRs via UpdatePassengerNameRecord
+      const { assignSeats, getSabreConfig } = require('./sabre-flights');
+      const config = await getSabreConfig();
+      if (!config) return res.status(500).json({ message: 'Sabre not configured' });
+
+      const { sabreRequest } = require('./sabre-flights');
+
+      // Build SSR list for ancillaries
+      const ssrList = ancillaries.map(anc => ({
+        SSR_Code: anc.code || 'OTHS',
+        Text: anc.text || `${anc.code} - ${anc.type}`,
+        PersonName: { NameNumber: `${(anc.passengerIndex || 0) + 1}.1` },
+        SegmentNumber: String(anc.segmentNumber || 'A'),
+        VendorPrefs: anc.airlineCode ? { Airline: { Code: anc.airlineCode } } : undefined,
+      }));
+
+      const body = {
+        CreatePassengerNameRecordRQ: {
+          targetCity: config.pcc,
+          SpecialReqDetails: {
+            SpecialService: {
+              SpecialServiceInfo: {
+                Service: ssrList,
+              },
+            },
+          },
+          PostProcessing: {
+            EndTransaction: { Source: { ReceivedFrom: 'SEVEN TRIP ANC' } },
+          },
+        },
+      };
+
+      try {
+        const response = await sabreRequest(config, `/v2.4.0/passenger/records?mode=update&recordLocator=${pnr}`, body, 'POST', 30000);
+        return res.json({ success: true, message: `${ancillaries.length} ancillary service(s) added to PNR ${pnr}`, rawResponse: response });
+      } catch (sabreErr) {
+        return res.json({ success: false, error: sabreErr.message });
+      }
+    }
+
+    return res.status(400).json({ message: `Ancillary purchase not supported for provider: ${source}` });
+  } catch (err) {
+    console.error('[PurchaseAncillary] Error:', err.message);
+    res.status(500).json({ message: 'Failed to purchase ancillary', error: err.message });
+  }
+});
+
+
 router.get('/tti-diagnostic', async (req, res) => {
   try {
     const { getTTIConfig, ttiRequest } = require('./tti-flights');

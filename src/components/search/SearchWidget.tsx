@@ -425,6 +425,9 @@ const SearchWidget = () => {
   const [accountNumber, setAccountNumber] = useState("");
   const [billAmount, setBillAmount] = useState("");
 
+  // Date popover open state — auto-close on select
+  const [openDatePopover, setOpenDatePopover] = useState<string | null>(null);
+
   // Date validation error highlighting
   const [dateErrors, setDateErrors] = useState<Set<string>>(new Set());
   const addDateError = (...keys: string[]) => setDateErrors(new Set(keys));

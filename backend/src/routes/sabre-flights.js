@@ -1720,7 +1720,19 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       console.log(`[Sabre] Ticket time limit: ${ticketTimeLimit}`);
     }
 
-    return { success: true, pnr: finalPnr, ticketTimeLimit, rawResponse: finalResponse };
+    const airlinePnr = extractDistinctSabreAirlinePnr(finalResponse, finalPnr);
+    if (airlinePnr) {
+      console.log(`[Sabre] Distinct airline locator found in CreatePNR response: ${airlinePnr}`);
+    }
+
+    return {
+      success: true,
+      pnr: finalPnr,
+      airlinePnr: airlinePnr || null,
+      ticketTimeLimit,
+      createVariant: successfulVariant || null,
+      rawResponse: finalResponse,
+    };
   } catch (err) {
     console.error('[Sabre] CreateBooking failed:', err.message);
     return { success: false, error: err.message, pnr: null };

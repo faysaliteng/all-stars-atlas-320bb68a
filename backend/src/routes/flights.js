@@ -1017,6 +1017,31 @@ function extractDistinctSabreAirlinePnr(rawBooking, gdsPnr) {
   return distinct || null;
 }
 
+function normalizeLocatorCode(value) {
+  const code = String(value || '').trim().toUpperCase();
+  return /^[A-Z0-9]{5,20}$/.test(code) ? code : null;
+}
+
+function resolveCancelLocators(booking = {}, details = {}) {
+  const gdsCandidates = [
+    details?.gdsPnr,
+    booking?.pnr,
+    details?.gdsBookingResult?.pnr,
+    details?.outbound?.pnr,
+  ].map(normalizeLocatorCode).filter(Boolean);
+
+  const airlineCandidates = [
+    details?.airlinePnr,
+    details?.gdsBookingResult?.airlinePnr,
+    details?.outbound?.airlinePnr,
+  ].map(normalizeLocatorCode).filter(Boolean);
+
+  const gdsPnr = gdsCandidates.find((c) => !airlineCandidates.includes(c)) || gdsCandidates[0] || null;
+  const airlinePnr = airlineCandidates[0] || null;
+
+  return { gdsPnr, airlinePnr };
+}
+
 async function hydrateTtiContextForBooking({ mergedFlightData, returnFlightData, isRoundTrip, passengers }) {
   if (mergedFlightData?._ttiOffer?.Ref && mergedFlightData?._ttiItineraryRef) {
     return mergedFlightData;

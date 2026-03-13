@@ -1095,7 +1095,13 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
   const config = await getSabreConfig();
   if (!config) throw new Error('Sabre API not configured');
 
+  console.log('[Sabre] ═══════════════════════════════════════════════════');
   console.log('[Sabre] Creating PNR for', flightData?.origin, '→', flightData?.destination);
+  console.log('[Sabre] Environment:', config.environment, '| BaseURL:', config.baseUrl);
+  console.log('[Sabre] PCC:', config.pcc, '| EPR:', config.epr);
+  console.log('[Sabre] Passengers:', passengers?.length, '| Legs:', flightData?.legs?.length || 0);
+  console.log('[Sabre] Airline:', flightData?.airlineCode, '| Flight:', flightData?.flightNumber);
+  console.log('[Sabre] IsMultiCity:', !!flightData?.isMultiCity, '| Source:', flightData?.source);
 
   try {
     const paxSegments = [];
@@ -1110,7 +1116,8 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
     }
     const segs = flatLegs.length > 0 ? flatLegs : [flightData];
-    console.log(`[Sabre] Creating PNR with ${segs.length} segment(s)`);
+    console.log(`[Sabre] Creating PNR with ${segs.length} segment(s):`);
+    segs.forEach((s, i) => console.log(`[Sabre]   Seg ${i+1}: ${s.airlineCode || flightData.airlineCode}${s.flightNumber || ''} ${s.origin || '?'}→${s.destination || '?'} ${s.departureTime || '?'}`));
 
     const toSabreDateTime = (value) => {
       if (!value) return '';
@@ -1451,6 +1458,14 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       const variant = requestVariants[attemptIndex];
 
       try {
+        console.log(`[Sabre] ── CreatePNR attempt ${attemptIndex + 1}/${requestVariants.length}: ${variant.label} ──`);
+        console.log(`[Sabre] Request segments:`, JSON.stringify(variant.body?.CreatePassengerNameRecordRQ?.AirBook?.OriginDestinationInformation?.FlightSegment?.map(s => `${s.MarketingAirline?.Code}${s.MarketingAirline?.FlightNumber} ${s.OriginLocation?.LocationCode}→${s.DestinationLocation?.LocationCode} ${s.DepartureDateTime}`) || []));
+        console.log(`[Sabre] Request passengers:`, JSON.stringify(variant.body?.CreatePassengerNameRecordRQ?.TravelItineraryAddInfo?.CustomerInfo?.PersonName?.map(p => `${p.GivenName} ${p.Surname}`) || []));
+        
+        const hasDocs = !!variant.body?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo?.AdvancePassenger;
+        const hasSSR = !!variant.body?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo?.Service;
+        console.log(`[Sabre] Has DOCS: ${hasDocs} | Has SSR: ${hasSSR}`);
+
         const response = await sabreRequest(config, '/v2.4.0/passenger/records?mode=create', variant.body);
         finalResponse = response;
         logSabreCreatePnrDebug(response);
@@ -1459,18 +1474,21 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
         if (pnr) {
           finalPnr = pnr;
           successfulVariant = variant.label;
+          console.log(`[Sabre] ✓ PNR created via ${variant.label}: ${pnr}`);
           break;
         }
 
         finalErrorMessage = `No PNR returned from ${variant.label}`;
         console.warn(`[Sabre] ${finalErrorMessage}`);
+        console.warn(`[Sabre] Response keys:`, JSON.stringify(Object.keys(response || {})));
       } catch (err) {
         finalErrorMessage = err.message;
-        console.error(`[Sabre] CreatePNR attempt failed (${variant.label}):`, err.message);
+        console.error(`[Sabre] ✗ CreatePNR attempt failed (${variant.label}):`, err.message);
 
         const shouldRetry = /VALIDATION_FAILED|NotProcessed|AdvancePassenger|SpecialReqDetails|Document|PersonName|NamePrefix|not allowed/i.test(err.message || '');
         const hasNextVariant = attemptIndex < requestVariants.length - 1;
         if (!(shouldRetry && hasNextVariant)) {
+          console.error(`[Sabre] No more fallback variants — booking failed`);
           break;
         }
         console.warn(`[Sabre] Retrying CreatePNR with fallback payload: ${requestVariants[attemptIndex + 1].label}`);

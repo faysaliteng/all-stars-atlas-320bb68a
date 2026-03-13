@@ -775,9 +775,6 @@ async function createBooking({ flightData, passengers, contactInfo }) {
     const email = isAdult ? (p.email || contactInfo?.email || '') : '';
     const phone = isAdult ? (p.phone || contactInfo?.phone || '') : '';
 
-    // TTI Passenger schema strictly accepts: Ref, PassengerQuantity, PassengerTypeCode, NameElement, Extensions
-    // Passport/DOB data goes via SpecialServices DOCS SSR (added below)
-    // Keep extra fields for backward compatibility — TTI silently ignores unknown props
     return {
       Ref: uniqueRef,
       RefItinerary: selectedItinRef,
@@ -815,19 +812,6 @@ async function createBooking({ flightData, passengers, contactInfo }) {
       Email: email || null,
       Phone: phone || null,
       Extensions: null,
-      // ── Internal fields for DOCS SSR builder (stripped before sending) ──
-      _internal: {
-        firstName,
-        lastName,
-        genderCode,
-        natCode,
-        rawPassport,
-        dobDate,
-        passportExpiryDate,
-        email,
-        phone,
-        paxType,
-      },
     };
   });
   
@@ -936,86 +920,66 @@ async function createBooking({ flightData, passengers, contactInfo }) {
     RefItinerary: selectedItinRef,
   };
 
-  // ── Build SpecialServices: DOCS (passport) for ALL passengers + CHLD/INFT SSRs ──
-  // TTI Passenger schema ONLY accepts Ref/PassengerQuantity/PassengerTypeCode/NameElement
-  // All identity data (DOB, passport, gender, nationality) MUST go via SpecialServices DOCS SSR
+  // ── Build SpecialServices for child/infant passengers ──
+  // TTI CHLD/INFT SSRs require DateOfBirth in the Data field
   const specialServices = [];
   const adultPassengers = ttiPassengers.filter(p => p.PassengerTypeCode === 'AD');
 
   ttiPassengers.forEach((tp, idx) => {
-    const int = tp._internal || {};
-
-    // DOCS SSR — passport/travel document for EVERY passenger
-    if (int.rawPassport) {
-      const dobMs = int.dobDate && !isNaN(int.dobDate.getTime()) ? int.dobDate.getTime() : null;
-      const expiryMs = int.passportExpiryDate && !isNaN(int.passportExpiryDate.getTime()) ? int.passportExpiryDate.getTime() : null;
-      specialServices.push({
-        Code: 'DOCS',
-        RefPassenger: tp.Ref,
-        Data: {
-          Docs: {
-            Documents: [{
-              DocumentTypeCode: 'P',
-              DocumentNumber: String(int.rawPassport).toUpperCase(),
-              IssueCountryCode: int.natCode || 'BD',
-              NationalityCountryCode: int.natCode || 'BD',
-              DateOfBirth: dobMs ? `/Date(${dobMs})/` : null,
-              Gender: int.genderCode || null,
-              DocumentExpiryDate: expiryMs ? `/Date(${expiryMs})/` : null,
-              Firstname: int.firstName || null,
-              Surname: int.lastName || null,
-            }],
-          },
-        },
-        Status: null, Text: null, RefSegment: null, TechnicalType: null, Extensions: null, Available: null,
-      });
-      console.log(`[TTI BOOKING] DOCS SSR pax ${idx + 1}: passport=${int.rawPassport} dob=${dobMs ? new Date(dobMs).toISOString().slice(0,10) : 'N/A'} gender=${int.genderCode} expiry=${expiryMs ? new Date(expiryMs).toISOString().slice(0,10) : 'N/A'} country=${int.natCode}`);
-    }
-
-    // CHLD SSR
+    const pax = passengers[idx];
     if (tp.PassengerTypeCode === 'CHD') {
-      const dobMs = int.dobDate && !isNaN(int.dobDate.getTime()) ? int.dobDate.getTime() : null;
-      if (dobMs) {
+      const dobDate = tp.DateOfBirth; // Already in /Date(ms)/ format
+      if (dobDate) {
         specialServices.push({
-          Code: 'CHLD', RefPassenger: tp.Ref,
-          Data: { Chld: { DateOfBirth: `/Date(${dobMs})/`, RefPassengerWithSeat: null } },
-          Status: null, Text: null, RefSegment: null, TechnicalType: null, Extensions: null, Available: null,
+          Code: 'CHLD',
+          RefPassenger: tp.Ref,
+          Data: {
+            Chld: {
+              DateOfBirth: dobDate,
+              RefPassengerWithSeat: null,
+            },
+          },
+          Status: null,
+          Text: null,
+          RefSegment: null,
+          TechnicalType: null,
+          Extensions: null,
+          Available: null,
         });
       }
-    }
-
-    // INFT SSR
-    if (tp.PassengerTypeCode === 'INF') {
-      const dobMs = int.dobDate && !isNaN(int.dobDate.getTime()) ? int.dobDate.getTime() : null;
+    } else if (tp.PassengerTypeCode === 'INF') {
+      const dobDate = tp.DateOfBirth;
+      // Infant must reference the adult they're travelling with
       const associatedAdult = adultPassengers[0] || ttiPassengers[0];
-      if (dobMs) {
+      if (dobDate) {
         specialServices.push({
-          Code: 'INFT', RefPassenger: tp.Ref,
-          Data: { Inft: { DateOfBirth: `/Date(${dobMs})/`, RefPassengerWithSeat: associatedAdult?.Ref || '1' } },
-          Status: null, Text: null, RefSegment: null, TechnicalType: null, Extensions: null, Available: null,
+          Code: 'INFT',
+          RefPassenger: tp.Ref,
+          Data: {
+            Inft: {
+              DateOfBirth: dobDate,
+              RefPassengerWithSeat: associatedAdult?.Ref || '1',
+            },
+          },
+          Status: null,
+          Text: null,
+          RefSegment: null,
+          TechnicalType: null,
+          Extensions: null,
+          Available: null,
         });
       }
-    }
-
-    // PCTC SSR — contact info (uses TTI schema field names)
-    if (int.paxType === 'AD' && (int.email || int.phone)) {
-      specialServices.push({
-        Code: 'PCTC', RefPassenger: tp.Ref,
-        Data: { Pctc: { ContactEmail: int.email || null, ContactCellPhone: int.phone || null } },
-        Status: null, Text: null, RefSegment: null, TechnicalType: null, Extensions: null, Available: null,
-      });
     }
   });
 
-  console.log('[TTI BOOKING] SpecialServices:', JSON.stringify(specialServices.map(s => ({ Code: s.Code, RefPassenger: s.RefPassenger }))));
-
-  // Strip _internal fields before sending to TTI (they're not part of the schema)
-  const cleanPassengers = ttiPassengers.map(({ _internal, ...rest }) => rest);
+  if (specialServices.length > 0) {
+    console.log('[TTI BOOKING] SpecialServices:', JSON.stringify(specialServices.map(s => ({ Code: s.Code, RefPassenger: s.RefPassenger }))));
+  }
 
   const request = {
     RequestInfo: { AuthenticationKey: config.key },
     Offer: offerWithRef,              // CRITICAL: Links to search session + selected itinerary
-    Passengers: cleanPassengers,
+    Passengers: ttiPassengers,
     Segments: segments,
     FareInfo: fareInfo,
     SpecialServices: specialServices.length > 0 ? specialServices : null,

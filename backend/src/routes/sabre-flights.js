@@ -1410,8 +1410,8 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           IssueCountry: docCountry,
           NationalityCountry: nationality,
           ExpirationDate: expiryFormatted,
-          DateOfBirth: dobFormatted || '1900-01-01',
-          Gender: sabreGender || 'M',
+          ...(dobFormatted ? { DateOfBirth: dobFormatted } : {}),
+          ...(sabreGender ? { Gender: sabreGender } : {}),
           GivenName: (pax.firstName || '').toUpperCase(),
           Surname: (pax.lastName || '').toUpperCase(),
         };

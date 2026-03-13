@@ -1138,10 +1138,22 @@ function extractDistinctSabreAirlinePnr(payload, gdsPnr) {
         continue;
       }
       if (typeof value !== 'string') continue;
-      if (!/(vendorlocator|airlinelocator|airlinepnr|reservationnumber|confirmationnumber|vendorconfirmation|supplierlocator|otherpnr)/i.test(key)) continue;
-      const code = value.trim().toUpperCase();
-      if (/^[A-Z0-9]{5,20}$/.test(code)) {
-        candidates.push(code);
+      
+      // Standard named fields for airline PNR
+      if (/(vendorlocator|airlinelocator|airlinepnr|reservationnumber|confirmationnumber|vendorconfirmation|supplierlocator|otherpnr|supplierref|airlineconfirmation|operatingairlineconfirmation)/i.test(key)) {
+        const code = value.trim().toUpperCase();
+        if (/^[A-Z0-9]{5,20}$/.test(code)) {
+          candidates.push(code);
+        }
+      }
+      
+      // Extract airline PNR from /DCBS*09HUEY or /DCAI*FCQGEC patterns
+      // This appears in segment reference fields (e.g., "DC" prefix with airline code + * + confirmation)
+      if (typeof value === 'string') {
+        const dcMatch = value.match(/\/DC[A-Z]{2}\*([A-Z0-9]{4,8})/i);
+        if (dcMatch) {
+          candidates.push(dcMatch[1].toUpperCase());
+        }
       }
     }
   }

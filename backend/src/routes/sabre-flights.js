@@ -1466,12 +1466,12 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       body,
     }];
 
-    if (ssrList.length > 0) {
-      // Keep passport DOCS, but allow retry without optional SSR service codes.
+    if (advancePassenger.length > 0) {
+      // Variant 2: Keep DOCS but strip SSR services (meals, wheelchair etc.)
       const bodyDocsOnly = JSON.parse(JSON.stringify(body));
-      const specialServiceInfo = bodyDocsOnly?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo;
-      if (specialServiceInfo?.Service) {
-        delete specialServiceInfo.Service;
+      const specialServiceInfo2 = bodyDocsOnly?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo;
+      if (specialServiceInfo2?.Service) {
+        delete specialServiceInfo2.Service;
       }
       requestVariants.push({
         label: 'docs_only_no_ssr',
@@ -1479,7 +1479,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       });
     }
 
-    // Final fallback: no SpecialReqDetails at all (some airlines reject DOCS for certain PCC configs)
+    // Variant 3: No SpecialReqDetails at all (some airlines reject DOCS/SSR for certain PCC configs)
     const bodyNoSpecial = JSON.parse(JSON.stringify(body));
     delete bodyNoSpecial.CreatePassengerNameRecordRQ.SpecialReqDetails;
     requestVariants.push({

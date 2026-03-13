@@ -1336,7 +1336,37 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
         });
       }
 
-      // DOCS — Passport/Travel Document (simplified to match BDFare's proven format)
+      // ── CTCM (Mobile Contact SSR) — Required by many airlines ──
+      const paxPhone = contactInfo?.phone || pax.phone || '';
+      if (paxPhone) {
+        // Split phone: remove leading + and country code for E164 format
+        const cleanPhone = paxPhone.replace(/[\s\-\(\)]/g, '');
+        let phoneForSSR = cleanPhone.replace(/^\+/, '');
+        // If starts with 880, keep as-is (already E164 without +)
+        // If starts with 0, prepend 880 (Bangladesh local)
+        if (phoneForSSR.startsWith('0')) phoneForSSR = '880' + phoneForSSR.substring(1);
+        ssrList.push({
+          SSRCode: 'CTCM',
+          Text: phoneForSSR,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // ── CTCE (Email Contact SSR) — Required by many airlines ──
+      const paxEmail = contactInfo?.email || pax.email || '';
+      if (paxEmail) {
+        // Sabre CTCE format: replace @ with // and . with ..
+        const emailForSSR = paxEmail.toUpperCase().replace('@', '//').replace(/\./g, '..');
+        ssrList.push({
+          SSRCode: 'CTCE',
+          Text: emailForSSR,
+          PersonName: { NameNumber: nameNumber },
+          SegmentNumber: 'A',
+        });
+      }
+
+      // DOCS — Passport/Travel Document (full fields required by Sabre)
       const passportNo = pax.passport || pax.passportNumber || '';
       const passportExpiry = pax.passportExpiry || '';
 
@@ -1346,17 +1376,13 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
         if (passportExpiry) {
           const raw = String(passportExpiry).replace(/['"]/g, '').trim();
           console.log(`[Sabre] DOCS ExpirationDate raw='${raw}' for pax ${i + 1}`);
-          // Already YYYY-MM-DD
           if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
             expiryFormatted = raw;
-          // YYYYMMDD → YYYY-MM-DD
           } else if (/^\d{8}$/.test(raw)) {
             expiryFormatted = `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`;
-          // DD/MM/YYYY or MM/DD/YYYY
           } else if (/^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(raw)) {
             const parts = raw.split(/[\/\-]/);
             expiryFormatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-          // Any other — try Date parse
           } else {
             const d = new Date(raw);
             if (!isNaN(d.getTime())) {
@@ -1370,15 +1396,45 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           throw new Error(`Missing or invalid passport expiry for passenger ${i + 1}`);
         }
 
-        // BDFare-proven DOCS format: just passport number + expiry date
-        // Additional fields (DOB, Gender, Names, Country) are auto-populated by Sabre from PNR passenger data
+        // DOB formatting
+        let dobFormatted = '';
+        const dobRaw = pax.dateOfBirth || pax.dob || '';
+        if (dobRaw) {
+          const rawDob = String(dobRaw).replace(/['"]/g, '').trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(rawDob)) {
+            dobFormatted = rawDob;
+          } else {
+            const d = new Date(rawDob);
+            if (!isNaN(d.getTime())) dobFormatted = d.toISOString().slice(0, 10);
+          }
+        }
+
+        // Gender mapping: M/F/MI(male infant)/FI(female infant)
+        const genderRaw = (pax.gender || pax.sex || '').toUpperCase();
+        let genderCode = 'M'; // default
+        if (genderRaw.startsWith('F') || genderRaw === 'FEMALE') genderCode = 'F';
+        const paxType = (pax.type || pax.passengerType || '').toUpperCase();
+        if (paxType === 'INF' || paxType === 'INFANT') {
+          genderCode = genderCode === 'F' ? 'FI' : 'MI';
+        }
+
+        // Nationality — 2-letter country code
+        const nationality = (pax.nationality || pax.citizenshipCountry || 'BD').toUpperCase().substring(0, 2);
+
+        // Full DOCS payload matching what Sabre requires
         const docPayload = {
           Type: 'P',
           Number: String(passportNo).toUpperCase(),
           ExpirationDate: expiryFormatted,
+          ...(dobFormatted ? { DateOfBirth: dobFormatted } : {}),
+          Gender: genderCode,
+          IssueCountry: nationality,
+          Nationality: nationality,
+          GivenName: (pax.firstName || '').toUpperCase(),
+          Surname: (pax.lastName || '').toUpperCase(),
         };
 
-        console.log(`[Sabre] DOCS pax ${i + 1}: ${docPayload.Number} | exp=${docPayload.ExpirationDate}`);
+        console.log(`[Sabre] DOCS pax ${i + 1}: ${docPayload.Number} | exp=${docPayload.ExpirationDate} | dob=${docPayload.DateOfBirth || 'N/A'} | gender=${docPayload.Gender} | nat=${docPayload.Nationality}`);
 
         advancePassenger.push({
           Document: docPayload,
@@ -1392,7 +1448,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       if (paxSS.destinationAddress?.trim()) {
         advancePassenger.push({
           Document: {
-            Type: 'A', // Address
+            Type: 'A',
             Text: paxSS.destinationAddress.trim().substring(0, 99).toUpperCase(),
           },
           PersonName: { NameNumber: nameNumber },

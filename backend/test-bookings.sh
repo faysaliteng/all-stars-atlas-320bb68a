@@ -172,12 +172,13 @@ search_flight() {
   fi
   
   # Pick first flight matching preferred source, or first flight
+  # API returns .data[] not .flights[]
   local FLIGHT
   if [ -n "$PREFERRED_SOURCE" ]; then
-    FLIGHT=$(echo "$SEARCH_RESULT" | jq -c --arg src "$PREFERRED_SOURCE" '[.flights[] | select(.source == $src)] | first // empty' 2>/dev/null)
+    FLIGHT=$(echo "$SEARCH_RESULT" | jq -c --arg src "$PREFERRED_SOURCE" '[.data[] | select(.source == $src)] | first // empty' 2>/dev/null)
   fi
   if [ -z "$FLIGHT" ] || [ "$FLIGHT" = "null" ]; then
-    FLIGHT=$(echo "$SEARCH_RESULT" | jq -c '.flights[0] // empty' 2>/dev/null)
+    FLIGHT=$(echo "$SEARCH_RESULT" | jq -c '.data[0] // empty' 2>/dev/null)
   fi
   
   echo "$FLIGHT"

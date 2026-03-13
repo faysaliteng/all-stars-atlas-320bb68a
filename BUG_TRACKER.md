@@ -109,7 +109,7 @@
 ### Resolution Time
 | Speed | Count | Description |
 |-------|-------|------------|
-| Same-day | 35 | Fixed within the day discovered |
+| Same-day | 36 | Fixed within the day discovered |
 | Next-day | 2 | Required investigation/probe testing |
 
 ---

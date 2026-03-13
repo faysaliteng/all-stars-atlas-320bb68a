@@ -1609,7 +1609,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
     }
 
     const toSchemaSafeDocsBody = (inputBody, options = {}) => {
-      const { includeIssueCountry = true } = options;
+      const { stripPersonalFields = false } = options;
       const cloned = JSON.parse(JSON.stringify(inputBody));
       const advancePax = cloned?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo?.AdvancePassenger;
 
@@ -1617,13 +1617,18 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
 
       advancePax.forEach((entry) => {
         if (entry?.Document?.Type !== 'P') return;
+        // Strip optional Document fields that some schemas reject
         const document = entry.Document;
         entry.Document = {
           Type: document.Type,
           Number: document.Number,
           ExpirationDate: document.ExpirationDate,
-          ...(includeIssueCountry && document.IssueCountry ? { IssueCountry: document.IssueCountry } : {}),
+          ...(document.IssueCountry ? { IssueCountry: document.IssueCountry } : {}),
         };
+        if (stripPersonalFields && entry.PersonName) {
+          // Keep only NameNumber
+          entry.PersonName = { NameNumber: entry.PersonName.NameNumber };
+        }
       });
 
       return cloned;

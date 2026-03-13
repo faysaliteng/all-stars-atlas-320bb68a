@@ -1089,7 +1089,14 @@ const AdminBookings = () => {
               </Select>
             </div>
 
-            {bulkCancelResult && (
+                {bulkCancelLoading && bulkCancelProgress && (
+                  <div className="p-3 rounded-lg border bg-muted/50 text-sm text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {bulkCancelProgress}
+                  </div>
+                )}
+
+                {bulkCancelResult && (
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">

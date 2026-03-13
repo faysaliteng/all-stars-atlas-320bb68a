@@ -679,6 +679,7 @@ interface TicketData {
   passenger?: string;
   pnr?: string;
   gdsPnr?: string;
+  airlinePnr?: string;
   seat?: string;
   class?: string;
   bookingRef?: string;

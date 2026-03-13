@@ -1541,12 +1541,20 @@ router.post('/cancel', authenticate, async (req, res) => {
       || details?.outbound?._ttiBookingId
       || null;
 
+    if (isGdsProvider && !gdsPnr) {
+      return res.status(422).json({
+        message: 'Missing GDS PNR — cancellation blocked to prevent local/GDS mismatch',
+        gdsError: `No valid GDS PNR found (airlinePnr=${airlinePnr || 'none'})`,
+        hint: 'This booking must store the provider GDS PNR for cancellation.',
+      });
+    }
+
     // Attempt GDS cancellation if PNR exists
     let gdsCancelResult = null;
     let gdsCancelFailed = false;
     if (gdsPnr) {
       try {
-        console.log(`[Cancel] Provider source='${source}' | airlineCode='${airlineCode || '-'}' | booking.provider='${booking.provider || ''}' | pnr='${gdsPnr}' | ttiBookingId='${ttiBookingId || '-'}'`);
+        console.log(`[Cancel] Provider source='${source}' | airlineCode='${airlineCode || '-'}' | booking.provider='${booking.provider || ''}' | bookingRef='${booking.booking_ref || '-'}' | gdsPnr='${gdsPnr}' | airlinePnr='${airlinePnr || '-'}' | ttiBookingId='${ttiBookingId || '-'}'`);
 
         if (isSabreSource) {
           const { cancelBooking: sabreCancelBooking } = require('./sabre-flights');

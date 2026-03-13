@@ -110,18 +110,17 @@ book_flight() {
   STATUS=$(echo "$BODY" | jq -r '.status // "?"')
 
   HAS_DUAL_PNR=true
-  if [ "$PNR" = "null" ] || [ "$AIRLINE_PNR" = "null" ] || [ "$PNR" = "$AIRLINE_PNR" ]; then
-    HAS_DUAL_PNR=false
-  fi
-
-  HAS_TTI_GDS_REF=true
   if [[ "$SRC" == *"tti"* ]] || [[ "$SRC" == *"astra"* ]]; then
-    if [ "$GDS_BOOKING_ID" = "null" ] || [ -z "$GDS_BOOKING_ID" ]; then
-      HAS_TTI_GDS_REF=false
+    if [ "$AIRLINE_PNR" = "null" ] || [ "$GDS_BOOKING_ID" = "null" ] || [ "$AIRLINE_PNR" = "$GDS_BOOKING_ID" ]; then
+      HAS_DUAL_PNR=false
+    fi
+  else
+    if [ "$PNR" = "null" ] || [ "$AIRLINE_PNR" = "null" ] || [ "$PNR" = "$AIRLINE_PNR" ]; then
+      HAS_DUAL_PNR=false
     fi
   fi
 
-  if [ "$GDS_BOOKED" = "true" ] && [ "$HAS_DUAL_PNR" = "true" ] && [ "$HAS_TTI_GDS_REF" = "true" ]; then
+  if [ "$GDS_BOOKED" = "true" ] && [ "$HAS_DUAL_PNR" = "true" ]; then
     echo -e "  ${GREEN}✓ SUCCESS${NC} | GDS PNR: ${GREEN}$PNR${NC} | Airline PNR: ${CYAN}$AIRLINE_PNR${NC} | GDS Ref: $GDS_BOOKING_ID | Ref: $BREF | Status: $STATUS"
     PASS=$((PASS + 1))
     ALL_PNRS+=("$PNR")

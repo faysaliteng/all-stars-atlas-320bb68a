@@ -997,11 +997,11 @@ async function createBooking({ flightData, passengers, contactInfo }) {
       }
     }
 
-    // PCTC SSR — contact info
+    // PCTC SSR — contact info (uses TTI schema field names)
     if (int.paxType === 'AD' && (int.email || int.phone)) {
       specialServices.push({
         Code: 'PCTC', RefPassenger: tp.Ref,
-        Data: { Pctc: { Email: int.email || null, Phone: int.phone || null } },
+        Data: { Pctc: { ContactEmail: int.email || null, ContactCellPhone: int.phone || null } },
         Status: null, Text: null, RefSegment: null, TechnicalType: null, Extensions: null, Available: null,
       });
     }

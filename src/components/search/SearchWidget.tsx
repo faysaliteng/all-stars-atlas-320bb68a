@@ -1178,12 +1178,12 @@ const SearchWidget = () => {
         <div className="grid grid-cols-2 md:contents">
           <div className={`md:col-span-2 search-field border-b md:border-b-0 border-r flex-col items-start ${dateErrorClass("pickupDate")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Pickup Date</div>
-            <Popover>
+            <Popover open={openDatePopover === "pickupDate"} onOpenChange={(o) => setOpenDatePopover(o ? "pickupDate" : null)}>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={pickupDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={pickupDate} onSelect={(d) => { setPickupDate(d); clearDateError("pickupDate"); }} initialFocus disabled={(date) => date < new Date()} />
+                <Calendar mode="single" selected={pickupDate} onSelect={(d) => { setPickupDate(d); clearDateError("pickupDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
               </PopoverContent>
             </Popover>
           </div>

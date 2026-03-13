@@ -583,15 +583,15 @@ const FlightBooking = () => {
           }
         }
 
-        // ─── International flight passport rules (IATA standard) ───
-        if (!domestic) {
-          if (!p.passport?.trim()) { errors[`passport_${pi}`] = `${paxLabel}: Passport number is mandatory for international flights`; }
-          else if (p.passport.trim().length < 5) { errors[`passport_${pi}`] = `${paxLabel}: Invalid passport number`; }
+        // ─── Passport/document mandatory for ALL flights (domestic + international) ───
+        if (!p.passport?.trim()) { errors[`passport_${pi}`] = `${paxLabel}: Passport/document number is required`; }
+        else if (p.passport.trim().length < 5) { errors[`passport_${pi}`] = `${paxLabel}: Invalid passport/document number`; }
 
-          if (!p.passportExpiry) {
-            errors[`passportExpiry_${pi}`] = `${paxLabel}: Passport expiry date is mandatory for international flights`;
-          } else if (!errors[`passportExpiry_${pi}`]) {
-            // 6-month validity rule — international standard (IATA/ICAO)
+        if (!p.passportExpiry) {
+          errors[`passportExpiry_${pi}`] = `${paxLabel}: Document expiry date is required`;
+        } else if (!errors[`passportExpiry_${pi}`]) {
+          // 6-month validity rule for international flights
+          if (!domestic) {
             const expiry = new Date(p.passportExpiry);
             const departureDate = outboundFlight?.departureTime ? new Date(outboundFlight.departureTime) : new Date();
             const sixMonthsFromDeparture = new Date(departureDate);
@@ -1102,14 +1102,14 @@ const FlightBooking = () => {
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className={`text-xs sm:text-sm ${fieldErrors[`passport_${pi}`] ? "text-destructive" : ""}`}>{domestic ? "Document Number" : "Document Number *"}</Label>
+                          <Label className={`text-xs sm:text-sm ${fieldErrors[`passport_${pi}`] ? "text-destructive" : ""}`}>Document Number *</Label>
                           <Input value={pax.passport} onChange={(e) => {
                             const updated = [...passengers]; updated[pi].passport = e.target.value; setPassengers(updated);
                             setFieldErrors(prev => { const n = {...prev}; delete n[`passport_${pi}`]; return n; });
                           }} placeholder="e.g. A0123456789" className={`h-10 sm:h-11 ${fieldErrors[`passport_${pi}`] ? "border-destructive ring-destructive/20 ring-2" : ""}`} />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className={`text-xs sm:text-sm ${fieldErrors[`passportExpiry_${pi}`] ? "text-destructive" : ""}`}>{domestic ? "Expiration Date" : "Expiration Date *"}</Label>
+                          <Label className={`text-xs sm:text-sm ${fieldErrors[`passportExpiry_${pi}`] ? "text-destructive" : ""}`}>Expiration Date *</Label>
                           <Input type="date" value={pax.passportExpiry} onChange={(e) => {
                             const updated = [...passengers]; updated[pi].passportExpiry = e.target.value; setPassengers(updated);
                             setFieldErrors(prev => { const n = {...prev}; delete n[`passportExpiry_${pi}`]; return n; });

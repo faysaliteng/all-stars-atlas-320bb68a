@@ -462,11 +462,16 @@ const AdminBookings = () => {
                   <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{b.type}</Badge></TableCell>
                   <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{b.route}</TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {b.pnr && b.pnr !== "—" ? (
-                      <span className="font-mono text-xs font-bold text-warning">{b.pnr}</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
+                    <div className="space-y-0.5">
+                      {b.airlinePnr ? (
+                        <code className="font-mono text-xs font-bold text-accent">{b.airlinePnr}</code>
+                      ) : (
+                        <span className="text-[9px] text-muted-foreground italic">PNR Pending</span>
+                      )}
+                      {b.pnr && b.pnr !== "—" && (
+                        <span className="text-[9px] text-muted-foreground font-mono block">ID: {b.pnr}</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{b.date}</TableCell>
                   <TableCell><Badge variant="outline" className={`text-[11px] capitalize ${getStatusStyle(b.status)}`}>{statusLabel(b.status)}</Badge></TableCell>

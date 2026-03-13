@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Plane, Building2, Search, Eye, Download, MoreHorizontal, RotateCcw, XCircle,
-  FileText, Globe, Palmtree, CreditCard, Timer, Package, Ban,
+  FileText, Globe, Palmtree, CreditCard, Timer, Package, Ban, AlertTriangle,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { generateTicketPDF } from "@/lib/pdf-generator";

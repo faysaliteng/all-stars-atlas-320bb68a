@@ -1135,13 +1135,19 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       });
     });
 
-    const travelersInfo = passengers.map((p, i) => ({
-      PersonName: {
+    const travelersInfo = passengers.map((p, i) => {
+      const personName = {
         NameNumber: `${i + 1}.1`,
         GivenName: (p.firstName || '').toUpperCase(),
         Surname: (p.lastName || '').toUpperCase(),
-      },
-    }));
+      };
+      // Add title/prefix (MR, MRS, MS, MSTR, MISS)
+      const title = (p.title || '').toUpperCase().replace(/\./g, '');
+      if (title) {
+        personName.NamePrefix = title;
+      }
+      return { PersonName: personName };
+    });
 
     // ── Build SSR (Special Service Requests) ──
     const ssrList = [];

@@ -1158,7 +1158,9 @@ async function issueTicket({ pnr, bookingId }) {
 
 /**
  * Cancel a TTI booking
- * Contract discovered from jsonSchema: CancelRequest uses CancelSettings (not CancelTicketSettings)
+ * Schema: CancelRequest { UniqueID: { ID }, Verification?: { RefCustomer?, PassengerName? },
+ *   CancelSettings: { ONE OF: CancelSegmentSettings | RefundSettings | RefundRequestSettings },
+ *   RequestInfo: { AuthenticationKey } }
  */
 async function cancelBooking({ pnr, bookingId }) {
   const config = await getTTIConfig();
@@ -1166,10 +1168,12 @@ async function cancelBooking({ pnr, bookingId }) {
 
   console.log('[TTI CANCEL] Cancelling booking PNR:', pnr, '| BookingId:', bookingId);
 
-  const refs = [bookingId, pnr].filter(Boolean).map(v => String(v).trim());
-  const uniqueRefs = [...new Set(refs)];
+  // UniqueID.ID should be the TTI internal booking reference (numeric)
+  // pnr is the airline PNR (alphanumeric like 00KSR3)
+  const ids = [bookingId, pnr].filter(Boolean).map(v => String(v).trim());
+  const uniqueIds = [...new Set(ids)];
 
-  const isStructuralError = (msg = '') => {
+  const isRetryableError = (msg = '') => {
     const m = String(msg || '');
     return (
       m.includes('Missing field') ||
@@ -1177,50 +1181,60 @@ async function cancelBooking({ pnr, bookingId }) {
       m.includes('MissingRequestInfo') ||
       m.includes('NullReference') ||
       m.includes('not valid') ||
-      m.includes('not found')
+      m.includes('not found') ||
+      m.includes('ONE AND ONLY ONE')
     );
   };
 
+  // Schema says CancelSettings must have EXACTLY ONE non-null sub-property
+  const cancelSettingsOptions = [
+    { CancelSegmentSettings: { SegmentReferencesToCancel: null } },  // cancel all segments
+    { RefundSettings: { RefundAllTaxes: false } },
+    { RefundRequestSettings: { ShouldCancelSegments: true } },
+  ];
+
   const requestVariants = [];
-  for (const ref of uniqueRefs) {
-    const uniqueIdVariants = [null, { ID: ref }, { Ref: ref }];
-    const verificationVariants = [null, { PnrCode: pnr || ref }, { Ref: ref }];
-    const cancelSettingsVariants = [
-      { CancelSegmentSettings: {} },
-      { CancelSegmentSettings: { SegmentReferencesToCancel: [String(ref)] } },
-      { CancelSegmentSettings: {}, RefundSettings: { RefundAllTaxes: false } },
-    ];
-
-    for (const uniqueId of uniqueIdVariants) {
-      for (const verification of verificationVariants) {
-        for (const cancelSettings of cancelSettingsVariants) {
-          const baseBody = {
-            RequestInfo: { AuthenticationKey: config.key },
-            CancelSettings: cancelSettings,
-          };
-          if (uniqueId) baseBody.UniqueID = uniqueId;
-          if (verification) baseBody.Verification = verification;
-
-          requestVariants.push(
-            { label: `Wrapped CancelSettings ref=${ref}`, bare: false, body: baseBody },
-            { label: `Bare CancelSettings ref=${ref}`, bare: true, body: baseBody }
-          );
-        }
-      }
+  for (const id of uniqueIds) {
+    for (const cancelSettings of cancelSettingsOptions) {
+      // Bare with UniqueID
+      requestVariants.push({
+        label: `Bare+UniqueID(${id})+${Object.keys(cancelSettings)[0]}`,
+        bare: true,
+        body: {
+          RequestInfo: { AuthenticationKey: config.key },
+          UniqueID: { ID: id },
+          CancelSettings: cancelSettings,
+        },
+      });
+      // Wrapped with UniqueID
+      requestVariants.push({
+        label: `Wrapped+UniqueID(${id})+${Object.keys(cancelSettings)[0]}`,
+        bare: false,
+        body: {
+          RequestInfo: { AuthenticationKey: config.key },
+          UniqueID: { ID: id },
+          CancelSettings: cancelSettings,
+        },
+      });
     }
   }
 
+  let lastError = '';
   for (const variant of requestVariants) {
     try {
       console.log(`[TTI CANCEL] Trying: ${variant.label}`);
+      console.log(`[TTI CANCEL] Payload: ${JSON.stringify(variant.body)}`);
       const response = variant.bare
         ? await ttiRequestBare('Cancel', variant.body)
         : await ttiRequest('Cancel', variant.body);
 
+      console.log('[TTI CANCEL] Response:', JSON.stringify(response).substring(0, 2000));
+
       if (response.ResponseInfo?.Error) {
-        const errMsg = response.ResponseInfo.Error.Message || response.ResponseInfo.Error.Code || 'Unknown';
+        const errMsg = response.ResponseInfo.Error.Message || response.ResponseInfo.Error.FullText || response.ResponseInfo.Error.Code || 'Unknown';
         console.error(`[TTI CANCEL] ❌ ${variant.label}: ${errMsg}`);
-        if (isStructuralError(errMsg)) continue;
+        lastError = errMsg;
+        if (isRetryableError(errMsg)) continue;
         throw new Error(`TTI cancel error: ${errMsg}`);
       }
 
@@ -1229,14 +1243,15 @@ async function cancelBooking({ pnr, bookingId }) {
     } catch (err) {
       if (err.message.startsWith('TTI cancel error:')) throw err;
       console.error(`[TTI CANCEL] Variant "${variant.label}" failed:`, err.message);
+      lastError = err.message;
       continue;
     }
   }
 
-  console.error('[TTI CANCEL] ❌ All cancel variants failed for refs:', uniqueRefs.join(', '));
+  console.error('[TTI CANCEL] ❌ All cancel variants failed for ids:', uniqueIds.join(', '));
   return {
     success: false,
-    error: `TTI Cancel API: all request formats failed for refs ${uniqueRefs.join(', ')}. Cancel via Air Astra back-office.`,
+    error: `TTI Cancel API failed for ids ${uniqueIds.join(', ')}. Last error: ${lastError}. Cancel via Air Astra back-office.`,
   };
 }
 

@@ -2,11 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
-## [3.9.9.3] — 2026-03-13 — REST GetSeats v3 Endpoint Fix
+## [3.9.9.4] — 2026-03-13 — REST GetSeats v1 Confirmed Endpoint
 
 ### Fixed
-- **REST GetSeats upgraded to v3**: `/v3/offers/getseats/byPnrLocator` (was `/v2/offers/getseats` which returned 404)
-- Uses simple `{ confirmationId: pnr }` payload instead of complex `SeatAvailabilityRQ` wrapper
+- **REST GetSeats corrected to v1**: `/v1/offers/getseats` (confirmed from Sabre developer portal — v2/v3 paths returned 400/404)
+- Multi-variant payload probing: tries `requestType: pnrLocator` (INFINI format), `SeatAvailabilityRQ` wrapper, and simple `confirmationId` — locks working format via `debugAttempts`
+- Handles both NDC v2 response (`seatMaps[].cabin.rows[].seats[]`) and legacy (`GetSeatMapRS.SeatMap.Row[]`) formats
 
 ### Verified — Production Airline Support Matrix (21 Airlines Tested)
 | Airline | Code | Route | Pre-Booking Seat Map | Rows | Source |
@@ -37,7 +38,7 @@ All notable changes to this project are documented in this file.
 | Feature | Pre-Booking | Post-Booking (PNR) | Source |
 |---------|-------------|-------------------|--------|
 | Seat Map View | ✅ 6 airlines | ✅ 6 airlines | SOAP EnhancedSeatMapRQ |
-| Seat Selection | ❌ | ✅ (with PNR) | REST GetSeats v2 |
+| Seat Selection | ❌ | ✅ (with PNR) | REST GetSeats v1 |
 | Extra Baggage | ❌ | ✅ (with PNR) | SOAP GetAncillaryOffersRQ |
 | Meal Selection | ❌ | ✅ (with PNR) | SOAP GetAncillaryOffersRQ |
 | Special Requests (SSR) | ✅ (booking form) | ✅ (injected to PNR) | REST CreatePNR |

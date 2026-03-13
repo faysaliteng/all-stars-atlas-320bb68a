@@ -1,15 +1,29 @@
 # Seven Trip — API Changelog
 
 > All backend API changes, new endpoints, breaking changes, and schema updates per version.
-> Last updated: 2026-03-13 (v3.9.9.2)
+> Last updated: 2026-03-13 (v3.9.9.4)
 
 ---
 
-## v3.9.9.2 — 2026-03-13
+## v3.9.9.4 — 2026-03-13
 
 ### Fixed
-- `GET /flights/seats-rest` — Fixed REST GetSeats to use Sabre v3 API (`/v3/offers/getseats/byPnrLocator` with `{ confirmationId }` payload)
-- Endpoint changed from `/v2/offers/getseats` → `/v3/offers/getseats/byPnrLocator`
+- `GET /flights/seats-rest` — Corrected to use confirmed Sabre endpoint `/v1/offers/getseats` (v2 returned 404, v3 returned 400)
+- Multi-variant payload probing: `requestType: pnrLocator` with/without `pointOfSale`, `SeatAvailabilityRQ` wrapper, simple `confirmationId`
+- Dual response parser: handles NDC v2 (`seatMaps[].cabin.rows[].seats[]`) and legacy (`GetSeatMapRS.SeatMap.Row[]`) formats
+- `debugAttempts` array in error responses shows exactly which variants were tried
+
+### Confirmed Sabre Endpoints (from developer portal)
+- Auth: `/v2/auth/token`
+- Search: `/v4/offers/shop`
+- Revalidate: `/v4/shop/flights/revalidate`
+- Book: `/v2.4.0/passenger/records?mode=create`
+- Cancel: `/v1/trip/orders/cancelBooking`
+- Retrieve: `/v1/trip/orders/getBooking`
+- Ticket: `/v1.3.0/air/ticket`
+- Ticket Status: `/v1/trip/orders/checkFlightTickets`
+- **Seats: `/v1/offers/getseats`**
+- SOAP: `https://webservices.cert.platform.sabre.com`
 
 ### Verified — Airline Support Matrix
 - **Pre-booking seat maps working**: EK (33 rows), SQ (35), AI (23), TG (26), TK (35), CZ (35) — all via Sabre SOAP

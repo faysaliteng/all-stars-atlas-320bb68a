@@ -9,7 +9,9 @@
 
 | # | Version | Bug | Root Cause | Fix | Impact |
 |---|---------|-----|-----------|-----|--------|
-| C00 | v3.9.9.5 | One-way & multi-city Sabre bookings failing silently | Error caught but not returned to client; no `gdsError` in response | Added `gdsError` field to booking response + detailed logging per CreatePNR attempt | Bookings appeared local-only |
+| C00 | v3.9.9.7 | Sabre DOCS silently dropped — PNR created without passport data | `passport` field contained upload path not number; `no_special_req` fallback succeeded without DOCS | Smart passport field detection + DOCS strict mode (disable no_special_req fallback when DOCS exist) | Passport data missing from airline records |
+| C00a | v3.9.9.7 | Sabre booking fails with AreaCityCode validation | `AreaCityCode` not allowed in `ContactNumber` schema | Removed `AreaCityCode` from phone mapping | Bookings blocked |
+| C00b | v3.9.9.5 | One-way & multi-city Sabre bookings failing silently | Error caught but not returned to client; no `gdsError` in response | Added `gdsError` field to booking response + detailed logging per CreatePNR attempt | Bookings appeared local-only |
 | C00b | v3.9.9.5 | Pre-booking seat map returning `success: false` | `/seats-rest` required PNR; no SOAP fallback for pre-booking | Added SOAP `EnhancedSeatMapRQ` fallback when no PNR | Seat maps unavailable pre-booking |
 | C00c | v3.9.9.5 | Airline PNR same as GDS PNR | GetBooking extraction only checked 2 paths | 4-method deep extraction with JSON deep scan | Users can't check in with airline |
 | C00d | v3.9.9.2 | REST GetSeats v2 schema validation error | Payload used v1 camelCase format; v2 requires PascalCase `SeatAvailabilityRQ.SeatMapQueryEnhanced` wrapper | Fixed payload schema + endpoint `/v1/` → `/v2/` | REST seat maps broken |

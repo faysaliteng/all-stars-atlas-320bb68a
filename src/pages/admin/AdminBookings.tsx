@@ -122,6 +122,7 @@ const AdminBookings = () => {
     };
   }) || [];
 
+  const bookings = apiBookings;
   // Only bookings WITH PNR are valid — others go to "Failed" section
   const hasPnr = (b: any) => b.pnr && b.pnr !== "—" && b.pnr.trim().length > 0;
   const successBookings = bookings.filter((b: any) => hasPnr(b));

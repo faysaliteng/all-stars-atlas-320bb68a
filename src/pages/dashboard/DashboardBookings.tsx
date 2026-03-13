@@ -19,7 +19,7 @@ import DataLoader from "@/components/DataLoader";
 import { useToast } from "@/hooks/use-toast";
 import TravelDocVerificationModal from "@/components/TravelDocVerificationModal";
 
-const statusTabs = ["All", "Reserved", "Pending", "In Progress", "Confirmed", "Completed", "Void", "Refund", "Exchange", "Expired", "Cancelled", "Un-Confirmed"];
+const statusTabs = ["All", "Reserved", "Pending", "In Progress", "Confirmed", "Completed", "Void", "Refund", "Exchange", "Expired", "Cancelled", "Un-Confirmed", "Failed"];
 
 const statusLabelMap: Record<string, string> = {
   on_hold: "Reserved", "On Hold": "Reserved",

@@ -1,7 +1,7 @@
 # Seven Trip — Complete Deployment History
 
 > Every deployment to production with exact commands, what changed, and verification steps.
-> Last updated: 2026-03-13 (v3.9.9.8 — Dual PNR Display)
+> Last updated: 2026-03-13 (v3.9.9.9 — Sabre Cancel Hardening + Host TA Recovery)
 
 ---
 

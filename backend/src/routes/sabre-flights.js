@@ -1514,7 +1514,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           CustomerInfo: {
             ContactNumbers: {
               ContactNumber: (() => {
-                const rawPhone = contactInfo?.phone || '01700000000';
+                const rawPhone = contactInfo?.phone || contactInfo?.contactPhone || '01700000000';
                 const clean = rawPhone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '');
                 let phoneNum = clean;
                 // If starts with 880, strip it for local number
@@ -1527,7 +1527,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
                 }];
               })(),
             },
-            Email: [{ Address: contactInfo?.email || '', Type: 'TO' }],
+            Email: [{ Address: contactInfo?.email || contactInfo?.contactEmail || '', Type: 'TO' }],
             PersonName: travelersInfo.map(t => t.PersonName),
           },
         },

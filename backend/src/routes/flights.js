@@ -1177,6 +1177,8 @@ router.post('/cancel', authenticate, async (req, res) => {
     const airlineCode = String(details.outbound?.airlineCode || details.airlineCode || '').toUpperCase();
     const isSabreSource = source.includes('sabre');
     const isTtiSource = source.includes('tti') || source.includes('astra') || ['2A', 'S2'].includes(airlineCode);
+    const isBdfareSource = source.includes('bdfare') || source.includes('bdf');
+    const isFlyhubSource = source.includes('flyhub');
 
     // For TTI, provider booking id from GDS response is required (local booking.id is NOT valid for TTI Cancel API)
     const ttiBookingId = details?.gdsBookingResult?.ttiBookingId
@@ -1199,6 +1201,16 @@ router.post('/cancel', authenticate, async (req, res) => {
         } else if (isTtiSource) {
           const { cancelBooking: ttiCancelBooking } = require('./tti-flights');
           gdsCancelResult = await ttiCancelBooking({ pnr: gdsPnr, bookingId: ttiBookingId });
+          if (!gdsCancelResult?.success) gdsCancelFailed = true;
+        } else if (isBdfareSource) {
+          const { cancelBooking: bdfCancelBooking } = require('./bdf-flights');
+          const bdfOrderId = details?.gdsBookingId || details?.gdsBookingResult?.orderId || null;
+          gdsCancelResult = await bdfCancelBooking({ orderId: bdfOrderId, pnr: gdsPnr });
+          if (!gdsCancelResult?.success) gdsCancelFailed = true;
+        } else if (isFlyhubSource) {
+          const { cancelBooking: fhCancelBooking } = require('./flyhub-flights');
+          const fhBookingId = details?.gdsBookingId || details?.gdsBookingResult?.bookingId || gdsPnr;
+          gdsCancelResult = await fhCancelBooking({ bookingId: fhBookingId, pnr: gdsPnr });
           if (!gdsCancelResult?.success) gdsCancelFailed = true;
         } else {
           gdsCancelFailed = true;

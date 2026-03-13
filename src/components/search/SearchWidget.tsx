@@ -734,12 +734,12 @@ const SearchWidget = () => {
 
                 <div className="md:col-span-3 search-field border-b md:border-b-0 flex-col items-start">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Departure</div>
-                  <Popover>
+                  <Popover open={openDatePopover === `mc-${index}`} onOpenChange={(o) => setOpenDatePopover(o ? `mc-${index}` : null)}>
                     <PopoverTrigger className="w-full text-left">
                       <DateDisplay date={segment.date} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={segment.date} onSelect={(d) => updateSegment(index, 'date', d)} initialFocus disabled={(date) => {
+                      <Calendar mode="single" selected={segment.date} onSelect={(d) => { updateSegment(index, 'date', d); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => {
                         const today = new Date(); today.setHours(0,0,0,0);
                         if (date < today) return true;
                         // Enforce: segment date must be >= previous segment's date

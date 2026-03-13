@@ -832,7 +832,16 @@ router.post('/book', authenticate, async (req, res) => {
       bookingRef = gdsPnr;
     }
 
-    const flightRoute = `${origin}-${destination}`;
+    // Build route string
+    const multiCityFlightsArr = req.body.multiCityFlights || [];
+    let flightRoute;
+    if (multiCityFlightsArr.length >= 2) {
+      flightRoute = multiCityFlightsArr.map(f => f.origin).concat(multiCityFlightsArr[multiCityFlightsArr.length - 1]?.destination).filter(Boolean).join('-');
+    } else if (isRoundTrip && returnFlightData) {
+      flightRoute = `${origin}-${destination}-${origin}`;
+    } else {
+      flightRoute = `${origin}-${destination}`;
+    }
     const flightProvider = flightSource || (isTtiFlight ? 'tti' : (isSabreFlight ? 'sabre' : (gdsPnr ? 'gds' : 'local')));
 
     await db.query(

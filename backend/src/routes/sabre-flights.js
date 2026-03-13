@@ -1239,12 +1239,33 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
     });
 
     const travelersInfo = passengers.map((p, i) => {
-      // Sabre schema does NOT allow NamePrefix — prepend title to GivenName (BDFare-proven format)
-      const title = (p.title || p.prefix || '').toUpperCase().replace(/\./g, '');
+      // Sabre format: Title goes AFTER given name (e.g., "MST RAFIZA MS", "MD KAOSAR MR")
+      // For children: MSTR (boy) / MISS (girl); For infants: use parent title or MSTR/MISS
+      const paxType = (p.type || p.passengerType || 'adult').toLowerCase();
+      const rawTitle = (p.title || p.prefix || '').toUpperCase().replace(/\./g, '');
+      let title = rawTitle;
+      
+      // Child/Infant title rules per Sabre standard
+      if (paxType === 'child' || paxType === 'cnn') {
+        const gender = (p.gender || '').toLowerCase();
+        if (gender === 'female' || gender === 'f' || ['MS', 'MRS', 'MISS'].includes(rawTitle)) {
+          title = 'MISS';
+        } else {
+          title = 'MSTR';
+        }
+      } else if (paxType === 'infant' || paxType === 'inf') {
+        const gender = (p.gender || '').toLowerCase();
+        if (gender === 'female' || gender === 'f' || ['MS', 'MRS', 'MISS'].includes(rawTitle)) {
+          title = 'MISS';
+        } else {
+          title = 'MSTR';
+        }
+      }
+      
       const givenName = (p.firstName || p.givenName || '').toUpperCase();
       const personName = {
         NameNumber: `${i + 1}.1`,
-        GivenName: title ? `${title} ${givenName}` : givenName,
+        GivenName: title ? `${givenName} ${title}` : givenName,
         Surname: (p.lastName || p.surname || '').toUpperCase(),
       };
       return { PersonName: personName };

@@ -283,10 +283,12 @@ async function getSeatMap(params, _retried = false) {
   } catch (err) {
     console.error('[Sabre SOAP] SeatMap request failed:', err.message);
 
-    // Retry once with fresh session on network/timeout errors
-    if (!_retried) {
-      console.log('[Sabre SOAP] SeatMap: retrying with fresh session after error...');
-      _sessionCache = { token: null, conversationId: null, expiresAt: 0 };
+    const netErr = /timeout|network|fetch failed|econnreset|etimedout/i.test(String(err?.message || ''));
+    const shouldRetry = !_retried && (netErr || isSoapSessionError(err?.message));
+
+    if (shouldRetry) {
+      console.log('[Sabre SOAP] SeatMap: retrying with fresh session after request error...');
+      await resetSoapSessionCacheWithClose(config);
       return getSeatMap(params, true);
     }
 

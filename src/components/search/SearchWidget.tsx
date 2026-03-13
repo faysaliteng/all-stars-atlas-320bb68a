@@ -425,6 +425,9 @@ const SearchWidget = () => {
   const [accountNumber, setAccountNumber] = useState("");
   const [billAmount, setBillAmount] = useState("");
 
+  // Date popover open state — auto-close on select
+  const [openDatePopover, setOpenDatePopover] = useState<string | null>(null);
+
   // Date validation error highlighting
   const [dateErrors, setDateErrors] = useState<Set<string>>(new Set());
   const addDateError = (...keys: string[]) => setDateErrors(new Set(keys));
@@ -731,12 +734,12 @@ const SearchWidget = () => {
 
                 <div className="md:col-span-3 search-field border-b md:border-b-0 flex-col items-start">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Departure</div>
-                  <Popover>
+                  <Popover open={openDatePopover === `mc-${index}`} onOpenChange={(o) => setOpenDatePopover(o ? `mc-${index}` : null)}>
                     <PopoverTrigger className="w-full text-left">
                       <DateDisplay date={segment.date} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={segment.date} onSelect={(d) => updateSegment(index, 'date', d)} initialFocus disabled={(date) => {
+                      <Calendar mode="single" selected={segment.date} onSelect={(d) => { updateSegment(index, 'date', d); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => {
                         const today = new Date(); today.setHours(0,0,0,0);
                         if (date < today) return true;
                         // Enforce: segment date must be >= previous segment's date
@@ -800,12 +803,12 @@ const SearchWidget = () => {
 
             <div className={`${tripType === "roundtrip" ? "col-span-1 sm:col-span-1" : ""} md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("depart")}`}>
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Departure</div>
-              <Popover>
+              <Popover open={openDatePopover === "depart"} onOpenChange={(o) => setOpenDatePopover(o ? "depart" : null)}>
                 <PopoverTrigger className="w-full text-left">
                   <DateDisplay date={departDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={departDate} onSelect={(d) => { setDepartDate(d); clearDateError("depart"); }} initialFocus disabled={(date) => date < new Date()} />
+                  <Calendar mode="single" selected={departDate} onSelect={(d) => { setDepartDate(d); clearDateError("depart"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
                 </PopoverContent>
               </Popover>
             </div>
@@ -813,12 +816,12 @@ const SearchWidget = () => {
             {tripType === "roundtrip" && (
               <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("return")}`}>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Return</div>
-                <Popover>
+                <Popover open={openDatePopover === "return"} onOpenChange={(o) => setOpenDatePopover(o ? "return" : null)}>
                   <PopoverTrigger className="w-full text-left">
                     <DateDisplay date={returnDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={returnDate} onSelect={(d) => { setReturnDate(d); clearDateError("return"); }} initialFocus disabled={(date) => date < (departDate || new Date())} />
+                    <Calendar mode="single" selected={returnDate} onSelect={(d) => { setReturnDate(d); clearDateError("return"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < (departDate || new Date())} />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -866,23 +869,23 @@ const SearchWidget = () => {
         <div className="grid grid-cols-2 md:contents">
           <div className={`md:col-span-2 search-field border-b md:border-b-0 border-r md:border-r flex-col items-start ${dateErrorClass("checkIn")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Check-in</div>
-            <Popover>
+            <Popover open={openDatePopover === "checkIn"} onOpenChange={(o) => setOpenDatePopover(o ? "checkIn" : null)}>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={checkIn} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={checkIn} onSelect={(d) => { setCheckIn(d); clearDateError("checkIn"); }} initialFocus disabled={(date) => date < new Date()} />
+                <Calendar mode="single" selected={checkIn} onSelect={(d) => { setCheckIn(d); clearDateError("checkIn"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
               </PopoverContent>
             </Popover>
           </div>
           <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("checkOut")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Check-out</div>
-            <Popover>
+            <Popover open={openDatePopover === "checkOut"} onOpenChange={(o) => setOpenDatePopover(o ? "checkOut" : null)}>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={checkOut} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={checkOut} onSelect={(d) => { setCheckOut(d); clearDateError("checkOut"); }} initialFocus disabled={(date) => date < (checkIn || new Date())} />
+                <Calendar mode="single" selected={checkOut} onSelect={(d) => { setCheckOut(d); clearDateError("checkOut"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < (checkIn || new Date())} />
               </PopoverContent>
             </Popover>
           </div>
@@ -974,23 +977,23 @@ const SearchWidget = () => {
         </div>
         <div className={`search-field border-b md:border-b-0 flex-col items-start md:col-span-2 ${dateErrorClass("visaDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Travel Date</div>
-          <Popover>
+          <Popover open={openDatePopover === "visaDate"} onOpenChange={(o) => setOpenDatePopover(o ? "visaDate" : null)}>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={visaDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={visaDate} onSelect={(d) => { setVisaDate(d); clearDateError("visaDate"); }} initialFocus disabled={(date) => date < new Date()} />
+              <Calendar mode="single" selected={visaDate} onSelect={(d) => { setVisaDate(d); clearDateError("visaDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
             </PopoverContent>
           </Popover>
         </div>
         <div className={`search-field border-b md:border-b-0 flex-col items-start md:col-span-2 ${dateErrorClass("visaReturnDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Return Date</div>
-          <Popover>
+          <Popover open={openDatePopover === "visaReturnDate"} onOpenChange={(o) => setOpenDatePopover(o ? "visaReturnDate" : null)}>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={visaReturnDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={visaReturnDate} onSelect={(d) => { setVisaReturnDate(d); clearDateError("visaReturnDate"); }} initialFocus disabled={(date) => date < (visaDate || new Date())} />
+              <Calendar mode="single" selected={visaReturnDate} onSelect={(d) => { setVisaReturnDate(d); clearDateError("visaReturnDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < (visaDate || new Date())} />
             </PopoverContent>
           </Popover>
         </div>
@@ -1051,12 +1054,12 @@ const SearchWidget = () => {
           </div>
           <div className={`md:col-span-4 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("travelDate")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Travel Date</div>
-            <Popover>
+            <Popover open={openDatePopover === "travelDate"} onOpenChange={(o) => setOpenDatePopover(o ? "travelDate" : null)}>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={travelDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={travelDate} onSelect={(d) => { setTravelDate(d); clearDateError("travelDate"); }} initialFocus disabled={(date) => date < new Date()} />
+                <Calendar mode="single" selected={travelDate} onSelect={(d) => { setTravelDate(d); clearDateError("travelDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
               </PopoverContent>
             </Popover>
           </div>
@@ -1106,12 +1109,12 @@ const SearchWidget = () => {
         </div>
         <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("medicalDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Travel Date</div>
-          <Popover>
+          <Popover open={openDatePopover === "medicalDate"} onOpenChange={(o) => setOpenDatePopover(o ? "medicalDate" : null)}>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={medicalDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={medicalDate} onSelect={(d) => { setMedicalDate(d); clearDateError("medicalDate"); }} initialFocus disabled={(date) => date < new Date()} />
+              <Calendar mode="single" selected={medicalDate} onSelect={(d) => { setMedicalDate(d); clearDateError("medicalDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
             </PopoverContent>
           </Popover>
         </div>
@@ -1175,23 +1178,23 @@ const SearchWidget = () => {
         <div className="grid grid-cols-2 md:contents">
           <div className={`md:col-span-2 search-field border-b md:border-b-0 border-r flex-col items-start ${dateErrorClass("pickupDate")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Pickup Date</div>
-            <Popover>
+            <Popover open={openDatePopover === "pickupDate"} onOpenChange={(o) => setOpenDatePopover(o ? "pickupDate" : null)}>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={pickupDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={pickupDate} onSelect={(d) => { setPickupDate(d); clearDateError("pickupDate"); }} initialFocus disabled={(date) => date < new Date()} />
+                <Calendar mode="single" selected={pickupDate} onSelect={(d) => { setPickupDate(d); clearDateError("pickupDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
               </PopoverContent>
             </Popover>
           </div>
           <div className={`md:col-span-2 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("dropoffDate")}`}>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Drop-off Date</div>
-            <Popover>
+            <Popover open={openDatePopover === "dropoffDate"} onOpenChange={(o) => setOpenDatePopover(o ? "dropoffDate" : null)}>
               <PopoverTrigger className="w-full text-left">
                 <DateDisplay date={dropoffDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={dropoffDate} onSelect={(d) => { setDropoffDate(d); clearDateError("dropoffDate"); }} initialFocus disabled={(date) => date < (pickupDate || new Date())} />
+                <Calendar mode="single" selected={dropoffDate} onSelect={(d) => { setDropoffDate(d); clearDateError("dropoffDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < (pickupDate || new Date())} />
               </PopoverContent>
             </Popover>
           </div>
@@ -1248,12 +1251,12 @@ const SearchWidget = () => {
         </div>
         <div className={`md:col-span-3 search-field border-b md:border-b-0 flex-col items-start ${dateErrorClass("esimDate")}`}>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Activation Date</div>
-          <Popover>
+          <Popover open={openDatePopover === "esimDate"} onOpenChange={(o) => setOpenDatePopover(o ? "esimDate" : null)}>
             <PopoverTrigger className="w-full text-left">
               <DateDisplay date={esimDate} fallbackDay="—" fallbackMonth="Select" fallbackWeekday="Date" />
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={esimDate} onSelect={(d) => { setEsimDate(d); clearDateError("esimDate"); }} initialFocus disabled={(date) => date < new Date()} />
+              <Calendar mode="single" selected={esimDate} onSelect={(d) => { setEsimDate(d); clearDateError("esimDate"); setOpenDatePopover(null); }} initialFocus className="pointer-events-auto" disabled={(date) => date < new Date()} />
             </PopoverContent>
           </Popover>
         </div>

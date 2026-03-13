@@ -38,7 +38,7 @@ All notable changes to this project are documented in this file.
 | Feature | Pre-Booking | Post-Booking (PNR) | Source |
 |---------|-------------|-------------------|--------|
 | Seat Map View | ✅ 6 airlines | ✅ 6 airlines | SOAP EnhancedSeatMapRQ |
-| Seat Selection | ❌ | ✅ (with PNR) | REST GetSeats v2 |
+| Seat Selection | ❌ | ✅ (with PNR) | REST GetSeats v1 |
 | Extra Baggage | ❌ | ✅ (with PNR) | SOAP GetAncillaryOffersRQ |
 | Meal Selection | ❌ | ✅ (with PNR) | SOAP GetAncillaryOffersRQ |
 | Special Requests (SSR) | ✅ (booking form) | ✅ (injected to PNR) | REST CreatePNR |

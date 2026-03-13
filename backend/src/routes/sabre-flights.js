@@ -1983,10 +1983,17 @@ async function getBooking({ pnr }) {
         if (v && typeof v === 'object') { stack.push(v); continue; }
         if (typeof v !== 'string') continue;
         // Match vendor/airline locator keys
-        if (/(vendorlocator|airlinelocator|airlinepnr|airlineconfirmation|vendorconfirmation|vendorPNR|otherPNR|supplierlocator|reservationnumber|confirmationnumber)/i.test(k)) {
+        if (/(vendorlocator|airlinelocator|airlinepnr|airlineconfirmation|vendorconfirmation|vendorPNR|otherPNR|supplierlocator|reservationnumber|confirmationnumber|supplierref|operatingairlineconfirmation)/i.test(k)) {
           const code = v.trim().toUpperCase();
           if (/^[A-Z0-9]{5,20}$/.test(code) && code !== pnr.toUpperCase()) {
             vendorLocators.push(code);
+          }
+        }
+        // Also extract from /DCBS*09HUEY or /DCAI*FCQGEC patterns
+        if (typeof v === 'string') {
+          const dcMatch = v.match(/\/DC[A-Z]{2}\*([A-Z0-9]{4,8})/i);
+          if (dcMatch && dcMatch[1].toUpperCase() !== pnr.toUpperCase()) {
+            vendorLocators.push(dcMatch[1].toUpperCase());
           }
         }
       }

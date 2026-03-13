@@ -249,8 +249,9 @@ cd ~/projects/all-stars-atlas && git pull origin main && npm install && npm run 
 
 | Metric | Value |
 |--------|-------|
-| **Total Deployments** | 7 |
+| **Total Deployments** | 8 |
 | **Full Stack** | 5 |
+| **Backend Only** | 2 |
 | **Nginx Only** | 1 |
 | **Database Only** | 1 |
 | **Average Deploy Time** | ~3 minutes (git pull → build → copy → restart) |

@@ -61,7 +61,7 @@
 | Mar 10, 2026 | 3 | Full audit v2, admin lifecycle, GDS operations |
 | Mar 11, 2026 | 8 | OCR v5-v7, multi-city, cabin class, document validation, performance |
 | Mar 12, 2026 | 12 | Sabre SOAP, branded fares, dedup, rewards, animated timeline, dark mode |
-| Mar 13, 2026 | 3 | TTI cancel fix, Sabre NamePrefix fix, SOAP retry |
+| Mar 13, 2026 | 5 | TTI cancel fix, Sabre NamePrefix fix, SOAP retry, DOCS strict mode, airline PNR from CreatePNR |
 
 **Peak development:** Mar 12 with 12 releases in one day.
 

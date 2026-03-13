@@ -70,6 +70,10 @@ const AdminBookings = () => {
   const [payLinkName, setPayLinkName] = useState("");
   const [payLinkPlatform, setPayLinkPlatform] = useState("email");
   const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
+  const [bulkCancelOpen, setBulkCancelOpen] = useState(false);
+  const [bulkCancelFilter, setBulkCancelFilter] = useState<"reserved" | "all_with_pnr">("reserved");
+  const [bulkCancelLoading, setBulkCancelLoading] = useState(false);
+  const [bulkCancelResult, setBulkCancelResult] = useState<any>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 

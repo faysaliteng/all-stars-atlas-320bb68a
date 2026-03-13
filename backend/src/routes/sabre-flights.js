@@ -1571,14 +1571,40 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       }
     }
 
+    const toSchemaSafeDocsBody = (inputBody) => {
+      const cloned = JSON.parse(JSON.stringify(inputBody));
+      const advancePax = cloned?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo?.AdvancePassenger;
+
+      if (!Array.isArray(advancePax)) return cloned;
+
+      advancePax.forEach((entry) => {
+        if (entry?.Document?.Type !== 'P') return;
+        const document = entry.Document;
+        entry.Document = {
+          Type: document.Type,
+          Number: document.Number,
+          ExpirationDate: document.ExpirationDate,
+          ...(document.IssueCountry ? { IssueCountry: document.IssueCountry } : {}),
+        };
+      });
+
+      return cloned;
+    };
+
     const requestVariants = [{
       label: 'full_payload',
       body,
     }];
 
     if (advancePassenger.length > 0) {
-      // Variant 2: Keep DOCS but strip SSR services (meals, wheelchair etc.)
-      const bodyDocsOnly = JSON.parse(JSON.stringify(body));
+      // Variant 2: Keep SSR + DOCS, but strip non-portable DOCS fields rejected by stricter Sabre schemas
+      requestVariants.push({
+        label: 'full_payload_docs_minimal',
+        body: toSchemaSafeDocsBody(body),
+      });
+
+      // Variant 3: Keep only DOCS (no meal/wheelchair SSR) with schema-safe DOCS
+      const bodyDocsOnly = toSchemaSafeDocsBody(body);
       const specialServiceInfo2 = bodyDocsOnly?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo;
       if (specialServiceInfo2?.Service) {
         delete specialServiceInfo2.Service;

@@ -274,6 +274,38 @@ const AdminBookings = () => {
     }
   };
 
+  const toggleSelectOne = (bookingId: string, checked: boolean) => {
+    setSelectedBookingIds((prev) => checked ? [...new Set([...prev, bookingId])] : prev.filter((id) => id !== bookingId));
+  };
+
+  const toggleSelectAllVisible = (checked: boolean) => {
+    setSelectedBookingIds((prev) => {
+      if (checked) return [...new Set([...prev, ...allVisibleIds])];
+      const visibleSet = new Set(allVisibleIds);
+      return prev.filter((id) => !visibleSet.has(id));
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedBookingIds.length === 0) return;
+    setBulkDeleteLoading(true);
+    try {
+      const result: any = await api.post('/admin/bookings/bulk-delete', { bookingIds: selectedBookingIds });
+      toast({
+        title: 'Bulk Delete Complete',
+        description: `${result.summary?.deleted || 0} deleted, ${result.summary?.notFound || 0} not found`,
+      });
+      setSelectedBookingIds([]);
+      setBulkDeleteOpen(false);
+      qc.invalidateQueries({ queryKey: ['admin', 'bookings'] });
+      refetch();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Bulk delete failed', variant: 'destructive' });
+    } finally {
+      setBulkDeleteLoading(false);
+    }
+  };
+
   const statCards = [
     { label: "Total Bookings", value: stats.total, icon: Ticket, color: "text-primary", bg: "bg-primary/10" },
     { label: "With PNR", value: stats.confirmed, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30" },

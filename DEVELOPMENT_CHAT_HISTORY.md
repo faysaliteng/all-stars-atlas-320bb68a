@@ -354,6 +354,8 @@ Placeholder data persisting in production code. Lesson: zero-mock audit + automa
 | 40 | v3.9.8 | Mar 13 | 🟡 | Post-booking extras missing seat UI | Added SeatMap component |
 | 41 | v3.9.9.7 | Mar 13 | 🔴 | Sabre DOCS silently dropped (passport field was file path) | Smart passport field detection + DOCS strict mode |
 | 42 | v3.9.9.7 | Mar 13 | 🔴 | AreaCityCode validation error | Removed AreaCityCode from ContactNumber |
+| 43 | v3.9.9.9 | Mar 13 | 🔴 | Sabre SOAP cancel blocked — Host TA exhaustion | `resetSoapSessionCacheWithClose()` + retry gate + session close in finally |
+| 44 | v3.9.9.9 | Mar 13 | 🔴 | Cancel using wrong PNR type (airline vs GDS) | `resolveCancelLocators()` ensures GDS PNR |
 
 ---
 

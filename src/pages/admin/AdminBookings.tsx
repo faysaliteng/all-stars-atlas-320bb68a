@@ -362,6 +362,13 @@ const AdminBookings = () => {
         <Card><CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader><TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  onCheckedChange={(checked) => toggleSelectAllVisible(Boolean(checked))}
+                  aria-label="Select all visible bookings"
+                />
+              </TableHead>
               <TableHead>ID</TableHead><TableHead>Customer</TableHead>
               <TableHead className="hidden md:table-cell">Type</TableHead>
               <TableHead className="hidden lg:table-cell">Route</TableHead>
@@ -374,7 +381,7 @@ const AdminBookings = () => {
             </TableRow></TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-12">No bookings found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-12">No bookings found</TableCell></TableRow>
               ) : filtered.map((b: any) => (
                 <TableRow key={b.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetail(b)}>
                   <TableCell className="font-mono text-xs">{b.id}</TableCell>

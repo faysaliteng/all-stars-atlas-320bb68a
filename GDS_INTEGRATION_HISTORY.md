@@ -92,7 +92,7 @@
 | Mar 12 | v3.9.3 | DOCS schema fix (remove unsupported fields) |
 | Mar 13 | v3.9.7 | **NamePrefix removal** — title appended to GivenName |
 | Mar 13 | v3.9.9 | **Full endpoint coverage**: revalidatePrice, getBooking, checkTicketStatus, getSeatsRest; ticketing upgraded to v1.3.0 |
-| Mar 13 | v3.9.9.4 | **REST GetSeats v1**: `/v1/offers/getseats` — confirmed from Sabre developer portal; multi-variant payload probing |
+| Mar 13 | v3.9.9.4 | **REST GetSeats resilience**: v3+v1 contract probing, explicit PNR viewership handling (700102), SOAP fallback when REST fails |
 
 ### Issues & Resolutions
 
@@ -126,6 +126,11 @@
 - **Status**: Not a code issue — PCC J4YL lacks NDC entitlements
 - **Action Required**: Contact Sabre account manager to activate NDC carrier agreements
 - **Code Status**: `DataSources: { NDC: "Enable" }` already in BFM request
+
+#### Issue #7: REST GetSeats PNR Access/Schema Mismatch (v3.9.9.4)
+- **Symptom**: `/flights/seats-rest` returned 400 `Failed to read HTTP message` or viewership/security errors for some PNRs
+- **Root Cause**: Mixed contract behavior across GetSeats versions + PNR ownership/viewership constraints (`code 700102`)
+- **Fix**: Probe v3 and v1 payload variants, surface `hint` for viewership restrictions, and auto-fallback to SOAP EnhancedSeatMapRQ for reliable seat visibility
 
 ---
 

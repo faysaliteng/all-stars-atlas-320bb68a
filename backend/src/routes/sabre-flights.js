@@ -1692,10 +1692,9 @@ async function checkTicketStatus({ pnr }) {
 }
 
 /**
- * Get seat map via Sabre REST /v1/offers/getseats
- * Confirmed endpoint: /v1/offers/getseats (from Sabre developer portal)
- * Requires PNR or offerId — does NOT support raw flight+date lookup.
- * SOAP EnhancedSeatMapRQ is used for pre-booking seat maps.
+ * Get seat map via Sabre REST GetSeats.
+ * Tries both v3 and v1 contracts, then falls back to SOAP EnhancedSeatMapRQ
+ * when REST fails (e.g., PNR viewership restrictions).
  */
 async function getSeatsRest({ origin, destination, departureDate, airlineCode, flightNumber, cabinClass, pnr, offerId }) {
   const config = await getSabreConfig();
@@ -1706,40 +1705,52 @@ async function getSeatsRest({ origin, destination, departureDate, airlineCode, f
 
   if (!pnr && !offerId) {
     return {
-      success: false, source: 'sabre-rest',
+      success: false,
+      source: 'sabre-rest',
       error: 'GetSeats REST requires PNR or offerId. Use SOAP EnhancedSeatMapRQ for pre-booking.',
-      rows: [], available: false,
+      rows: [],
+      available: false,
       note: 'Pre-booking seat maps use SOAP EnhancedSeatMapRQ (no PNR needed)',
     };
   }
 
-  // All requests go to /v1/offers/getseats (confirmed Sabre endpoint)
-  const ENDPOINT = '/v1/offers/getseats';
   const cityCode = String(origin || 'DAC').toUpperCase().slice(0, 3);
-
   const requestVariants = [];
 
   if (pnr) {
-    // Variant 1: INFINI-documented format — requestType + request wrapper + pointOfSale
+    // v3 variants (often accepted by parser; may fail later with PNR viewership restrictions)
+    requestVariants.push({
+      name: 'v3_byPnr_pnrLocator',
+      endpoint: '/v3/offers/getseats/byPnrLocator',
+      body: { pnrLocator: pnr },
+    });
+    requestVariants.push({
+      name: 'v3_byPnr_confirmationId',
+      endpoint: '/v3/offers/getseats/byPnrLocator',
+      body: { confirmationId: pnr },
+    });
+
+    // v1 variants (as shared by Sabre developer endpoint list)
     requestVariants.push({
       name: 'v1_pnrLocator_with_pos',
+      endpoint: '/v1/offers/getseats',
       body: {
         pointOfSale: { location: { countryCode: 'BD', cityCode } },
         requestType: 'pnrLocator',
         request: { pnrLocator: pnr },
       },
     });
-    // Variant 2: Same without pointOfSale
     requestVariants.push({
       name: 'v1_pnrLocator_no_pos',
+      endpoint: '/v1/offers/getseats',
       body: {
         requestType: 'pnrLocator',
         request: { pnrLocator: pnr },
       },
     });
-    // Variant 3: SeatAvailabilityRQ legacy wrapper with ConfirmationId
     requestVariants.push({
       name: 'v1_legacy_confirmationId',
+      endpoint: '/v1/offers/getseats',
       body: {
         SeatAvailabilityRQ: {
           SeatMapQueryEnhanced: {
@@ -1755,15 +1766,20 @@ async function getSeatsRest({ origin, destination, departureDate, airlineCode, f
         },
       },
     });
-    // Variant 4: Simple confirmationId at top level
     requestVariants.push({
       name: 'v1_simple_confirmationId',
+      endpoint: '/v1/offers/getseats',
       body: { confirmationId: pnr },
     });
   } else if (offerId) {
-    // Variant for offerId (pre-booking with BFM offer)
+    requestVariants.push({
+      name: 'v3_offerId_byReservationPayload',
+      endpoint: '/v3/offers/getseats/byReservationPayload',
+      body: { offer: { offerId } },
+    });
     requestVariants.push({
       name: 'v1_offerId_with_pos',
+      endpoint: '/v1/offers/getseats',
       body: {
         pointOfSale: { location: { countryCode: 'BD', cityCode } },
         requestType: 'offerId',
@@ -1772,6 +1788,7 @@ async function getSeatsRest({ origin, destination, departureDate, airlineCode, f
     });
     requestVariants.push({
       name: 'v1_offerId_no_pos',
+      endpoint: '/v1/offers/getseats',
       body: {
         requestType: 'offerId',
         request: { offer: { offerId } },
@@ -1786,21 +1803,22 @@ async function getSeatsRest({ origin, destination, departureDate, airlineCode, f
     let successVariant;
 
     for (const variant of requestVariants) {
+      const endpoint = variant.endpoint || '/v1/offers/getseats';
       try {
-        console.log(`[Sabre] REST GetSeats attempt: ${variant.name} -> ${ENDPOINT}`);
-        response = await sabreRequest(config, ENDPOINT, variant.body);
-        successVariant = variant.name;
-        console.log(`[Sabre] REST GetSeats SUCCESS via ${variant.name}, keys: ${Object.keys(response || {}).join(', ')}`);
+        console.log(`[Sabre] REST GetSeats attempt: ${variant.name} -> ${endpoint}`);
+        response = await sabreRequest(config, endpoint, variant.body);
+        successVariant = `${variant.name}@${endpoint}`;
+        console.log(`[Sabre] REST GetSeats SUCCESS via ${successVariant}, keys: ${Object.keys(response || {}).join(', ')}`);
         break;
       } catch (variantErr) {
         const errSnippet = variantErr.message?.slice(0, 300) || String(variantErr);
         console.log(`[Sabre] REST GetSeats ${variant.name} failed: ${errSnippet}`);
-        attemptErrors.push(`${variant.name}: ${errSnippet}`);
+        attemptErrors.push(`${variant.name}@${endpoint}: ${errSnippet}`);
       }
     }
 
     if (!response) {
-      throw new Error(`All GetSeats variants failed on ${ENDPOINT}. Attempts: ${attemptErrors.length}`);
+      throw new Error(`All GetSeats variants failed. Attempts: ${attemptErrors.length}`);
     }
 
     // Parse response — handle both legacy (GetSeatMapRS/SeatMap) and NDC v2 (response.seatMaps) formats
@@ -1929,9 +1947,64 @@ async function getSeatsRest({ origin, destination, departureDate, airlineCode, f
     };
   } catch (err) {
     console.error('[Sabre] REST GetSeats failed:', err.message);
+
+    const attemptsText = attemptErrors.join(' | ');
+    const isViewershipRestricted = /viewership is restricted for the pnr|security check not supported|code:\s*700102/i.test(attemptsText);
+
+    // Final fallback: SOAP EnhancedSeatMapRQ (works pre-booking and for many post-booking checks)
+    if (origin && destination && departureDate && airlineCode && flightNumber) {
+      try {
+        const sabreSoap = require('./sabre-soap');
+        if (typeof sabreSoap.getSeatMap === 'function') {
+          const BD_AIRPORTS = ['DAC', 'CXB', 'CGP', 'ZYL', 'JSR', 'RJH', 'SPD', 'BZL', 'IRD', 'TKR'];
+          const isDomestic = BD_AIRPORTS.includes(String(origin).toUpperCase()) && BD_AIRPORTS.includes(String(destination).toUpperCase());
+
+          const soapResult = await sabreSoap.getSeatMap({
+            origin,
+            destination,
+            departureDate,
+            marketingCarrier: airlineCode,
+            operatingCarrier: airlineCode,
+            flightNumber: String(flightNumber).replace(/^[A-Z]{2}/i, ''),
+            cabinClass: cabinClass || 'Economy',
+            isDomestic,
+          });
+
+          if (soapResult && !soapResult._error && Array.isArray(soapResult.rows) && soapResult.rows.length > 0) {
+            const totalSeats = soapResult.rows.reduce((sum, r) => sum + (r.seats?.length || 0), 0);
+            return {
+              success: true,
+              source: 'sabre-soap-fallback',
+              variant: 'soap_enhanced_seat_map_fallback',
+              rows: soapResult.rows,
+              columns: soapResult.columns || [],
+              exitRows: soapResult.exitRows || [],
+              totalRows: soapResult.totalRows || soapResult.rows.length,
+              totalSeats,
+              available: true,
+              warning: isViewershipRestricted
+                ? 'REST GetSeats blocked by PNR viewership restriction; SOAP fallback used.'
+                : 'REST GetSeats contract rejected this payload; SOAP fallback used.',
+              debugAttempts: attemptErrors,
+            };
+          }
+        }
+      } catch (soapErr) {
+        attemptErrors.push(`soap_fallback: ${soapErr.message}`);
+      }
+    }
+
     return {
-      success: false, source: 'sabre-rest',
-      error: err.message, rows: [], available: false,
+      success: false,
+      source: 'sabre-rest',
+      error: err.message,
+      hint: isViewershipRestricted
+        ? 'PNR viewership restriction: use a PNR created/owned by this PCC or rely on SOAP seat-map endpoint.'
+        : 'GetSeats contract rejected payloads in this environment. Use /flights/seat-map (SOAP) for pre-booking visibility.',
+      rows: [],
+      totalRows: 0,
+      totalSeats: 0,
+      available: false,
       debugAttempts: attemptErrors,
     };
   }

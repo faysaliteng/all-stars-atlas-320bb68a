@@ -75,6 +75,9 @@ const AdminBookings = () => {
   const [bulkCancelFilter, setBulkCancelFilter] = useState<"reserved" | "all_with_pnr">("reserved");
   const [bulkCancelLoading, setBulkCancelLoading] = useState(false);
   const [bulkCancelResult, setBulkCancelResult] = useState<any>(null);
+  const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
 

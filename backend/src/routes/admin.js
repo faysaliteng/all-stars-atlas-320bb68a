@@ -417,12 +417,11 @@ router.patch('/bookings/:id/archive', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: 'Something went wrong', status: 500 }); }
 });
 
-// POST /admin/bookings/bulk-cancel — cancel bookings via GDS in small batches to avoid gateway timeout
-// Accepts: filter ('reserved'|'all_with_pnr'|'selected'), bookingIds[], batchSize (default 3), offset (default 0)
-// Returns hasMore:true when more bookings remain — frontend should auto-loop until hasMore is false.
+// POST /admin/bookings/bulk-cancel — cancel bookings via GDS (or force-local) in small batches
+// Accepts: filter, bookingIds[], batchSize (default 3), offset (default 0), skipGds (default false)
 router.post('/bookings/bulk-cancel', async (req, res) => {
   try {
-    const { filter = 'reserved', bookingIds, batchSize = 3, offset = 0 } = req.body;
+    const { filter = 'reserved', bookingIds, batchSize = 3, offset = 0, skipGds = false } = req.body;
     let sql, params = [];
 
     if (filter === 'selected' && bookingIds?.length) {

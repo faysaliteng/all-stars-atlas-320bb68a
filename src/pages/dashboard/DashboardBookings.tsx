@@ -244,7 +244,7 @@ const DashboardBookings = () => {
                             <span className="text-muted-foreground text-[9px] italic block">PNR Pending</span>
                           )}
                           {booking.gdsBookingId && (
-                            <span className="text-[9px] text-muted-foreground font-mono block">ID: {booking.gdsBookingId}</span>
+                            <span className="text-[9px] text-muted-foreground font-mono block">Booking ID: {booking.gdsBookingId}</span>
                           )}
                         </div>
                       </TableCell>

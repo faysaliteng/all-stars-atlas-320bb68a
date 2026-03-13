@@ -9,7 +9,7 @@ const { notifyBookingConfirm } = require('../services/notify');
 const { searchFlights: ttiSearch, createBooking: ttiCreateBooking } = require('./tti-flights');
 const { searchFlights: bdfSearch } = require('./bdf-flights');
 const { searchFlights: flyhubSearch } = require('./flyhub-flights');
-const { searchFlights: sabreSearch, createBooking: sabreCreateBooking } = require('./sabre-flights');
+const { searchFlights: sabreSearch, createBooking: sabreCreateBooking, revalidatePrice: sabreRevalidate, getBooking: sabreGetBooking, checkTicketStatus: sabreCheckTickets, getSeatsRest: sabreGetSeatsRest } = require('./sabre-flights');
 const { searchFlights: galileoSearch } = require('./galileo-flights');
 const { searchFlights: ndcSearch } = require('./ndc-flights');
 const { searchAllLCCs } = require('./lcc-flights');
@@ -79,6 +79,62 @@ router.get('/travel-docs/:bookingId', authenticate, requireAdmin, async (req, re
   }
 });
 
+
+// ─── Sabre REST: Price Revalidation ───
+router.post('/revalidate-price', authenticate, async (req, res) => {
+  try {
+    const { flights, adults, children, infants, cabinClass } = req.body;
+    if (!flights || !Array.isArray(flights) || flights.length === 0) {
+      return res.status(400).json({ message: 'flights array is required' });
+    }
+    const result = await sabreRevalidate({ flights, adults, children, infants, cabinClass });
+    res.json(result);
+  } catch (err) {
+    console.error('[RevalidatePrice] Error:', err.message);
+    res.status(500).json({ message: 'Price revalidation failed', error: err.message });
+  }
+});
+
+// ─── Sabre REST: Get Booking ───
+router.get('/booking/:pnr', authenticate, async (req, res) => {
+  try {
+    const { pnr } = req.params;
+    if (!pnr) return res.status(400).json({ message: 'PNR is required' });
+    const result = await sabreGetBooking({ pnr });
+    res.json(result);
+  } catch (err) {
+    console.error('[GetBooking] Error:', err.message);
+    res.status(500).json({ message: 'Failed to retrieve booking', error: err.message });
+  }
+});
+
+// ─── Sabre REST: Check Ticket Status ───
+router.get('/ticket-status/:pnr', authenticate, async (req, res) => {
+  try {
+    const { pnr } = req.params;
+    if (!pnr) return res.status(400).json({ message: 'PNR is required' });
+    const result = await sabreCheckTickets({ pnr });
+    res.json(result);
+  } catch (err) {
+    console.error('[CheckTickets] Error:', err.message);
+    res.status(500).json({ message: 'Failed to check ticket status', error: err.message });
+  }
+});
+
+// ─── Sabre REST: Seat Map (alternative to SOAP) ───
+router.get('/seats-rest', async (req, res) => {
+  try {
+    const { origin, destination, departureDate, airlineCode, flightNumber, cabinClass, pnr } = req.query;
+    if (!origin || !destination || !departureDate || !airlineCode || !flightNumber) {
+      return res.status(400).json({ message: 'Required: origin, destination, departureDate, airlineCode, flightNumber' });
+    }
+    const result = await sabreGetSeatsRest({ origin, destination, departureDate, airlineCode, flightNumber, cabinClass, pnr });
+    res.json(result);
+  } catch (err) {
+    console.error('[SeatsRest] Error:', err.message);
+    res.status(500).json({ message: 'Failed to load seat map', error: err.message });
+  }
+});
 
 
 // GET /flights/tti-diagnostic — test TTI API connectivity

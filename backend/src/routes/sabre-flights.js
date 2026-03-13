@@ -1458,6 +1458,14 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       const variant = requestVariants[attemptIndex];
 
       try {
+        console.log(`[Sabre] ── CreatePNR attempt ${attemptIndex + 1}/${requestVariants.length}: ${variant.label} ──`);
+        console.log(`[Sabre] Request segments:`, JSON.stringify(variant.body?.CreatePassengerNameRecordRQ?.AirBook?.OriginDestinationInformation?.FlightSegment?.map(s => `${s.MarketingAirline?.Code}${s.MarketingAirline?.FlightNumber} ${s.OriginLocation?.LocationCode}→${s.DestinationLocation?.LocationCode} ${s.DepartureDateTime}`) || []));
+        console.log(`[Sabre] Request passengers:`, JSON.stringify(variant.body?.CreatePassengerNameRecordRQ?.TravelItineraryAddInfo?.CustomerInfo?.PersonName?.map(p => `${p.GivenName} ${p.Surname}`) || []));
+        
+        const hasDocs = !!variant.body?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo?.AdvancePassenger;
+        const hasSSR = !!variant.body?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo?.Service;
+        console.log(`[Sabre] Has DOCS: ${hasDocs} | Has SSR: ${hasSSR}`);
+
         const response = await sabreRequest(config, '/v2.4.0/passenger/records?mode=create', variant.body);
         finalResponse = response;
         logSabreCreatePnrDebug(response);
@@ -1466,18 +1474,21 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
         if (pnr) {
           finalPnr = pnr;
           successfulVariant = variant.label;
+          console.log(`[Sabre] ✓ PNR created via ${variant.label}: ${pnr}`);
           break;
         }
 
         finalErrorMessage = `No PNR returned from ${variant.label}`;
         console.warn(`[Sabre] ${finalErrorMessage}`);
+        console.warn(`[Sabre] Response keys:`, JSON.stringify(Object.keys(response || {})));
       } catch (err) {
         finalErrorMessage = err.message;
-        console.error(`[Sabre] CreatePNR attempt failed (${variant.label}):`, err.message);
+        console.error(`[Sabre] ✗ CreatePNR attempt failed (${variant.label}):`, err.message);
 
         const shouldRetry = /VALIDATION_FAILED|NotProcessed|AdvancePassenger|SpecialReqDetails|Document|PersonName|NamePrefix|not allowed/i.test(err.message || '');
         const hasNextVariant = attemptIndex < requestVariants.length - 1;
         if (!(shouldRetry && hasNextVariant)) {
+          console.error(`[Sabre] No more fallback variants — booking failed`);
           break;
         }
         console.warn(`[Sabre] Retrying CreatePNR with fallback payload: ${requestVariants[attemptIndex + 1].label}`);

@@ -1439,8 +1439,8 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
 
       if (ssrList.length > 0) {
         specialServiceInfo.Service = ssrList.map(ssr => ({
-          SSRCode: ssr.SSRCode,
-          ...(ssr.AirlineCode ? { Airline: { Code: ssr.AirlineCode } } : {}),
+          SSR_Code: ssr.SSRCode,
+          ...(ssr.AirlineCode ? { VendorPrefs: { Airline: { Code: ssr.AirlineCode } } } : {}),
           Text: ssr.Text,
           PersonName: ssr.PersonName,
           SegmentNumber: ssr.SegmentNumber,
@@ -1466,12 +1466,12 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       body,
     }];
 
-    if (ssrList.length > 0) {
-      // Keep passport DOCS, but allow retry without optional SSR service codes.
+    if (advancePassenger.length > 0) {
+      // Variant 2: Keep DOCS but strip SSR services (meals, wheelchair etc.)
       const bodyDocsOnly = JSON.parse(JSON.stringify(body));
-      const specialServiceInfo = bodyDocsOnly?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo;
-      if (specialServiceInfo?.Service) {
-        delete specialServiceInfo.Service;
+      const specialServiceInfo2 = bodyDocsOnly?.CreatePassengerNameRecordRQ?.SpecialReqDetails?.SpecialService?.SpecialServiceInfo;
+      if (specialServiceInfo2?.Service) {
+        delete specialServiceInfo2.Service;
       }
       requestVariants.push({
         label: 'docs_only_no_ssr',
@@ -1479,7 +1479,7 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
       });
     }
 
-    // Final fallback: no SpecialReqDetails at all (some airlines reject DOCS for certain PCC configs)
+    // Variant 3: No SpecialReqDetails at all (some airlines reject DOCS/SSR for certain PCC configs)
     const bodyNoSpecial = JSON.parse(JSON.stringify(body));
     delete bodyNoSpecial.CreatePassengerNameRecordRQ.SpecialReqDetails;
     requestVariants.push({
@@ -1516,24 +1516,26 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
           break;
         }
 
+        // No PNR extracted — try next variant
         finalErrorMessage = `No PNR returned from ${variant.label}`;
         console.warn(`[Sabre] ${finalErrorMessage}`);
         console.warn(`[Sabre] Response keys:`, JSON.stringify(Object.keys(response || {})));
-        // Continue to next variant — PNR extraction failed (likely NotProcessed/rejected)
         if (attemptIndex < requestVariants.length - 1) {
           console.warn(`[Sabre] Retrying with next variant: ${requestVariants[attemptIndex + 1].label}`);
-          continue;
         }
+        // loop continues to next variant automatically
+      } catch (err) {
         finalErrorMessage = err.message;
         console.error(`[Sabre] ✗ CreatePNR attempt failed (${variant.label}):`, err.message);
 
-        const shouldRetry = /VALIDATION_FAILED|NotProcessed|AdvancePassenger|SpecialReqDetails|Document|PersonName|NamePrefix|not allowed|UNABLE TO PROCESS|FORMAT|INVALID/i.test(err.message || '');
-        const hasNextVariant = attemptIndex < requestVariants.length - 1;
-        if (!(shouldRetry && hasNextVariant)) {
+        const shouldRetry = /VALIDATION_FAILED|NotProcessed|AdvancePassenger|SpecialReqDetails|Document|PersonName|NamePrefix|not allowed|UNABLE TO PROCESS|FORMAT|INVALID|CHECK FLIGHT/i.test(err.message || '');
+        if (shouldRetry && attemptIndex < requestVariants.length - 1) {
+          console.warn(`[Sabre] Retrying CreatePNR with fallback payload: ${requestVariants[attemptIndex + 1].label}`);
+          // loop continues to next variant
+        } else {
           console.error(`[Sabre] No more fallback variants — booking failed`);
           break;
         }
-        console.warn(`[Sabre] Retrying CreatePNR with fallback payload: ${requestVariants[attemptIndex + 1].label}`);
       }
     }
 

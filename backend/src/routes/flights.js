@@ -1017,6 +1017,31 @@ function extractDistinctSabreAirlinePnr(rawBooking, gdsPnr) {
   return distinct || null;
 }
 
+function normalizeLocatorCode(value) {
+  const code = String(value || '').trim().toUpperCase();
+  return /^[A-Z0-9]{5,20}$/.test(code) ? code : null;
+}
+
+function resolveCancelLocators(booking = {}, details = {}) {
+  const gdsCandidates = [
+    details?.gdsPnr,
+    booking?.pnr,
+    details?.gdsBookingResult?.pnr,
+    details?.outbound?.pnr,
+  ].map(normalizeLocatorCode).filter(Boolean);
+
+  const airlineCandidates = [
+    details?.airlinePnr,
+    details?.gdsBookingResult?.airlinePnr,
+    details?.outbound?.airlinePnr,
+  ].map(normalizeLocatorCode).filter(Boolean);
+
+  const gdsPnr = gdsCandidates.find((c) => !airlineCandidates.includes(c)) || gdsCandidates[0] || null;
+  const airlinePnr = airlineCandidates[0] || null;
+
+  return { gdsPnr, airlinePnr };
+}
+
 async function hydrateTtiContextForBooking({ mergedFlightData, returnFlightData, isRoundTrip, passengers }) {
   if (mergedFlightData?._ttiOffer?.Ref && mergedFlightData?._ttiItineraryRef) {
     return mergedFlightData;
@@ -1497,7 +1522,6 @@ router.post('/cancel', authenticate, async (req, res) => {
     }
 
     const details = typeof booking.details === 'string' ? JSON.parse(booking.details) : (booking.details || {});
-    const gdsPnr = details.gdsPnr || booking.pnr;
     const sourceRaw = details.outbound?.source || details.source || booking.provider || '';
     const source = String(sourceRaw).toLowerCase().trim();
 
@@ -1506,6 +1530,9 @@ router.post('/cancel', authenticate, async (req, res) => {
     const isTtiSource = source.includes('tti') || source.includes('astra') || ['2A', 'S2'].includes(airlineCode);
     const isBdfareSource = source.includes('bdfare') || source.includes('bdf');
     const isFlyhubSource = source.includes('flyhub');
+    const isGdsProvider = isSabreSource || isTtiSource || isBdfareSource || isFlyhubSource;
+
+    const { gdsPnr, airlinePnr } = resolveCancelLocators(booking, details);
 
     // For TTI, provider booking id from GDS response is required (local booking.id is NOT valid for TTI Cancel API)
     const ttiBookingId = details?.gdsBookingResult?.ttiBookingId
@@ -1514,12 +1541,20 @@ router.post('/cancel', authenticate, async (req, res) => {
       || details?.outbound?._ttiBookingId
       || null;
 
+    if (isGdsProvider && !gdsPnr) {
+      return res.status(422).json({
+        message: 'Missing GDS PNR — cancellation blocked to prevent local/GDS mismatch',
+        gdsError: `No valid GDS PNR found (airlinePnr=${airlinePnr || 'none'})`,
+        hint: 'This booking must store the provider GDS PNR for cancellation.',
+      });
+    }
+
     // Attempt GDS cancellation if PNR exists
     let gdsCancelResult = null;
     let gdsCancelFailed = false;
     if (gdsPnr) {
       try {
-        console.log(`[Cancel] Provider source='${source}' | airlineCode='${airlineCode || '-'}' | booking.provider='${booking.provider || ''}' | pnr='${gdsPnr}' | ttiBookingId='${ttiBookingId || '-'}'`);
+        console.log(`[Cancel] Provider source='${source}' | airlineCode='${airlineCode || '-'}' | booking.provider='${booking.provider || ''}' | bookingRef='${booking.booking_ref || '-'}' | gdsPnr='${gdsPnr}' | airlinePnr='${airlinePnr || '-'}' | ttiBookingId='${ttiBookingId || '-'}'`);
 
         if (isSabreSource) {
           const { cancelBooking: sabreCancelBooking } = require('./sabre-flights');

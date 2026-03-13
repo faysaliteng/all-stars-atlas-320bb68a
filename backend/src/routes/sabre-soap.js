@@ -77,6 +77,22 @@ function getSoapClientCredentials(config) {
 // ── Session token cache (reuse across calls, 15min TTL) ──
 let _sessionCache = { token: null, conversationId: null, expiresAt: 0 };
 
+const SOAP_SESSION_ERROR_RE = /(binarysecuritytoken|security token|invalid session|session not found|stale session|authentication failed|host tas allocated|limit of host tas|not authorized)/i;
+
+function isSoapSessionError(message) {
+  return SOAP_SESSION_ERROR_RE.test(String(message || ''));
+}
+
+async function resetSoapSessionCacheWithClose(config) {
+  const hadToken = !!_sessionCache.token;
+  const { token, conversationId } = _sessionCache;
+  _sessionCache = { token: null, conversationId: null, expiresAt: 0 };
+
+  if (hadToken && token) {
+    await closeSession(config, token, conversationId);
+  }
+}
+
 /**
  * Create a SOAP session — returns BinarySecurityToken
  */
@@ -241,16 +257,16 @@ async function getSeatMap(params, _retried = false) {
     console.log(`[Sabre SOAP] SeatMap response length: ${xml.length}`);
     console.log(`[Sabre SOAP] SeatMap XML (first 3000): ${xml.substring(0, 3000)}`);
 
-    // Check for SOAP fault or error — retry once with fresh session
+    // Check for SOAP fault or error — retry once only for session/auth issues
     if (xml.includes('faultstring') || xml.includes('ErrorRS') || xml.includes('status="NotProcessed"') || xml.includes('status="Incomplete"')) {
       const errMatch = xml.match(/faultstring>([^<]+)/) || xml.match(/Message[^>]*>([^<]+)/) || xml.match(/ShortText="([^"]+)"/) || xml.match(/SystemSpecificResults[^>]*>[\s\S]*?Message[^>]*>([^<]+)/);
       const errMsg = errMatch ? errMatch[1] : 'Unknown error';
       console.log(`[Sabre SOAP] SeatMap error: ${errMsg}`);
 
-      // If session-related error and not retried, clear cache and retry once
-      if (!_retried) {
-        console.log('[Sabre SOAP] SeatMap: retrying with fresh session...');
-        _sessionCache = { token: null, conversationId: null, expiresAt: 0 };
+      const shouldRetry = !_retried && isSoapSessionError(errMsg);
+      if (shouldRetry) {
+        console.log('[Sabre SOAP] SeatMap: session/auth error, retrying with fresh session...');
+        await resetSoapSessionCacheWithClose(config);
         return getSeatMap(params, true);
       }
 
@@ -267,10 +283,12 @@ async function getSeatMap(params, _retried = false) {
   } catch (err) {
     console.error('[Sabre SOAP] SeatMap request failed:', err.message);
 
-    // Retry once with fresh session on network/timeout errors
-    if (!_retried) {
-      console.log('[Sabre SOAP] SeatMap: retrying with fresh session after error...');
-      _sessionCache = { token: null, conversationId: null, expiresAt: 0 };
+    const netErr = /timeout|network|fetch failed|econnreset|etimedout/i.test(String(err?.message || ''));
+    const shouldRetry = !_retried && (netErr || isSoapSessionError(err?.message));
+
+    if (shouldRetry) {
+      console.log('[Sabre SOAP] SeatMap: retrying with fresh session after request error...');
+      await resetSoapSessionCacheWithClose(config);
       return getSeatMap(params, true);
     }
 
@@ -578,15 +596,12 @@ async function cancelPnrViaSoap(pnr) {
 
   console.log(`[Sabre SOAP] Cancel PNR via SOAP: ${pnr}`);
 
-  // Create a FRESH session (don't reuse cached — cancel needs its own context)
-  const oldCache = { ..._sessionCache };
-  _sessionCache = { token: null, conversationId: null, expiresAt: 0 };
-
+  // Reuse cached session if valid; otherwise create one.
+  // This avoids unnecessary SessionCreate calls and reduces Host TA exhaustion.
   let session;
   try {
     session = await createSession(config);
   } catch (err) {
-    _sessionCache = oldCache; // restore
     throw new Error(`SOAP session failed: ${err.message}`);
   }
 
@@ -708,8 +723,13 @@ async function cancelPnrViaSoap(pnr) {
     return { success: true, method: 'soap-cancel', pnr };
 
   } catch (err) {
-    console.error(`[Sabre SOAP] Cancel failed for ${pnr}:`, err.message);
-    return { success: false, error: err.message, method: 'soap-cancel' };
+    const rawError = err?.message || 'SOAP cancel failed';
+    const enrichedError = /limit of host tas|host tas allocated/i.test(rawError)
+      ? `${rawError} | Sabre Host TA limit reached on PCC. Wait for active sessions to expire or ask Sabre to increase/release TA allocation.`
+      : rawError;
+
+    console.error(`[Sabre SOAP] Cancel failed for ${pnr}:`, enrichedError);
+    return { success: false, error: enrichedError, method: 'soap-cancel' };
   } finally {
     // Always close session
     await closeSession(config, token, conversationId);

@@ -707,6 +707,11 @@ router.post('/book', authenticate, async (req, res) => {
       }
     }
 
+    // Use real PNR as booking reference when available
+    if (gdsPnr) {
+      bookingRef = gdsPnr;
+    }
+
     const flightRoute = `${origin}-${destination}`;
     const flightProvider = flightSource || (isTtiFlight ? 'tti' : (isSabreFlight ? 'sabre' : (gdsPnr ? 'gds' : 'local')));
 

@@ -730,7 +730,8 @@ const AdminBookings = () => {
                       {viewBooking.details.aircraft && <div><p className="text-xs text-muted-foreground">Aircraft</p><p className="font-medium">{viewBooking.details.aircraft}</p></div>}
                       {viewBooking.details.duration && <div><p className="text-xs text-muted-foreground">Duration</p><p className="font-medium">{viewBooking.details.duration}</p></div>}
                       {viewBooking.details.baggage && <div><p className="text-xs text-muted-foreground">Baggage</p><p className="font-medium">{viewBooking.details.baggage}</p></div>}
-                      {viewBooking.details.pnr && <div><p className="text-xs text-muted-foreground">PNR / GDS Ref</p><p className="font-bold font-mono text-primary">{viewBooking.details.pnr}</p></div>}
+                      {viewBooking.details.pnr && <div><p className="text-xs text-muted-foreground">Booking ID (GDS)</p><p className="font-bold font-mono text-primary">{viewBooking.pnr || viewBooking.details.pnr}</p></div>}
+                      {viewBooking.details.airlinePnr && <div><p className="text-xs text-muted-foreground">Airlines PNR</p><p className="font-bold font-mono text-accent">{viewBooking.details.airlinePnr}</p></div>}
                       {viewBooking.details.ttiBookingId && <div><p className="text-xs text-muted-foreground">TTI Booking ID</p><p className="font-mono text-xs">{viewBooking.details.ttiBookingId}</p></div>}
                       {viewBooking.details.source && <div><p className="text-xs text-muted-foreground">Source</p><Badge variant="outline" className="capitalize">{viewBooking.details.source}</Badge></div>}
                     </div>

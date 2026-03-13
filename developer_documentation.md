@@ -1004,3 +1004,4 @@ Migration: `backend/database/reward-points-migration.sql`
 - GAO returns "Proper request mode" error on auto-cancelled PNRs
 - REST GetSeats requires v2 endpoint with `SeatAvailabilityRQ.SeatMapQueryEnhanced` PascalCase schema
 - 15/21 airlines from DAC have no seat map data in Sabre (carrier-level restriction, not a code issue)
+- Sabre REST cancel endpoints may return `ERR.2SG.SEC.NOT_AUTHORIZED` on PCC-level privilege limits; SOAP cancel fallback can fail with "Host TAs allocated" if too many sessions are open. Backend now retries seat-map with fresh SOAP session **only** on auth/session/network errors to reduce TA exhaustion and enforces GDS-PNR-only cancellation safety.

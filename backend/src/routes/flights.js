@@ -996,7 +996,7 @@ function extractDistinctSabreAirlinePnr(rawBooking, gdsPnr) {
         continue;
       }
       if (typeof value !== 'string') continue;
-      if (!/(vendorlocator|airlinelocator|airlinepnr|confirmationid|confirmationnumber|locator|recordlocator)/i.test(key)) continue;
+      if (!/(vendorlocator|airlinelocator|airlinepnr|confirmationid|confirmationnumber|reservationnumber|locator|recordlocator)/i.test(key)) continue;
       const code = value.trim().toUpperCase();
       if (/^[A-Z0-9]{5,20}$/.test(code)) candidates.push(code);
     }

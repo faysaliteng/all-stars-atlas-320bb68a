@@ -583,15 +583,15 @@ const FlightBooking = () => {
           }
         }
 
-        // ─── International flight passport rules (IATA standard) ───
-        if (!domestic) {
-          if (!p.passport?.trim()) { errors[`passport_${pi}`] = `${paxLabel}: Passport number is mandatory for international flights`; }
-          else if (p.passport.trim().length < 5) { errors[`passport_${pi}`] = `${paxLabel}: Invalid passport number`; }
+        // ─── Passport/document mandatory for ALL flights (domestic + international) ───
+        if (!p.passport?.trim()) { errors[`passport_${pi}`] = `${paxLabel}: Passport/document number is required`; }
+        else if (p.passport.trim().length < 5) { errors[`passport_${pi}`] = `${paxLabel}: Invalid passport/document number`; }
 
-          if (!p.passportExpiry) {
-            errors[`passportExpiry_${pi}`] = `${paxLabel}: Passport expiry date is mandatory for international flights`;
-          } else if (!errors[`passportExpiry_${pi}`]) {
-            // 6-month validity rule — international standard (IATA/ICAO)
+        if (!p.passportExpiry) {
+          errors[`passportExpiry_${pi}`] = `${paxLabel}: Document expiry date is required`;
+        } else if (!errors[`passportExpiry_${pi}`]) {
+          // 6-month validity rule for international flights
+          if (!domestic) {
             const expiry = new Date(p.passportExpiry);
             const departureDate = outboundFlight?.departureTime ? new Date(outboundFlight.departureTime) : new Date();
             const sixMonthsFromDeparture = new Date(departureDate);

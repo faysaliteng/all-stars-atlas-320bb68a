@@ -1374,15 +1374,49 @@ async function createBooking({ flightData, passengers, contactInfo, specialServi
 
         // Keep Document schema-safe for Sabre validation
         // Required by user: always push passport data, never downgrade by stripping DOCS.
+        // Sabre DOCS SSR requires: Type, Number, IssueCountry, NationalityCountry, ExpirationDate,
+        // DateOfBirth, Gender, GivenName, Surname — all mandatory for airline processing.
+
+        // Format DOB to YYYY-MM-DD
+        let dobFormatted = '';
+        const rawDob = pax.dob || pax.dateOfBirth || '';
+        if (rawDob) {
+          const dStr = String(rawDob).replace(/['"]/g, '').trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+            dobFormatted = dStr;
+          } else if (/^\d{8}$/.test(dStr)) {
+            dobFormatted = `${dStr.slice(0,4)}-${dStr.slice(4,6)}-${dStr.slice(6,8)}`;
+          } else if (/^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(dStr)) {
+            const dp = dStr.split(/[\/\-]/);
+            dobFormatted = `${dp[2]}-${dp[1]}-${dp[0]}`;
+          } else {
+            const dd = new Date(dStr);
+            if (!isNaN(dd.getTime())) dobFormatted = dd.toISOString().slice(0, 10);
+          }
+        }
+
+        // Map gender to Sabre format (M/F/MI/FI for infants)
+        const rawGender = (pax.gender || '').toUpperCase();
+        let sabreGender = rawGender === 'MALE' || rawGender === 'M' ? 'M' : rawGender === 'FEMALE' || rawGender === 'F' ? 'F' : '';
+        // If pax type is infant, use MI/FI
+        const paxType = (pax.type || pax.paxType || '').toUpperCase();
+        if (paxType === 'INF' || paxType === 'INFANT') {
+          sabreGender = sabreGender === 'F' ? 'FI' : 'MI';
+        }
+
         const docPayload = {
           Type: 'P',
           Number: String(passportNo).toUpperCase(),
           IssueCountry: docCountry,
           NationalityCountry: nationality,
           ExpirationDate: expiryFormatted,
+          ...(dobFormatted ? { DateOfBirth: dobFormatted } : {}),
+          ...(sabreGender ? { Gender: sabreGender } : {}),
+          GivenName: (pax.firstName || '').toUpperCase(),
+          Surname: (pax.lastName || '').toUpperCase(),
         };
 
-        console.log(`[Sabre] DOCS pax ${i + 1}: ${docPayload.Number} | ${docPayload.IssueCountry} | exp=${docPayload.ExpirationDate}`);
+        console.log(`[Sabre] DOCS pax ${i + 1}: ${docPayload.Number} | country=${docPayload.IssueCountry} | exp=${docPayload.ExpirationDate} | dob=${docPayload.DateOfBirth || 'N/A'} | gender=${docPayload.Gender || 'N/A'} | name=${docPayload.GivenName}/${docPayload.Surname}`);
 
         advancePassenger.push({
           Document: docPayload,

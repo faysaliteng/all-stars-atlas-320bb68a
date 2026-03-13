@@ -60,6 +60,7 @@
 |------|---------|-------|
 | Mar 9 | v2.5 | Initial integration |
 | Mar 12 | v3.7.7 | **Complete normalizer rewrite** to match actual API v2 structure |
+| Mar 13 | v3.9.9.6 | **Booking wired** — `createBooking()` now called from `POST /flights/book` for BDFare-sourced flights |
 
 ### Issues & Resolutions
 

@@ -1555,10 +1555,11 @@ async function issueTicket({ pnr }) {
 async function cancelBooking({ pnr }) {
   const config = await getSabreConfig();
   if (!config) throw new Error('Sabre API not configured');
+  if (!pnr) return { success: false, error: 'PNR is required for Sabre cancellation' };
 
   console.log('[Sabre] Cancelling PNR:', pnr);
 
-  // Try multiple cancel API versions — some PCCs only have access to specific versions
+  // Try multiple REST cancel APIs first
   const cancelVariants = [
     {
       label: 'v2.0.2',
@@ -1583,16 +1584,13 @@ async function cancelBooking({ pnr }) {
       },
     },
     {
-      // Alternative: use CreatePassengerNameRecord to cancel by adding XI status
       label: 'cancel-via-modify',
-      endpoint: `/v2.4.0/passenger/records?mode=update`,
+      endpoint: '/v2.4.0/passenger/records?mode=update',
       body: {
         UpdatePassengerNameRecordRQ: {
           version: '2.4.0',
           Itinerary: { ID: pnr },
-          Cancel: {
-            Segment: [{ Type: 'entire' }],
-          },
+          Cancel: { Segment: [{ Type: 'entire' }] },
           PostProcessing: {
             EndTransaction: {
               Source: { ReceivedFrom: 'SEVEN TRIP API CANCEL' },
@@ -1603,6 +1601,8 @@ async function cancelBooking({ pnr }) {
     },
   ];
 
+  const restFailures = [];
+
   for (const variant of cancelVariants) {
     try {
       console.log(`[Sabre] Cancel attempt: ${variant.label} for PNR ${pnr}`);
@@ -1610,28 +1610,44 @@ async function cancelBooking({ pnr }) {
       console.log(`[Sabre] PNR ${pnr} cancelled via ${variant.label}`);
       return { success: true, method: variant.label, rawResponse: response };
     } catch (err) {
-      console.warn(`[Sabre] Cancel via ${variant.label} failed:`, err.message);
-      // If NOT_AUTHORIZED, try next variant
-      if (/NOT_AUTHORIZED|403|not found/i.test(err.message)) continue;
-      // Other errors — still fail
-      return { success: false, error: err.message, method: variant.label };
+      const msg = err?.message || 'Unknown Sabre error';
+      restFailures.push({ method: variant.label, error: msg });
+      console.warn(`[Sabre] Cancel via ${variant.label} failed:`, msg);
+      // Keep trying all REST variants; SOAP fallback runs after loop
     }
   }
 
-  // Final fallback: SOAP stateful cancel (SessionCreate → Retrieve → OTA_CancelLLSRQ → EndTransaction)
-  console.log(`[Sabre] REST cancel failed — falling back to SOAP cancel for PNR ${pnr}`);
+  // Final fallback: SOAP stateful cancel
+  console.log(`[Sabre] All REST cancel attempts failed for ${pnr}. Trying SOAP fallback...`);
   try {
     const { cancelPnrViaSoap } = require('./sabre-soap');
-    const soapResult = await cancelPnrViaSoap(pnr);
-    if (soapResult.success) {
-      console.log(`[Sabre] PNR ${pnr} cancelled via SOAP session`);
-      return soapResult;
+    if (typeof cancelPnrViaSoap !== 'function') {
+      throw new Error('cancelPnrViaSoap not available from sabre-soap module');
     }
-    console.error(`[Sabre] SOAP cancel also failed for PNR ${pnr}:`, soapResult.error);
-    return soapResult;
+
+    const soapResult = await cancelPnrViaSoap(pnr);
+    if (soapResult?.success) {
+      console.log(`[Sabre] PNR ${pnr} cancelled via SOAP session`);
+      return { ...soapResult, restFailures };
+    }
+
+    const soapError = soapResult?.error || 'Unknown SOAP cancel failure';
+    console.error(`[Sabre] SOAP cancel failed for PNR ${pnr}:`, soapError);
+    return {
+      success: false,
+      method: 'soap-cancel',
+      error: `All Sabre cancel methods failed — REST and SOAP unsuccessful`,
+      details: { restFailures, soapError },
+    };
   } catch (soapErr) {
-    console.error(`[Sabre] SOAP cancel exception for PNR ${pnr}:`, soapErr.message);
-    return { success: false, error: `All cancel methods failed. REST: NOT_AUTHORIZED. SOAP: ${soapErr.message}` };
+    const soapError = soapErr?.message || 'SOAP fallback exception';
+    console.error(`[Sabre] SOAP cancel exception for PNR ${pnr}:`, soapError);
+    return {
+      success: false,
+      method: 'soap-cancel',
+      error: `All Sabre cancel methods failed — REST and SOAP unsuccessful`,
+      details: { restFailures, soapError },
+    };
   }
 }
 

@@ -110,6 +110,18 @@ These files MUST be kept in sync with every code change.
 - ✅ Mobile responsive overhaul — fixed all horizontal overflow issues
 - ✅ Logo sizing normalized across all layouts (Header, Footer, Dashboard, Admin, Mobile)
 
+## ✅ Phase 8: Complete Sabre GDS (v4.0.0 — 2026-03-14)
+
+- ✅ Section 24: Void Flight Tickets — `POST /flights/void` → Sabre REST
+- ✅ Section 23: Refund — `POST /flights/refund/price` + `POST /flights/refund/fulfill` → Sabre REST
+- ✅ Section 22: Exchange/Reissue — `POST /flights/exchange` → Sabre SOAP `ExchangeBookingRQ v1.1.0`
+- ✅ Section 20: Structured Fare Rules — `GET /flights/fare-rules` → Sabre SOAP `StructureFareRulesRQ v3.0.1`
+- ✅ Section 25: Flight Status (FLIFO) — `GET /flights/status` → Sabre REST
+- ✅ Section 17: Stateless Ancillaries — `POST /flights/ancillaries-stateless` → Sabre REST
+- ✅ Section 18: Add Ancillary + EMD — `POST /flights/add-ancillary-stateless` + `POST /flights/fulfill-tickets` → Sabre REST
+- ✅ Section 26: Post-booking FF Update — `POST /flights/update-frequent-flyer` → UpdatePNR v2.4.0 FQTV SSR
+- ✅ All 26 Sabre GDS sections: 100% feature coverage
+
 ---
 
 ## Architecture

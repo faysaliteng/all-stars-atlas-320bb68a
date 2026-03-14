@@ -2643,6 +2643,389 @@ async function addAncillarySSR({ pnr, ssrList }) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SECTION 24: Void Flight Tickets
+// POST /v1/trip/orders/voidFlightTickets
+// ═══════════════════════════════════════════════════════════════
+async function voidTickets({ pnr, tickets }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  console.log(`[Sabre] Voiding tickets — PNR: ${pnr || 'N/A'}, tickets: ${tickets?.join(', ') || 'all'}`);
+
+  try {
+    const body = {};
+    if (tickets && tickets.length > 0) {
+      body.tickets = tickets;
+    } else if (pnr) {
+      body.confirmationId = pnr;
+    } else {
+      return { success: false, error: 'PNR or ticket numbers required' };
+    }
+
+    const response = await sabreRequest(config, '/v1/trip/orders/voidFlightTickets', body, 'POST', 30000);
+    console.log(`[Sabre] Void response:`, JSON.stringify(response).substring(0, 1000));
+
+    return {
+      success: true,
+      method: 'void',
+      pnr,
+      voidedTickets: response?.voidedTickets || response?.tickets || tickets || [],
+      rawResponse: response,
+    };
+  } catch (err) {
+    console.error(`[Sabre] Void failed:`, err.message);
+    return { success: false, error: err.message, method: 'void' };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 23: Refund (Stateless Refunds API)
+// Step 1: POST /v1/offers/refund/price  → get refund quote
+// Step 2: POST /v1/offers/refund/fulfill → execute refund
+// ═══════════════════════════════════════════════════════════════
+async function refundPrice({ pnr, passengers, refundDocuments, qualifiers }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  console.log(`[Sabre] Pricing refund for PNR: ${pnr}, docs: ${refundDocuments?.length || 0}`);
+
+  try {
+    const body = {
+      pnrLocator: pnr,
+      clientContext: {
+        pseudoCityCode: config.pcc,
+        stationNumber: '31000104',
+        accountingCity: config.pcc,
+      },
+      passengers: passengers || [],
+      refundDocuments: refundDocuments || [],
+    };
+
+    if (qualifiers) {
+      body.qualifiers = qualifiers;
+    }
+
+    const response = await sabreRequest(config, '/v1/offers/refund/price', body, 'POST', 30000);
+    console.log(`[Sabre] Refund pricing result:`, JSON.stringify(response).substring(0, 1000));
+
+    return {
+      success: true,
+      method: 'refund-price',
+      pnr,
+      refundQuote: response,
+    };
+  } catch (err) {
+    console.error(`[Sabre] Refund pricing failed:`, err.message);
+    return { success: false, error: err.message, method: 'refund-price' };
+  }
+}
+
+async function refundFulfill({ pnr, passengers, formsOfRefund, refundDocuments, cancelItinerary = true }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  console.log(`[Sabre] Fulfilling refund for PNR: ${pnr}, cancel: ${cancelItinerary}`);
+
+  try {
+    const body = {
+      pnrLocator: pnr,
+      clientContext: {
+        pseudoCityCode: config.pcc,
+        stationNumber: '31000104',
+        accountingCity: config.pcc,
+      },
+      passengers: passengers || [],
+      formsOfRefund: formsOfRefund || [],
+      refundDocuments: refundDocuments || [],
+      cancelItinerary,
+    };
+
+    const response = await sabreRequest(config, '/v1/offers/refund/fulfill', body, 'POST', 30000);
+    console.log(`[Sabre] Refund fulfill result:`, JSON.stringify(response).substring(0, 1000));
+
+    return {
+      success: true,
+      method: 'refund-fulfill',
+      pnr,
+      refundResult: response,
+    };
+  } catch (err) {
+    console.error(`[Sabre] Refund fulfill failed:`, err.message);
+    return { success: false, error: err.message, method: 'refund-fulfill' };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 25: Flight Status (FLIFO)
+// GET /products/air/flight/status
+// ═══════════════════════════════════════════════════════════════
+async function getFlightStatus({ airlineCode, flightNumber, departureDate, origin, destination }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  const params = new URLSearchParams();
+  if (departureDate) params.append('departureDate', departureDate);
+  if (airlineCode) params.append('airlineCode', airlineCode);
+  if (flightNumber) params.append('flightNumber', String(flightNumber).replace(/\D/g, ''));
+  if (origin) params.append('origin', origin);
+  if (destination) params.append('destination', destination);
+
+  const endpoint = `/products/air/flight/status?${params.toString()}`;
+  console.log(`[Sabre] Flight status: ${endpoint}`);
+
+  try {
+    const response = await sabreRequest(config, endpoint, null, 'GET', 15000);
+    console.log(`[Sabre] FLIFO result:`, JSON.stringify(response).substring(0, 1000));
+
+    // Parse flight status from response
+    const flights = response?.flightStatusResponse?.flightStatuses || response?.flightStatuses || [];
+
+    return {
+      success: true,
+      method: 'flifo',
+      flights: flights.map(f => ({
+        airlineCode: f.marketingAirline?.code || airlineCode,
+        flightNumber: f.flightNumber || flightNumber,
+        origin: f.departureAirport?.code || origin,
+        destination: f.arrivalAirport?.code || destination,
+        scheduledDeparture: f.scheduledDepartureDateTime || null,
+        estimatedDeparture: f.estimatedDepartureDateTime || null,
+        actualDeparture: f.actualDepartureDateTime || null,
+        scheduledArrival: f.scheduledArrivalDateTime || null,
+        estimatedArrival: f.estimatedArrivalDateTime || null,
+        actualArrival: f.actualArrivalDateTime || null,
+        status: f.status || f.flightStatus || 'UNKNOWN',
+        equipment: f.equipment?.code || null,
+      })),
+      rawResponse: response,
+    };
+  } catch (err) {
+    console.error(`[Sabre] FLIFO failed:`, err.message);
+    return { success: false, error: err.message, method: 'flifo' };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 17 (complete): Stateless Ancillaries REST API
+// POST /v1/offers/getAncillaries
+// ═══════════════════════════════════════════════════════════════
+async function getAncillariesStateless({ pnr, segments, passengers, mode = 'payload' }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  console.log(`[Sabre] Stateless ancillaries — mode: ${mode}, PNR: ${pnr || 'N/A'}, segments: ${segments?.length || 0}`);
+
+  try {
+    const body = {
+      clientContext: {
+        pseudoCityCode: config.pcc,
+        stationNumber: '31000104',
+        accountingCity: config.pcc,
+      },
+    };
+
+    if (mode === 'pnr' && pnr) {
+      body.pnrLocator = pnr;
+    } else {
+      // Payload mode
+      body.segments = (segments || []).map((seg, idx) => ({
+        id: `SEG-${idx + 1}`,
+        departureDateTime: seg.departureTime || seg.departureDateTime || '',
+        arrivalDateTime: seg.arrivalTime || seg.arrivalDateTime || '',
+        departureAirportCode: seg.origin || seg.departureAirportCode || '',
+        arrivalAirportCode: seg.destination || seg.arrivalAirportCode || '',
+        operatingAirlineCode: seg.operatingAirline || seg.airlineCode || '',
+        bookingAirlineCode: seg.airlineCode || seg.bookingAirlineCode || '',
+        isElectronicTicket: true,
+        bookingFlightNumber: String(seg.flightNumber || '').replace(/\D/g, ''),
+        bookingClassCode: seg.bookingClass || 'Y',
+        operatingFlightNumber: String(seg.flightNumber || '').replace(/\D/g, ''),
+        operatingBookingClassCode: seg.bookingClass || 'Y',
+        sequence: idx + 1,
+      }));
+      body.passengers = (passengers || []).map((pax, idx) => ({
+        id: `PAX-${idx + 1}`,
+        nameNumber: `0${idx + 1}.01`,
+        givenName: `${(pax.firstName || pax.givenName || 'TEST').toUpperCase()} ${(pax.title || 'MR').toUpperCase()}`,
+        surname: (pax.lastName || pax.surname || 'SABRE').toUpperCase(),
+        typeCode: pax.type || pax.typeCode || 'ADT',
+      }));
+    }
+
+    const response = await sabreRequest(config, '/v1/offers/getAncillaries', body, 'POST', 30000);
+    console.log(`[Sabre] Stateless ancillaries result:`, JSON.stringify(response).substring(0, 1500));
+
+    // Parse ancillary offers from response
+    const offers = response?.ancillaryOffers || response?.offers || [];
+    const ancillaries = [];
+
+    for (const offer of offers) {
+      const items = offer.items || [];
+      for (const item of items) {
+        ancillaries.push({
+          offerId: offer.id || null,
+          itemId: item.id || null,
+          groupCode: item.ancillary?.groupCode || item.groupCode || '',
+          subCode: item.ancillary?.subCode || item.subCode || '',
+          commercialName: item.ancillary?.commercialName || item.commercialName || '',
+          airlineCode: item.ancillary?.airlineCode || item.airlineCode || '',
+          price: item.price?.amount || item.totalAmount || 0,
+          currency: item.price?.currencyCode || item.currency || 'BDT',
+          segmentIds: item.segmentReferenceIds || [],
+          passengerIds: item.passengerReferenceIds || [],
+        });
+      }
+    }
+
+    return {
+      success: true,
+      method: 'stateless-ancillaries',
+      ancillaries,
+      totalOffers: ancillaries.length,
+      rawResponse: response,
+    };
+  } catch (err) {
+    console.error(`[Sabre] Stateless ancillaries failed:`, err.message);
+    return { success: false, error: err.message, method: 'stateless-ancillaries' };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 18 (complete): Add Ancillary + EMD Issuance
+// POST /v1/offers/addAncillaries — attach priced ancillary to PNR
+// POST /v1/trip/orders/fulfillOrder — issue EMD
+// ═══════════════════════════════════════════════════════════════
+async function addAncillaryStateless({ pnr, segments, passengers, offers, ancillaries }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  console.log(`[Sabre] Adding stateless ancillary to PNR: ${pnr}, offers: ${offers?.length || 0}`);
+
+  try {
+    const body = {
+      pnrLocator: pnr,
+      itinerary: { id: 'I-1', itineraryPartReferenceIds: ['IP-1'] },
+      itineraryParts: [{ id: 'IP-1', segmentReferenceIds: (segments || []).map((_, i) => `SEG-${i + 1}`) }],
+      segments: (segments || []).map((seg, idx) => ({
+        id: `SEG-${idx + 1}`,
+        departureAirportCode: seg.origin || seg.departureAirportCode || '',
+        arrivalAirportCode: seg.destination || seg.arrivalAirportCode || '',
+        bookingAirlineCode: seg.airlineCode || seg.bookingAirlineCode || '',
+        bookingFlightNumber: String(seg.flightNumber || '').replace(/\D/g, ''),
+        sequence: idx + 1,
+      })),
+      passengers: (passengers || []).map((pax, idx) => ({
+        id: `PAX-${idx + 1}`,
+        nameNumber: `0${idx + 1}.01`,
+        givenName: `${(pax.firstName || pax.givenName || '').toUpperCase()} ${(pax.title || 'MR').toUpperCase()}`,
+        surname: (pax.lastName || pax.surname || '').toUpperCase(),
+        typeCode: pax.type || pax.typeCode || 'ADT',
+      })),
+      offers: offers || [],
+      ancillaries: ancillaries || [],
+    };
+
+    const response = await sabreRequest(config, '/v1/offers/addAncillaries', body, 'POST', 30000);
+    console.log(`[Sabre] Add ancillary result:`, JSON.stringify(response).substring(0, 1000));
+
+    return { success: true, method: 'add-ancillary-stateless', pnr, rawResponse: response };
+  } catch (err) {
+    console.error(`[Sabre] Add ancillary stateless failed:`, err.message);
+    return { success: false, error: err.message, method: 'add-ancillary-stateless' };
+  }
+}
+
+async function fulfillTickets({ pnr, fulfillments, formsOfPayment, acceptPriceChanges = true }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  console.log(`[Sabre] Fulfill tickets/EMD for PNR: ${pnr}`);
+
+  try {
+    const body = {
+      confirmationId: pnr,
+      retainAccounting: false,
+      fulfillments: fulfillments || [{
+        ticketingQualifiers: {
+          priceWithTaxes: true,
+          returnFareFlexibilityDetails: false,
+          priceQuoteRecordIds: ['1'],
+          isNetFareCommission: false,
+        },
+        payment: { primaryFormOfPayment: 1 },
+      }],
+      receivedFrom: 'SEVEN TRIP API',
+      designatePrinters: [{ ticket: { countryCode: 'BD' } }],
+      formsOfPayment: formsOfPayment || [],
+      acceptPriceChanges,
+    };
+
+    const response = await sabreRequest(config, '/v1/trip/orders/fulfillOrder', body, 'POST', 45000);
+    console.log(`[Sabre] Fulfill result:`, JSON.stringify(response).substring(0, 1000));
+
+    return {
+      success: true,
+      method: 'fulfill-tickets',
+      pnr,
+      tickets: response?.tickets || response?.fulfillments || [],
+      rawResponse: response,
+    };
+  } catch (err) {
+    console.error(`[Sabre] Fulfill tickets failed:`, err.message);
+    return { success: false, error: err.message, method: 'fulfill-tickets' };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 26 (complete): Post-booking Frequent Flyer Update
+// Uses UpdatePassengerNameRecord v2.4.0 with FQTV SSR
+// ═══════════════════════════════════════════════════════════════
+async function updateFrequentFlyer({ pnr, loyaltyUpdates }) {
+  const config = await getSabreConfig();
+  if (!config) throw new Error('Sabre API not configured');
+
+  if (!pnr || !loyaltyUpdates?.length) {
+    return { success: false, error: 'PNR and loyaltyUpdates required' };
+  }
+
+  console.log(`[Sabre] Updating FF for PNR ${pnr}: ${loyaltyUpdates.length} update(s)`);
+
+  try {
+    const services = loyaltyUpdates.map(update => ({
+      SSR_Code: 'FQTV',
+      Text: `${(update.airlineCode || '').toUpperCase()}${update.loyaltyNumber || ''}`,
+      PersonName: { NameNumber: `${(update.passengerIndex || 0) + 1}.1` },
+      SegmentNumber: 'A',
+      VendorPrefs: { Airline: { Code: update.airlineCode || '' } },
+    }));
+
+    const body = {
+      CreatePassengerNameRecordRQ: {
+        targetCity: config.pcc,
+        SpecialReqDetails: {
+          SpecialService: {
+            SpecialServiceInfo: {
+              Service: services,
+            },
+          },
+        },
+        PostProcessing: {
+          EndTransaction: { Source: { ReceivedFrom: 'SEVEN TRIP FF UPDATE' } },
+        },
+      },
+    };
+
+    const response = await sabreRequest(config, `/v2.4.0/passenger/records?mode=update&recordLocator=${pnr}`, body, 'POST', 30000);
+    const updatedPnr = extractSabrePnrFromCreateResponse(response);
+    console.log(`[Sabre] FF update result: PNR=${updatedPnr || pnr}`);
+    return { success: true, pnr: updatedPnr || pnr, rawResponse: response };
+  } catch (err) {
+    console.error(`[Sabre] FF update failed for PNR ${pnr}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = {
   searchFlights,
   createBooking,
@@ -2656,4 +3039,18 @@ module.exports = {
   addAncillarySSR,
   getSabreConfig,
   clearSabreConfigCache,
+  // Section 24: Void
+  voidTickets,
+  // Section 23: Refund
+  refundPrice,
+  refundFulfill,
+  // Section 25: FLIFO
+  getFlightStatus,
+  // Section 17: Stateless Ancillaries
+  getAncillariesStateless,
+  // Section 18: Add Ancillary + EMD
+  addAncillaryStateless,
+  fulfillTickets,
+  // Section 26: FF Update
+  updateFrequentFlyer,
 };

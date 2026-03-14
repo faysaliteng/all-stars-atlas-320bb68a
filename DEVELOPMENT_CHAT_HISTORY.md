@@ -388,3 +388,22 @@ Placeholder data persisting in production code. Lesson: zero-mock audit + automa
 - **Added**: `airlinePnr` and `createVariant` in `createBooking()` return object
 - **Fixed**: `AreaCityCode` removed from ContactNumber (Sabre schema rejection)
 - **Enhanced**: Extended alias support for `prefix`, `passportNo`, `passportEx`, `nationalityCountry`, `contactPhone`, `contactEmail`
+
+---
+
+## Phase 8: Complete Sabre GDS — All 26 Features (Mar 14, 2026)
+
+### v4.0.0 — Mar 14 — All 26 Sabre GDS Sections Implemented
+- **Added 10 new API endpoints** completing full Sabre GDS coverage:
+  - `POST /flights/void` — Section 24: Void Flight Tickets
+  - `POST /flights/refund/price` + `/refund/fulfill` — Section 23: Refund (2-step)
+  - `POST /flights/exchange` — Section 22: Exchange/Reissue via SOAP
+  - `GET /flights/fare-rules` — Section 20: Structured Fare Rules via SOAP
+  - `GET /flights/status` — Section 25: Flight Status (FLIFO)
+  - `POST /flights/ancillaries-stateless` — Section 17: Stateless Ancillaries REST
+  - `POST /flights/add-ancillary-stateless` — Section 18: Add Ancillary Stateless
+  - `POST /flights/fulfill-tickets` — Section 18: EMD Issuance
+  - `POST /flights/update-frequent-flyer` — Section 26: Post-booking FF Update
+- **8 new functions in `sabre-flights.js`**: `voidTickets()`, `refundPrice()`, `refundFulfill()`, `getFlightStatus()`, `getAncillariesStateless()`, `addAncillaryStateless()`, `fulfillTickets()`, `updateFrequentFlyer()`
+- **2 new functions in `sabre-soap.js`**: `getStructuredFareRules()`, `exchangeBooking()`
+- **Result**: 100% Sabre GDS feature coverage (26/26 sections), 100+ total API endpoints

@@ -153,9 +153,9 @@ All core booking lifecycle features are production-verified:
 
 ---
 
-### ⚠️ Section 18: Add Ancillary + EMD — PARTIAL
+### ✅ Section 18: Add Ancillary + EMD — DONE (v4.0.0)
 
-**VPS Test:** ✅ 18a (SSR-based add) | ⏭️ 18b (Stateless REST — NOT IMPLEMENTED) | ⏭️ 18c (EMD — NOT IMPLEMENTED)
+**What we have:**
 
 **What we have:**
 - SSR-based ancillary add via `addAncillarySSR()` in `sabre-flights.js`

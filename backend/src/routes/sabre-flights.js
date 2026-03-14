@@ -1923,6 +1923,7 @@ async function revalidatePrice({ flights, adults = 1, children = 0, infants = 0,
       },
     };
 
+    console.log('[Sabre] Revalidation payload:', JSON.stringify(body, null, 2).substring(0, 2000));
     const response = await sabreRequest(config, '/v4/shop/flights/revalidate', body);
 
     // Extract revalidated pricing

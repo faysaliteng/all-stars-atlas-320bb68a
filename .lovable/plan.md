@@ -45,7 +45,7 @@ These files MUST be kept in sync with every code change.
 
 - ✅ `src/lib/api.ts` — HTTP client with JWT, refresh, 401 retry, interceptors, NETWORK_ERROR handling
 - ✅ `src/lib/config.ts` — Environment-based API URL configuration
-- ✅ `src/lib/constants.ts` — All 90+ API endpoints
+- ✅ `src/lib/constants.ts` — All 100+ API endpoints
 - ✅ `src/contexts/AuthContext.tsx` — Full auth state management with social login
 - ✅ `src/hooks/useApiData.ts` — 40+ React Query hooks covering all services
 - ✅ `src/hooks/useCmsContent.ts` — CMS content with API fallback to defaults

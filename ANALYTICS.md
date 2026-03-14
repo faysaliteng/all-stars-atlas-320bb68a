@@ -33,7 +33,7 @@
 | **Admin Modules** | 17 |
 | **CMS Modules** | 10 |
 | **Auth Pages** | 5 |
-| **API Endpoints** | 90+ |
+| **API Endpoints** | 100+ |
 | **Database Tables** | 24 (20 core + 4 rewards) |
 | **GDS Integrations** | 6 (TTI, BDFare, FlyHub, Sabre REST, Sabre SOAP, Galileo) |
 | **Payment Gateways** | 3 (SSLCommerz, bKash, Nagad) |

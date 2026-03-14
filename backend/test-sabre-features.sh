@@ -118,7 +118,20 @@ echo -e "${CYAN}━━━ 3. Price Revalidation ━━━${NC}"
 # Get first Sabre flight from search for revalidation
 FIRST_FLIGHT=$(echo "$SEARCH_RESULT" | jq -c '[.data[] | select(.source == "sabre")][0] // empty')
 if [ -n "$FIRST_FLIGHT" ] && [ "$FIRST_FLIGHT" != "null" ]; then
-  REVAL_BODY=$(echo "$FIRST_FLIGHT" | jq -c '{flights: [.legs[0] // .], adults: 1, children: 0, infants: 0, cabinClass: (.cabinClass // "Economy")}')
+  # Build revalidation payload from top-level flight fields (not legs)
+  REVAL_BODY=$(echo "$FIRST_FLIGHT" | jq -c '{
+    flights: [{
+      origin: .origin,
+      destination: .destination,
+      departureTime: .departureTime,
+      arrivalTime: .arrivalTime,
+      flightNumber: .flightNumber,
+      airlineCode: .airlineCode,
+      bookingClass: (.bookingClass // .fareDetails[0].bookingClass // "Y")
+    }],
+    adults: 1, children: 0, infants: 0,
+    cabinClass: (.cabinClass // "Economy")
+  }')
   REVAL_RESULT=$(curl -s -X POST "$API_BASE/flights/revalidate-price" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \

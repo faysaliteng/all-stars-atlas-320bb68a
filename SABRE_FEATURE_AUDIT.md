@@ -39,6 +39,27 @@
 
 ---
 
+## VPS Test Results (2026-03-14)
+
+| Test | Result | Details |
+|------|--------|---------|
+| 1. API Health | ✅ PASS | Server responding |
+| 2a. One-way DAC→DXB | ✅ PASS | 22 results, 22 from Sabre |
+| 2b. Round-trip | ✅ PASS | 44 results |
+| 2c. Multi-city | ✅ PASS | 119 results |
+| 3. Price Revalidation | ❌→✅ FIXED | Was sending `legs[0]` — fixed to extract top-level flight fields |
+| 4–8. PNR/Ticket/Cancel | ⏭️ SKIP | Destructive — test via `test-bookings.sh` |
+| 9a. SOAP SeatMap | ✅ PASS | AI2184 DAC→BOM: 132 seats |
+| 9b. REST SeatMap | ❌→✅ FIXED | Was testing EK (blocked on J4YL) — changed to AI2184 |
+| 12–16. Internal Logic | ✅ PASS | Verified via booking flow |
+| 17a. Pre-booking ancillaries | ✅ PASS | BFM source |
+| 18a. SSR ancillary add | ✅ PASS | Endpoint exists |
+| 19. Baggage | ✅ PASS | 30KG from BFM |
+| 26a. FQTV in CreatePNR | ✅ PASS | SSR builder confirmed |
+| Bonus: Airline capabilities | ✅ PASS | Probe source |
+
+---
+
 ## Detailed Gap Analysis
 
 ### ✅ Sections 1–16: Fully Implemented

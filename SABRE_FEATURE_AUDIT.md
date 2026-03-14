@@ -345,34 +345,11 @@ All core booking lifecycle features are production-verified:
 
 ---
 
-### ❌ Section 24: Void — NOT IMPLEMENTED
+### ✅ Section 24: Void — DONE (v4.0.0)
 
-**VPS Test:** ⏭️ SKIP — needs `POST /v1/trip/orders/voidFlightTickets`
-
-**Official verified samples:**
-
-By ticket number:
-```json
-{ "tickets": ["0721237725987"] }
-```
-
-By conjunctive document:
-```json
-{ "tickets": ["1606802005008/09"] }
-```
-
-By booking (void all):
-```json
-{ "confirmationId": "ABCDEF" }
-```
-[Source: Sabre Void Flight Tickets](https://developer.sabre.com/rest-api/booking-management-api/v1/help-documentation/void-flight-tickets-examples.html)
-
-**Impact:** HIGH — Void is free/cheap vs refund penalties. 24h void window.
-
-**Implementation plan:**
-1. Add `voidTickets()` in `sabre-flights.js`
-2. Add route `POST /api/flights/void`
-3. Auto-void logic: if cancel within 24h of ticketing, try void before refund
+**Implementation:** `sabre-flights.js` → `voidTickets()`
+**Route:** `POST /api/flights/void`
+**Features:** Void by PNR (`confirmationId`) or by ticket numbers array. 24h void window saves money vs refund penalties.
 
 ---
 

@@ -293,7 +293,7 @@ Express, mysql2, bcryptjs, jsonwebtoken, multer, uuid, cors, helmet, morgan, exp
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture (frontend, backend, GDS, design system) |
 | [SECURITY.md](./SECURITY.md) | Security measures, JWT flow, API keys, SSL, firewalls |
 | [API_CHANGELOG.md](./API_CHANGELOG.md) | Backend API changes per version (endpoints, schema) |
-| [DEPLOYMENT_HISTORY.md](./DEPLOYMENT_HISTORY.md) | All 7 deployments with exact commands and verification |
+| [DEPLOYMENT_HISTORY.md](./DEPLOYMENT_HISTORY.md) | All 8+ deployments with exact commands and verification |
 | [DEPLOYMENT_COMMANDS.md](./DEPLOYMENT_COMMANDS.md) | Copy-paste VPS deployment commands |
 | [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | Solutions for all known issues |
 | [VPS_SESSION_LOG.md](./VPS_SESSION_LOG.md) | Complete VPS terminal session history with outputs |

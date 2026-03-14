@@ -1016,4 +1016,4 @@ Stored in: `system_settings` table, key: `api_sabre`
 
 ---
 
-*Last updated: 2026-03-13 | v3.9.9.8 | Production-verified with PNR GCCVGK + Airlines PNR 09HUGY*
+*Last updated: 2026-03-14 | v4.0.0 | All 26 Sabre sections implemented*

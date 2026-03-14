@@ -138,4 +138,4 @@ Config:   API keys in DB system_settings (not .env)
 ## Counts
 
 - **Public pages:** 27 | **Dashboard:** 12 | **Admin:** 17 | **CMS:** 10 | **Auth:** 5
-- **Total: 70+ pages | 90+ API endpoints | 20 DB tables | 60+ airline logos**
+- **Total: 70+ pages | 100+ API endpoints | 24 DB tables | 60+ airline logos | 26/26 Sabre features**

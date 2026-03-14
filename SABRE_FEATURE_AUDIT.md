@@ -651,13 +651,13 @@ GET /products/air/flight/schedules?departureDate=2026-04-27&airlineCode=BS&fligh
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `backend/src/routes/sabre-flights.js` | 2655 | REST API: search, booking, ticketing, cancel, seats, ancillary SSR |
-| `backend/src/routes/sabre-soap.js` | 753 | SOAP API: session mgmt, seat maps, GAO, cancel |
-| `backend/src/routes/flights.js` | 1612 | Unified flight routes: search, book, cancel |
+| `backend/src/routes/sabre-flights.js` | ~3000 | REST API: search, booking, ticketing, cancel, seats, ancillary SSR, void, refund, FLIFO, stateless ancillaries, EMD, FF update |
+| `backend/src/routes/sabre-soap.js` | ~1000 | SOAP API: session mgmt, seat maps, GAO, cancel, fare rules, exchange |
+| `backend/src/routes/flights.js` | ~1800 | Unified flight routes: search, book, cancel, + 10 new v4.0.0 routes |
 | `backend/src/routes/ancillaries.js` | 444 | Ancillary/seat map endpoints |
-| `SABRE_PAYLOADS.md` | 1018 | Working payload reference (sections 1–16) |
-| `backend/test-sabre-features.sh` | ~400 | Automated VPS test suite for all 26 features |
+| `SABRE_PAYLOADS.md` | ~1050 | Working payload reference (sections 1–16) |
+| `backend/test-sabre-features.sh` | ~450 | Automated VPS test suite for all 26 features |
 
 ---
 
-*Last updated: 2026-03-14 | v3.9.9.9 | VPS test verified*
+*Last updated: 2026-03-14 | v4.0.0 | All 26 Sabre sections implemented*
